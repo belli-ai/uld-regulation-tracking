@@ -852,7 +852,7 @@ export default function SupervisorPage() {
   const [polygons, setPolygons] = useState<AirportPolygons | null>(null);
   const [trackerMeasurements, setTrackerMeasurements] =
     useState<TrackerMeasurementsByUld>({});
-  const [builtUldIds, setBuiltUldIds] = useState<string[]>(fallbackBuiltUldIds);
+  const [builtUldIds, setBuiltUldIds] = useState<string[]>([]);
   const [logicalNowMs, setLogicalNowMs] = useState<number>(simulationBaseMs);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -901,9 +901,7 @@ export default function SupervisorPage() {
             ),
           );
 
-          setBuiltUldIds(
-            auditedUlds.length > 0 ? auditedUlds : fallbackBuiltUldIds,
-          );
+          setBuiltUldIds(auditedUlds);
         }
       } catch (caughtError: unknown) {
         if (!cancelled) {
