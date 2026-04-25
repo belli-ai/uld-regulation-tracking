@@ -457,6 +457,24 @@ export async function recalculateAll(
         eventFor: toIRI(snap.uldId),
         eventLocation: toIRI(`urn:cargo:zone:DXB-${snap.stage}`),
         eventTimeType: "actual",
+        otherIdentifiers: [
+          `shc:${snap.shcCode}`,
+          `state:${snap.stage}`,
+          `internalTemperatureC:${snap.internalC.toFixed(2)}`,
+          `ambientTemperatureC:${snap.effectiveAmbientC.toFixed(2)}`,
+          `budgetPercent:${snap.budgetPercent.toFixed(1)}`,
+          ...(snap.predictedBreachMinutes !== null
+            ? [
+                `predictedBreachInMinutes:${snap.predictedBreachMinutes.toFixed(1)}`,
+              ]
+            : []),
+          ...(snap.flightNumber ? [`flight:${snap.flightNumber}`] : []),
+          ...(eventCode === "BREACH_ACTUAL"
+            ? [
+                `rootCause:Internal ${snap.internalC.toFixed(1)}C breached ${snap.shcCode} band`,
+              ]
+            : []),
+        ],
       };
       transitions.push(event);
     }
