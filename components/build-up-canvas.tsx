@@ -760,6 +760,7 @@ function getStdLabel(flight: BuildUpFlight | null): string {
 export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const router = useRouter();
   const addBuiltUld = useUldStore((state) => state.addBuiltUld);
+  const builtContents = useUldStore((state) => state.contents);
   const releaseFromBuildUp = useInventoryStore(
     (state) => state.releaseFromBuildUp,
   );
@@ -854,6 +855,30 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     () => new Set(contents.map((waybill) => waybill["@id"])),
     [contents],
   );
+  const assignedWaybillIdsOutsideCurrentUld = useMemo(() => {
+    const assigned = new Set<string>();
+
+    for (const [builtUldId, waybills] of Object.entries(builtContents)) {
+      if (uld && builtUldId === uld["@id"]) {
+        continue;
+      }
+
+      for (const waybill of waybills) {
+        assigned.add(waybill["@id"]);
+      }
+    }
+
+    return assigned;
+  }, [builtContents, uld]);
+  const availableManifest = useMemo(
+    () =>
+      manifest.filter(
+        (waybill) =>
+          !loadedWaybillIds.has(waybill["@id"]) &&
+          !assignedWaybillIdsOutsideCurrentUld.has(waybill["@id"]),
+      ),
+    [assignedWaybillIdsOutsideCurrentUld, loadedWaybillIds, manifest],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -923,7 +948,11 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     const waybill = manifest.find(
       (entry) => entry["@id"] === toIRI(payload.waybillId),
     );
-    if (!waybill || loadedWaybillIds.has(waybill["@id"])) {
+    if (
+      !waybill ||
+      loadedWaybillIds.has(waybill["@id"]) ||
+      assignedWaybillIdsOutsideCurrentUld.has(waybill["@id"])
+    ) {
       return;
     }
 
@@ -937,6 +966,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
         getLocationCode(String(flight.departureLocation)),
         getLocationCode(String(flight.arrivalLocation)),
         flight.flightNumber,
+        flight.aircraftCategory ?? "passenger",
       );
       const rejected = nextResults.filter(
         (result) => result.status === "rejected",
@@ -1151,7 +1181,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     </CardDescription>
                   </div>
                   <Badge variant="secondary" className="min-h-7">
-                    {manifest.length} AWBs
+                    {availableManifest.length} AWBs
                   </Badge>
                 </div>
               </CardHeader>
@@ -1170,9 +1200,15 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     </div>
                   ) : null}
 
-                  {manifest.map((waybill) => {
-                    const disabled =
-                      loadedWaybillIds.has(waybill["@id"]) || checkingDg;
+                  {availableManifest.length === 0 ? (
+                    <div className="border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+                      All manifest AWBs are loaded into this ULD or assigned to
+                      another built ULD.
+                    </div>
+                  ) : null}
+
+                  {availableManifest.map((waybill) => {
+                    const disabled = checkingDg;
                     const totalAwbWeight = totalWeightKg([waybill]);
 
                     return (

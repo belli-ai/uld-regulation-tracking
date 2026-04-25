@@ -41,7 +41,7 @@ type RawDgCheckResponse =
 
 function toLocation(station: string): Location {
   const locationCode = station.startsWith("urn:")
-    ? station.split(":").at(-1) ?? station
+    ? (station.split(":").at(-1) ?? station)
     : station;
   const iri = station.startsWith("urn:") ? station : `urn:cargo:loc:${station}`;
 
@@ -53,11 +53,9 @@ function toLocation(station: string): Location {
   };
 }
 
-function inferAircraftCategory(flight: string): "cargo" | "passenger" {
-  return /\bcargo\b|cao/i.test(flight) ? "cargo" : "passenger";
-}
-
-function asResultList(payload: RawDgCheckResponse): AdapterDgValidationResult[] {
+function asResultList(
+  payload: RawDgCheckResponse,
+): AdapterDgValidationResult[] {
   if (Array.isArray(payload)) {
     return payload;
   }
@@ -112,6 +110,7 @@ export const dgChecker = {
     departure: string,
     arrival: string,
     flight: string,
+    aircraftCategory: "cargo" | "passenger" = "passenger",
   ): Promise<DgValidationResult[]> {
     if (pieces.length === 0) {
       return [];
@@ -123,7 +122,7 @@ export const dgChecker = {
       arrival: toLocation(arrival),
       flight: {
         flightNumber: flight,
-        aircraftCategory: inferAircraftCategory(flight),
+        aircraftCategory,
       },
     };
 
@@ -144,6 +143,8 @@ export const dgChecker = {
       asResultList(payload).map((result) => [result.pieceIri, result] as const),
     );
 
-    return pieces.map((piece) => normalizeResult(piece, byPieceIri.get(piece["@id"])));
+    return pieces.map((piece) =>
+      normalizeResult(piece, byPieceIri.get(piece["@id"])),
+    );
   },
 };
