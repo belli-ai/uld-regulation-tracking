@@ -115,7 +115,7 @@ const RESOURCE_FALLBACK = {
   freeCoolDollies: 8,
   freeCoolRoomSlots: 200,
 };
-const LOGICAL_MULTIPLIER = 1200;
+const LOGICAL_MULTIPLIER = 60;
 const TRACKER_WINDOW = 48;
 const TOW_ESTIMATE_MINUTES: Record<string, number> = {
   AVI: 5,
