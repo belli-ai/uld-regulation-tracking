@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { PackagePlus, Wand2 } from "lucide-react";
 import uldSpecsData from "@/public/config/uld-specs.json";
 import { AwbManifestPanel } from "@/components/awb-manifest-panel";
@@ -40,7 +41,7 @@ import {
   type InventoryUld,
 } from "@/lib/stores/inventory-store";
 import { useUldStore } from "@/lib/stores/uld-store";
-import { auditDb } from "@/lib/persistence/audit-db";
+import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import { cn } from "@/lib/utils";
 
 declare module "react" {
@@ -477,13 +478,37 @@ export default function FlightWorkspacePage() {
     };
   }, [clockAnchor, flightNo]);
 
-  const builtEntries = buildWorkspaceEntries(
+  const liveSnapshots =
+    useLiveQuery(
+      () => auditDb.uldStatus.toArray(),
+      [],
+      [] as UldThermalSnapshot[],
+    ) ?? [];
+  const snapshotByUld = new Map(
+    liveSnapshots.map((snap) => [snap.uldId, snap] as const),
+  );
+
+  // Workspace built-ULD strip uses the same uldStatus snapshot the
+  // recalculator writes every 5s. Local mock budget is only the warm-up
+  // fallback before the first tick lands a snapshot for that ULD.
+  const localEntries = buildWorkspaceEntries(
     builtUlds,
     builtContents,
     monitorStages,
     auditEvents,
     logicalNowMs,
   );
+  const builtEntries: BuiltUldStripEntry[] = localEntries.map((entry) => {
+    const snap = snapshotByUld.get(entry.uld.uldSerialNumber);
+    if (!snap) return entry;
+    return {
+      ...entry,
+      budgetH: snap.budgetH,
+      budgetTone: snap.budgetTone,
+      currentState: snap.stage as typeof entry.currentState,
+      thermalBudgetLabel: `${snap.budgetH.toFixed(1)}h`,
+    };
+  });
   const assignedUldByWaybill = buildAssignedUldMap(builtUlds, builtContents);
   const assignedWaybillIds = useMemo(
     () => new Set(Object.keys(assignedUldByWaybill)),
