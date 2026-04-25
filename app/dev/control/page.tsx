@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
 
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -270,7 +276,7 @@ function ManualInjectPanel() {
   }
 
   return (
-    <Card>
+    <Card className="mission-panel border-border/80">
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -508,13 +514,71 @@ export default function DevControlPage() {
     ) ?? null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6">
-        <Card>
+    <MissionShell>
+      <MissionTopBar eyebrow="Demo operations" title="Demo Control Panel" />
+      <div className="grid w-full gap-5 px-4 py-5 sm:px-6">
+        <MissionHero
+          eyebrow="Scenario runner"
+          title="Demo Control Panel"
+          description="Deterministic playback, manual inject, resources, and scenario status."
+          actions={
+            <>
+              <Button
+                className="min-h-11"
+                onClick={() => void demoScenarioRunner.play()}
+              >
+                Play
+              </Button>
+              <Button
+                className="min-h-11"
+                onClick={() => void demoScenarioRunner.pause()}
+                variant="outline"
+              >
+                Pause
+              </Button>
+              <Button
+                className="min-h-11"
+                onClick={() => void demoScenarioRunner.skip(15)}
+                variant="outline"
+              >
+                Skip +15s
+              </Button>
+              <Button
+                className="min-h-11"
+                onClick={() => void demoScenarioRunner.reset()}
+                variant="secondary"
+              >
+                Reset
+              </Button>
+            </>
+          }
+        >
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile
+              label="Status"
+              value={describePlayState(clockState.playState)}
+              meta={runnerState.statusMessage ?? "Ready"}
+            />
+            <MetricTile
+              label="Clock"
+              value={formatTick(clockState.currentTickSec)}
+            />
+            <MetricTile
+              label="Ambient"
+              value={`${runnerState.weather.ambientC.toFixed(1)} C`}
+            />
+            <MetricTile
+              label="Speed"
+              value={`${clockState.speedMultiplier}x`}
+            />
+          </div>
+        </MissionHero>
+
+        <Card className="mission-panel border-border/80">
           <CardHeader className="gap-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex flex-col gap-1">
-                <CardTitle>Demo Control Panel</CardTitle>
+                <CardTitle>Playback controls</CardTitle>
                 <CardDescription>
                   Scenario runner, deterministic playback, and manual inject.
                 </CardDescription>
@@ -551,7 +615,7 @@ export default function DevControlPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-              <div className="rounded-lg border px-4 py-3">
+              <div className="border px-4 py-3">
                 <div className="text-sm text-muted-foreground">Status</div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">
@@ -567,21 +631,21 @@ export default function DevControlPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border px-4 py-3">
+              <div className="border px-4 py-3">
                 <div className="text-sm text-muted-foreground">Clock</div>
                 <div className="mt-1 text-xl font-semibold">
                   {formatTick(clockState.currentTickSec)}
                 </div>
               </div>
 
-              <div className="rounded-lg border px-4 py-3">
+              <div className="border px-4 py-3">
                 <div className="text-sm text-muted-foreground">Ambient</div>
                 <div className="mt-1 text-xl font-semibold">
                   {runnerState.weather.ambientC.toFixed(1)} C
                 </div>
               </div>
 
-              <div className="rounded-lg border px-4 py-3">
+              <div className="border px-4 py-3">
                 <div className="text-sm text-muted-foreground">Speed</div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -611,9 +675,9 @@ export default function DevControlPage() {
           </CardHeader>
         </Card>
 
-        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
           <aside className="flex flex-col gap-4">
-            <Card>
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Scenario Picker</CardTitle>
                 <CardDescription>
@@ -653,7 +717,7 @@ export default function DevControlPage() {
                 ) : null}
 
                 {loadError ? (
-                  <div className="rounded-lg border border-amber-500/40 px-3 py-2 text-sm text-muted-foreground">
+                  <div className="border border-amber-500/40 px-3 py-2 text-sm text-muted-foreground">
                     {loadError}. Using bundled runner scenarios.
                   </div>
                 ) : null}
@@ -667,7 +731,7 @@ export default function DevControlPage() {
                       <button
                         key={scenario.id}
                         className={cn(
-                          "flex min-h-11 flex-col items-start gap-2 rounded-lg border px-4 py-3 text-left",
+                          "flex min-h-11 flex-col items-start gap-2 border px-4 py-3 text-left",
                           isActive
                             ? "border-primary bg-accent"
                             : "border-border",
@@ -695,7 +759,7 @@ export default function DevControlPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Toggles</CardTitle>
                 <CardDescription>
@@ -703,7 +767,7 @@ export default function DevControlPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                <div className="flex items-center justify-between gap-3 border px-4 py-3">
                   <div className="flex flex-col gap-1">
                     <div className="text-base font-medium">Weather mode</div>
                     <div className="text-sm text-muted-foreground">
@@ -719,7 +783,7 @@ export default function DevControlPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                <div className="flex items-center justify-between gap-3 border px-4 py-3">
                   <div className="flex flex-col gap-1">
                     <div className="text-base font-medium">Sound</div>
                     <div className="text-sm text-muted-foreground">
@@ -737,7 +801,7 @@ export default function DevControlPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Resources</CardTitle>
                 <CardDescription>
@@ -745,7 +809,7 @@ export default function DevControlPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
-                <div className="rounded-lg border px-4 py-3">
+                <div className="border px-4 py-3">
                   <div className="text-sm text-muted-foreground">
                     Cool dollies
                   </div>
@@ -753,7 +817,7 @@ export default function DevControlPage() {
                     {resources.freeCoolDollies}
                   </div>
                 </div>
-                <div className="rounded-lg border px-4 py-3">
+                <div className="border px-4 py-3">
                   <div className="text-sm text-muted-foreground">
                     Cool room slots
                   </div>
@@ -761,7 +825,7 @@ export default function DevControlPage() {
                     {resources.freeCoolRoomSlots}
                   </div>
                 </div>
-                <div className="rounded-lg border px-4 py-3">
+                <div className="border px-4 py-3">
                   <div className="text-sm text-muted-foreground">
                     Build-up bays
                   </div>
@@ -774,7 +838,7 @@ export default function DevControlPage() {
           </aside>
 
           <main className="flex flex-col gap-4">
-            <Card>
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Event Timeline</CardTitle>
                 <CardDescription>
@@ -791,7 +855,7 @@ export default function DevControlPage() {
                       <div
                         key={item.id}
                         className={cn(
-                          "rounded-lg border px-4 py-3",
+                          "border px-4 py-3",
                           item.status === "dispatched" &&
                             "border-primary/40 bg-accent/60",
                           item.status === "pending" && "border-border",
@@ -821,7 +885,7 @@ export default function DevControlPage() {
                     );
                   })
                 ) : (
-                  <div className="rounded-lg border px-4 py-6 text-sm text-muted-foreground">
+                  <div className="border px-4 py-6 text-sm text-muted-foreground">
                     No scripted events in this scenario.
                   </div>
                 )}
@@ -829,7 +893,7 @@ export default function DevControlPage() {
             </Card>
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <Card>
+              <Card className="mission-panel border-border/80">
                 <CardHeader>
                   <CardTitle className="text-lg">Scenario Status</CardTitle>
                   <CardDescription>
@@ -837,7 +901,7 @@ export default function DevControlPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3">
-                  <div className="rounded-lg border px-4 py-3">
+                  <div className="border px-4 py-3">
                     <div className="text-sm text-muted-foreground">
                       Scenario
                     </div>
@@ -845,7 +909,7 @@ export default function DevControlPage() {
                       {activeScenario?.name ?? "Unavailable"}
                     </div>
                   </div>
-                  <div className="rounded-lg border px-4 py-3">
+                  <div className="border px-4 py-3">
                     <div className="text-sm text-muted-foreground">
                       Duration
                     </div>
@@ -855,7 +919,7 @@ export default function DevControlPage() {
                         : `${activeScenario?.duration_seconds ?? 0}s`}
                     </div>
                   </div>
-                  <div className="rounded-lg border px-4 py-3">
+                  <div className="border px-4 py-3">
                     <div className="text-sm text-muted-foreground">
                       Next event
                     </div>
@@ -865,7 +929,7 @@ export default function DevControlPage() {
                         : "None pending"}
                     </div>
                   </div>
-                  <div className="rounded-lg border px-4 py-3">
+                  <div className="border px-4 py-3">
                     <div className="text-sm text-muted-foreground">
                       Wait state
                     </div>
@@ -883,6 +947,6 @@ export default function DevControlPage() {
           </main>
         </div>
       </div>
-    </div>
+    </MissionShell>
   );
 }

@@ -1,11 +1,13 @@
+import path from "node:path";
 import type { NextConfig } from "next";
+
+const projectRoot = path.resolve(__dirname);
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: "/Users/abelramadhan/projects/belli-workspace/hackathon",
+    root: projectRoot,
   },
-  outputFileTracingRoot:
-    "/Users/abelramadhan/projects/belli-workspace/hackathon",
+  outputFileTracingRoot: projectRoot,
 };
 
 export default nextConfig;

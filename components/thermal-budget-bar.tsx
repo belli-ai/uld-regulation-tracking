@@ -29,13 +29,20 @@ function formatBreachAt(value: string | Date | null): string {
 
 export function ThermalBudgetBar({ budgetH, breachAt, warning }: Props) {
   const clampedBudget = Math.max(budgetH, 0);
-  const normalizedValue = Math.max(0, Math.min((clampedBudget / 12) * 100, 100));
+  const normalizedValue = Math.max(
+    0,
+    Math.min((clampedBudget / 12) * 100, 100),
+  );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 border border-border/70 bg-background/40 p-3">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Budget</span>
-        <span className="font-semibold text-foreground">{clampedBudget.toFixed(1)} h</span>
+        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Budget
+        </span>
+        <span className="font-mono text-lg font-bold text-foreground">
+          {clampedBudget.toFixed(1)} h
+        </span>
       </div>
       <Progress
         value={normalizedValue}

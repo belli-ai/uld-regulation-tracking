@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   CartesianGrid,
@@ -8,7 +8,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
+} from "recharts";
 
 type Point = {
   actionLabel: string;
@@ -38,23 +38,23 @@ export function BenefitScatterChart({ points }: Props) {
           type="number"
           dataKey="claimedBenefitHours"
           name="Claimed"
-          tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+          tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           unit="h"
         />
         <YAxis
           type="number"
           dataKey="measuredBenefitHours"
           name="Actual"
-          tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+          tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           unit="h"
         />
         <Tooltip
-          cursor={{ stroke: 'var(--border)' }}
+          cursor={{ stroke: "var(--border)" }}
           contentStyle={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: '0.75rem',
-            color: 'var(--foreground)',
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: "0.75rem",
+            color: "var(--foreground)",
           }}
         />
         <Scatter data={points} fill="var(--primary)" />

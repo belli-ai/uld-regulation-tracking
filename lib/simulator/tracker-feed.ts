@@ -4,10 +4,10 @@ import airportsData from "@/public/data/airports.json";
 import flightsData from "@/public/data/flights.json";
 import iotDevicesData from "@/public/data/iot-devices.json";
 import uldInventoryData from "@/public/data/uld-inventory.json";
+import { trackerLogicalCadenceMs } from "@/lib/env";
 import { toIRI, type Measurement, type Sensor } from "@/lib/ontology/one-record";
 import type { Scenario } from "@/lib/simulator/scenario-schema";
 
-const LOGICAL_CADENCE_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 20;
 const EARTH_RADIUS_KM = 6371;
 
@@ -452,11 +452,13 @@ export function startTrackerFeed(
     }
 
     const logicalElapsedMs = Math.max(getLogicalTime() - logicalStartTime, 0);
-    const targetStepCount = Math.floor(logicalElapsedMs / LOGICAL_CADENCE_MS);
+    const targetStepCount = Math.floor(
+      logicalElapsedMs / trackerLogicalCadenceMs,
+    );
 
     while (emittedStepCount < targetStepCount) {
       emittedStepCount += 1;
-      const emissionElapsedMs = emittedStepCount * LOGICAL_CADENCE_MS;
+      const emissionElapsedMs = emittedStepCount * trackerLogicalCadenceMs;
       const measurements = buildMeasurements(
         emittedStepCount,
         emissionElapsedMs,

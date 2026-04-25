@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-import { ExcursionLogRow } from '@/components/excursion-log-row';
+import { ExcursionLogRow } from "@/components/excursion-log-row";
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -18,15 +24,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import type { LogisticsAction, LogisticsEvent } from '@/lib/ontology/one-record';
-import { auditDb } from '@/lib/persistence/audit-db';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table";
+import type {
+  LogisticsAction,
+  LogisticsEvent,
+} from "@/lib/ontology/one-record";
+import { auditDb } from "@/lib/persistence/audit-db";
+import { cn } from "@/lib/utils";
 
 const EXCURSION_EVENT_CODES = [
-  'WARNING_BUDGET_LOW',
-  'BREACH_PREDICTED',
-  'BREACH_ACTUAL',
+  "WARNING_BUDGET_LOW",
+  "BREACH_PREDICTED",
+  "BREACH_ACTUAL",
 ] as const;
 
 type ExcursionEventCode = (typeof EXCURSION_EVENT_CODES)[number];
@@ -53,16 +62,18 @@ type ExcursionRowData = {
   state: string;
 };
 
-type SeverityFilter = 'all' | ExcursionEventCode;
+type SeverityFilter = "all" | ExcursionEventCode;
 
 const filterClassName =
-  'h-11 rounded-md border border-input bg-background px-3 text-base text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+  "h-11 rounded-md border border-input bg-background px-3 text-base text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 function readIdentifierValue(
   identifiers: string[] | undefined,
   prefix: string,
 ): string | null {
-  const match = identifiers?.find((identifier) => identifier.startsWith(prefix));
+  const match = identifiers?.find((identifier) =>
+    identifier.startsWith(prefix),
+  );
 
   return match ? match.slice(prefix.length) : null;
 }
@@ -88,49 +99,55 @@ function getEventIdentifiers(event: LogisticsEvent): string[] | undefined {
 
 function getEventShc(event: LogisticsEvent): string {
   const extendedEvent = event as ExtendedExcursionEvent;
-  const shcFromIdentifiers = readIdentifierValue(getEventIdentifiers(event), 'shc:');
+  const shcFromIdentifiers = readIdentifierValue(
+    getEventIdentifiers(event),
+    "shc:",
+  );
 
-  return extendedEvent.shc ?? shcFromIdentifiers ?? 'Unknown';
+  return extendedEvent.shc ?? shcFromIdentifiers ?? "Unknown";
 }
 
 function getEventState(event: LogisticsEvent): string {
   const extendedEvent = event as ExtendedExcursionEvent;
   const stateFromIdentifiers = readIdentifierValue(
     getEventIdentifiers(event),
-    'state:',
+    "state:",
   );
 
-  return extendedEvent.state ?? stateFromIdentifiers ?? 'Unknown';
+  return extendedEvent.state ?? stateFromIdentifiers ?? "Unknown";
 }
 
 function getAmbientTemperature(event: LogisticsEvent): number | null {
   const extendedEvent = event as ExtendedExcursionEvent;
 
-  if (typeof extendedEvent.ambientTemperatureC === 'number') {
+  if (typeof extendedEvent.ambientTemperatureC === "number") {
     return extendedEvent.ambientTemperatureC;
   }
 
-  return readNumberValue(getEventIdentifiers(event), 'ambientTemperatureC:');
+  return readNumberValue(getEventIdentifiers(event), "ambientTemperatureC:");
 }
 
 function getInternalTemperature(event: LogisticsEvent): number | null {
   const extendedEvent = event as ExtendedExcursionEvent;
 
-  if (typeof extendedEvent.internalTemperatureC === 'number') {
+  if (typeof extendedEvent.internalTemperatureC === "number") {
     return extendedEvent.internalTemperatureC;
   }
 
-  return readNumberValue(getEventIdentifiers(event), 'internalTemperatureC:');
+  return readNumberValue(getEventIdentifiers(event), "internalTemperatureC:");
 }
 
 function getPredictedBreachInMinutes(event: LogisticsEvent): number | null {
   const extendedEvent = event as ExtendedExcursionEvent;
 
-  if (typeof extendedEvent.predictedBreachInMinutes === 'number') {
+  if (typeof extendedEvent.predictedBreachInMinutes === "number") {
     return extendedEvent.predictedBreachInMinutes;
   }
 
-  return readNumberValue(getEventIdentifiers(event), 'predictedBreachInMinutes:');
+  return readNumberValue(
+    getEventIdentifiers(event),
+    "predictedBreachInMinutes:",
+  );
 }
 
 function getRootCause(event: LogisticsEvent): string | null {
@@ -138,7 +155,7 @@ function getRootCause(event: LogisticsEvent): string | null {
 
   return (
     extendedEvent.rootCause ??
-    readIdentifierValue(getEventIdentifiers(event), 'rootCause:')
+    readIdentifierValue(getEventIdentifiers(event), "rootCause:")
   );
 }
 
@@ -146,18 +163,20 @@ function getResolutionTimestamp(action: LogisticsAction): string {
   return action.actionStartTime;
 }
 
-function getSeverityCounts(events: ExcursionRowData[]): Record<ExcursionEventCode, number> {
+function getSeverityCounts(
+  events: ExcursionRowData[],
+): Record<ExcursionEventCode, number> {
   return events.reduce<Record<ExcursionEventCode, number>>(
     (counts, row) => {
-      if (row.event.eventCode === 'WARNING_BUDGET_LOW') {
+      if (row.event.eventCode === "WARNING_BUDGET_LOW") {
         counts.WARNING_BUDGET_LOW += 1;
       }
 
-      if (row.event.eventCode === 'BREACH_PREDICTED') {
+      if (row.event.eventCode === "BREACH_PREDICTED") {
         counts.BREACH_PREDICTED += 1;
       }
 
-      if (row.event.eventCode === 'BREACH_ACTUAL') {
+      if (row.event.eventCode === "BREACH_ACTUAL") {
         counts.BREACH_ACTUAL += 1;
       }
 
@@ -178,23 +197,23 @@ function getDateValue(value: string): string {
 async function loadExcursionEvents(): Promise<LogisticsEvent[]> {
   const eventsTable = auditDb.events as unknown as {
     toCollection(): {
-      and(
-        predicate: (event: LogisticsEvent) => boolean,
-      ): { toArray(): Promise<LogisticsEvent[]> };
+      and(predicate: (event: LogisticsEvent) => boolean): {
+        toArray(): Promise<LogisticsEvent[]>;
+      };
     };
     where(index: string): {
       equals(value: string): {
-        and(
-          predicate: (event: LogisticsEvent) => boolean,
-        ): { toArray(): Promise<LogisticsEvent[]> };
+        and(predicate: (event: LogisticsEvent) => boolean): {
+          toArray(): Promise<LogisticsEvent[]>;
+        };
       };
     };
   };
 
   try {
     return await eventsTable
-      .where('@type')
-      .equals('LogisticsEvent')
+      .where("@type")
+      .equals("LogisticsEvent")
       .and((event) =>
         EXCURSION_EVENT_CODES.includes(event.eventCode as ExcursionEventCode),
       )
@@ -204,7 +223,7 @@ async function loadExcursionEvents(): Promise<LogisticsEvent[]> {
       .toCollection()
       .and(
         (event) =>
-          event['@type'] === 'LogisticsEvent' &&
+          event["@type"] === "LogisticsEvent" &&
           EXCURSION_EVENT_CODES.includes(event.eventCode as ExcursionEventCode),
       )
       .toArray();
@@ -212,22 +231,24 @@ async function loadExcursionEvents(): Promise<LogisticsEvent[]> {
 }
 
 function getSelectedExcursionId(): string | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
-  return new URLSearchParams(window.location.search).get('excursion');
+  return new URLSearchParams(window.location.search).get("excursion");
 }
 
 export default function SupervisorExcursionsPage() {
   const [rows, setRows] = useState<ExcursionRowData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [uldFilter, setUldFilter] = useState('all');
-  const [startDateFilter, setStartDateFilter] = useState('');
-  const [endDateFilter, setEndDateFilter] = useState('');
-  const [shcFilter, setShcFilter] = useState('all');
-  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
-  const [selectedExcursionId, setSelectedExcursionId] = useState<string | null>(null);
+  const [uldFilter, setUldFilter] = useState("all");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [shcFilter, setShcFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  const [selectedExcursionId, setSelectedExcursionId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -242,7 +263,9 @@ export default function SupervisorExcursionsPage() {
       actions
         .slice()
         .sort((left, right) =>
-          getResolutionTimestamp(left).localeCompare(getResolutionTimestamp(right)),
+          getResolutionTimestamp(left).localeCompare(
+            getResolutionTimestamp(right),
+          ),
         )
         .forEach((action) => {
           if (!action.servedActivity) {
@@ -263,7 +286,8 @@ export default function SupervisorExcursionsPage() {
           ambientTemperatureC: getAmbientTemperature(event),
           event,
           internalTemperatureC: getInternalTemperature(event),
-          linkedResolution: firstResolutionByEventId.get(String(event['@id'])) ?? null,
+          linkedResolution:
+            firstResolutionByEventId.get(String(event["@id"])) ?? null,
           predictedBreachInMinutes: getPredictedBreachInMinutes(event),
           rootCause: getRootCause(event),
           shc: getEventShc(event),
@@ -291,18 +315,22 @@ export default function SupervisorExcursionsPage() {
 
   const filteredRows = rows.filter((row) => {
     const uldMatches =
-      uldFilter === 'all' || String(row.event.eventFor) === uldFilter;
-    const shcMatches = shcFilter === 'all' || row.shc === shcFilter;
+      uldFilter === "all" || String(row.event.eventFor) === uldFilter;
+    const shcMatches = shcFilter === "all" || row.shc === shcFilter;
     const severityMatches =
-      severityFilter === 'all' || row.event.eventCode === severityFilter;
+      severityFilter === "all" || row.event.eventCode === severityFilter;
     const eventDate = getDateValue(row.event.eventDate);
     const startMatches = !startDateFilter || eventDate >= startDateFilter;
     const endMatches = !endDateFilter || eventDate <= endDateFilter;
 
-    return uldMatches && shcMatches && severityMatches && startMatches && endMatches;
+    return (
+      uldMatches && shcMatches && severityMatches && startMatches && endMatches
+    );
   });
   const severityCounts = getSeverityCounts(filteredRows);
-  const resolvedCount = filteredRows.filter((row) => row.linkedResolution).length;
+  const resolvedCount = filteredRows.filter(
+    (row) => row.linkedResolution,
+  ).length;
   const uldOptions = Array.from(
     new Set(rows.map((row) => String(row.event.eventFor))),
   ).sort((left, right) => left.localeCompare(right));
@@ -311,14 +339,11 @@ export default function SupervisorExcursionsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <h1 className="truncate text-base font-semibold text-foreground">
-              Excursion Log
-            </h1>
-          </div>
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="Supervisor audit console"
+        title="Excursion Log"
+        actions={
           <nav className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link
               href="/supervisor/excursions"
@@ -333,54 +358,29 @@ export default function SupervisorExcursionsPage() {
               Resolutions
             </Link>
           </nav>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8">
-        <section className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Supervisor
-          </p>
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Predicted and actual excursion events
-            </h2>
-            <p className="text-base text-muted-foreground">
-              Warning, breach-predicted, and actual excursion events pulled from
-              the audit database.
-            </p>
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6">
+        <MissionHero
+          eyebrow="Supervisor"
+          title="Predicted and actual excursion events"
+          description="Warning, breach-predicted, and actual excursion events pulled from the audit database."
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <MetricTile label="Total events" value={filteredRows.length} />
+            <MetricTile
+              label="Warning / predicted"
+              value={`${severityCounts.WARNING_BUDGET_LOW} / ${severityCounts.BREACH_PREDICTED}`}
+            />
+            <MetricTile
+              label="Linked resolutions"
+              value={`${resolvedCount}/${filteredRows.length}`}
+            />
           </div>
-        </section>
+        </MissionHero>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl border shadow-sm">
-            <CardHeader className="flex flex-col gap-1">
-              <CardDescription>Total events</CardDescription>
-              <CardTitle className="text-7xl font-bold tracking-tighter">
-                {filteredRows.length}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="rounded-xl border shadow-sm">
-            <CardHeader className="flex flex-col gap-1">
-              <CardDescription>Warning / predicted</CardDescription>
-              <CardTitle className="text-2xl">
-                {severityCounts.WARNING_BUDGET_LOW} /{' '}
-                {severityCounts.BREACH_PREDICTED}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="rounded-xl border shadow-sm">
-            <CardHeader className="flex flex-col gap-1">
-              <CardDescription>Linked resolutions</CardDescription>
-              <CardTitle className="text-2xl">
-                {resolvedCount}/{filteredRows.length}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </section>
-
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2">
             <CardTitle className="text-lg font-semibold leading-none">
               Filters
@@ -456,7 +456,7 @@ export default function SupervisorExcursionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2">
             <CardTitle className="text-lg font-semibold leading-none">
               Event list
@@ -469,7 +469,7 @@ export default function SupervisorExcursionsPage() {
             <Table>
               <TableCaption>
                 {isLoading
-                  ? 'Loading excursion events from IndexedDB.'
+                  ? "Loading excursion events from IndexedDB."
                   : `${filteredRows.length} excursion events in view.`}
               </TableCaption>
               <TableHeader>
@@ -486,7 +486,7 @@ export default function SupervisorExcursionsPage() {
               <TableBody>
                 {filteredRows.map((row) => (
                   <ExcursionLogRow
-                    key={row.event['@id']}
+                    key={row.event["@id"]}
                     event={row.event}
                     ambientTemperatureC={row.ambientTemperatureC}
                     internalTemperatureC={row.internalTemperatureC}
@@ -495,7 +495,9 @@ export default function SupervisorExcursionsPage() {
                     rootCause={row.rootCause}
                     shc={row.shc}
                     state={row.state}
-                    isSelected={selectedExcursionId === String(row.event['@id'])}
+                    isSelected={
+                      selectedExcursionId === String(row.event["@id"])
+                    }
                   />
                 ))}
                 {!isLoading && filteredRows.length === 0 ? (
@@ -503,7 +505,7 @@ export default function SupervisorExcursionsPage() {
                     <td
                       colSpan={7}
                       className={cn(
-                        'p-6 text-center text-base text-muted-foreground',
+                        "p-6 text-center text-base text-muted-foreground",
                       )}
                     >
                       No excursion events match the current filters.
@@ -515,6 +517,6 @@ export default function SupervisorExcursionsPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </MissionShell>
   );
 }

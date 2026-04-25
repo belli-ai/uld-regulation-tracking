@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
 
-import { TableCell, TableRow } from '@/components/ui/table';
-import type { ResolutionOutcome } from '@/lib/audit/resolution-logger';
-import type { LogisticsAction, LogisticsEvent } from '@/lib/ontology/one-record';
-import { cn } from '@/lib/utils';
+import { TableCell, TableRow } from "@/components/ui/table";
+import type { ResolutionOutcome } from "@/lib/audit/resolution-logger";
+import type {
+  LogisticsAction,
+  LogisticsEvent,
+} from "@/lib/ontology/one-record";
+import { cn } from "@/lib/utils";
 
 type Props = {
   action: LogisticsAction;
@@ -17,7 +20,7 @@ type Props = {
   isSelected?: boolean;
   linkedExcursion: LogisticsEvent | null;
   measuredBenefitHours: number | null;
-  outcome: ResolutionOutcome | 'unknown';
+  outcome: ResolutionOutcome | "unknown";
   shc: string;
   stationCapability: string | null;
   uldId: string;
@@ -27,54 +30,54 @@ function formatDateTime(timestamp: string): string {
   const value = new Date(timestamp);
 
   if (Number.isNaN(value.getTime())) {
-    return 'Invalid time';
+    return "Invalid time";
   }
 
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(value);
 }
 
 function formatBenefit(value: number | null): string {
-  return typeof value === 'number' ? `${value.toFixed(1)} h` : '—';
+  return typeof value === "number" ? `${value.toFixed(1)} h` : "—";
 }
 
-function getOutcomeMeta(outcome: ResolutionOutcome | 'unknown'): {
+function getOutcomeMeta(outcome: ResolutionOutcome | "unknown"): {
   badgeClassName: string;
   label: string;
 } {
-  if (outcome === 'averted') {
+  if (outcome === "averted") {
     return {
-      badgeClassName: 'bg-primary/10 text-primary',
-      label: 'Averted',
+      badgeClassName: "bg-primary/10 text-primary",
+      label: "Averted",
     };
   }
 
-  if (outcome === 'monitoring') {
+  if (outcome === "monitoring") {
     return {
-      badgeClassName: 'bg-orange-500/10 text-orange-500',
-      label: 'Monitoring',
+      badgeClassName: "bg-orange-500/10 text-orange-500",
+      label: "Monitoring",
     };
   }
 
-  if (outcome === 'cancelled') {
+  if (outcome === "cancelled") {
     return {
-      badgeClassName: 'bg-muted text-muted-foreground',
-      label: 'Cancelled',
+      badgeClassName: "bg-muted text-muted-foreground",
+      label: "Cancelled",
     };
   }
 
-  if (outcome === 'breached-anyway') {
+  if (outcome === "breached-anyway") {
     return {
-      badgeClassName: 'bg-destructive/10 text-destructive',
-      label: 'Breached anyway',
+      badgeClassName: "bg-destructive/10 text-destructive",
+      label: "Breached anyway",
     };
   }
 
   return {
-    badgeClassName: 'bg-secondary text-secondary-foreground',
-    label: 'Unknown',
+    badgeClassName: "bg-secondary text-secondary-foreground",
+    label: "Unknown",
   };
 }
 
@@ -104,18 +107,17 @@ export function ResolutionLogRow({
   const outcomeMeta = getOutcomeMeta(outcome);
 
   return (
-    <TableRow
-      className={cn(
-        isSelected && 'bg-primary/5 hover:bg-primary/10',
-      )}
-    >
+    <TableRow className={cn(isSelected && "bg-primary/5 hover:bg-primary/10")}>
       <TableCell className="align-top">
         <div className="flex flex-col gap-1">
           <span className="text-sm text-foreground">
             {formatDateTime(action.actionStartTime)}
           </span>
           <span className="text-xs text-muted-foreground">
-            Ends {action.actionEndTime ? formatDateTime(action.actionEndTime) : 'open'}
+            Ends{" "}
+            {action.actionEndTime
+              ? formatDateTime(action.actionEndTime)
+              : "open"}
           </span>
         </div>
       </TableCell>
@@ -135,14 +137,14 @@ export function ResolutionLogRow({
         <div className="flex flex-col gap-2">
           <span
             className={cn(
-              'inline-flex w-fit rounded-full px-2 py-1 text-xs font-semibold',
+              "inline-flex w-fit rounded-full px-2 py-1 text-xs font-semibold",
               outcomeMeta.badgeClassName,
             )}
           >
             {outcomeMeta.label}
           </span>
           <span className="text-xs text-muted-foreground">
-            {executor ?? 'Executor unknown'}
+            {executor ?? "Executor unknown"}
           </span>
         </div>
       </TableCell>
@@ -168,7 +170,7 @@ export function ResolutionLogRow({
         {linkedExcursion ? (
           <Link
             href={`/supervisor/excursions?excursion=${encodeURIComponent(
-              String(linkedExcursion['@id']),
+              String(linkedExcursion["@id"]),
             )}`}
             className="flex flex-col gap-1 text-sm text-primary transition-colors hover:text-accent"
           >
@@ -178,7 +180,9 @@ export function ResolutionLogRow({
             </span>
           </Link>
         ) : (
-          <span className="text-sm text-muted-foreground">No linked excursion</span>
+          <span className="text-sm text-muted-foreground">
+            No linked excursion
+          </span>
         )}
       </TableCell>
     </TableRow>

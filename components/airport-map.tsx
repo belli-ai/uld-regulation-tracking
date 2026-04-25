@@ -45,9 +45,18 @@ delete (
   }
 )._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).toString(),
-  iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).toString(),
-  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).toString(),
+  iconRetinaUrl: new URL(
+    "leaflet/dist/images/marker-icon-2x.png",
+    import.meta.url,
+  ).toString(),
+  iconUrl: new URL(
+    "leaflet/dist/images/marker-icon.png",
+    import.meta.url,
+  ).toString(),
+  shadowUrl: new URL(
+    "leaflet/dist/images/marker-shadow.png",
+    import.meta.url,
+  ).toString(),
 });
 
 function getZoneStyle(feature?: MapFeature) {
@@ -63,7 +72,12 @@ function getZoneStyle(feature?: MapFeature) {
   };
 }
 
-export function AirportMap({ geojson, position, label, inferred = false }: Props) {
+export function AirportMap({
+  geojson,
+  position,
+  label,
+  inferred = false,
+}: Props) {
   const { resolvedTheme } = useTheme();
   const tile = TILE_CONFIG[resolvedTheme === "dark" ? "dark" : "light"];
 
@@ -71,7 +85,7 @@ export function AirportMap({ geojson, position, label, inferred = false }: Props
     <MapContainer
       center={DXB_CENTER}
       zoom={DXB_ZOOM}
-      className="size-full rounded-xl"
+      className="size-full"
       scrollWheelZoom={false}
     >
       <TileLayer attribution={tile.attribution} url={tile.url} />

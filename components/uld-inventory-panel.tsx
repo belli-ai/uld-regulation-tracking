@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { missionCardClassName } from "@/components/mission-control";
 import {
   Card,
   CardContent,
@@ -48,7 +49,12 @@ export function UldInventoryPanel({
   ).length;
 
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+    <Card
+      className={cn(
+        missionCardClassName,
+        "flex h-full min-h-0 flex-col overflow-hidden",
+      )}
+    >
       <CardHeader className="gap-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
@@ -71,13 +77,13 @@ export function UldInventoryPanel({
       <CardContent className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-3">
           {isLoading && inventory.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               Loading inventory...
             </div>
           ) : null}
 
           {!isLoading && inventory.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               No ULD inventory available at DXB.
             </div>
           ) : null}
@@ -89,8 +95,8 @@ export function UldInventoryPanel({
               <Button
                 key={uld["@id"]}
                 className={cn(
-                  "h-auto min-h-16 w-full justify-start rounded-lg border border-transparent px-4 py-3 text-left",
-                  "hover:border-border hover:bg-muted/60",
+                  "h-auto min-h-16 w-full justify-start border border-border/60 bg-background/35 px-4 py-3 text-left",
+                  "hover:border-primary/50 hover:bg-primary/5",
                   !actionable &&
                     "cursor-default hover:border-transparent hover:bg-muted/30",
                 )}
@@ -114,7 +120,9 @@ export function UldInventoryPanel({
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <Badge variant={serviceabilityVariant(uld.serviceabilityCode)}>
+                    <Badge
+                      variant={serviceabilityVariant(uld.serviceabilityCode)}
+                    >
                       {uld.serviceabilityCode}
                     </Badge>
                     {uld.buildUpStatus === "in-build-up" ? (

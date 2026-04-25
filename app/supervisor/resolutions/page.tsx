@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Bar,
   BarChart,
@@ -13,17 +13,23 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
+} from "recharts";
 
-import { BenefitScatterChart } from '@/components/benefit-scatter-chart';
-import { ResolutionLogRow } from '@/components/resolution-log-row';
+import { BenefitScatterChart } from "@/components/benefit-scatter-chart";
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
+import { ResolutionLogRow } from "@/components/resolution-log-row";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -31,14 +37,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import type { ResolutionOutcome } from '@/lib/audit/resolution-logger';
-import type { LogisticsAction, LogisticsEvent } from '@/lib/ontology/one-record';
-import { auditDb } from '@/lib/persistence/audit-db';
-import { ACTION_LIBRARY } from '@/lib/recommender/action-library';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table";
+import type { ResolutionOutcome } from "@/lib/audit/resolution-logger";
+import type {
+  LogisticsAction,
+  LogisticsEvent,
+} from "@/lib/ontology/one-record";
+import { auditDb } from "@/lib/persistence/audit-db";
+import { ACTION_LIBRARY } from "@/lib/recommender/action-library";
+import { cn } from "@/lib/utils";
 
-type OutcomeFilter = 'all' | ResolutionOutcome | 'unknown';
+type OutcomeFilter = "all" | ResolutionOutcome | "unknown";
 
 type ExtendedExcursionEvent = LogisticsEvent & {
   otherIdentifiers?: string[];
@@ -54,7 +63,7 @@ type ResolutionRowData = {
   executor: string | null;
   linkedExcursion: LogisticsEvent | null;
   measuredBenefitHours: number | null;
-  outcome: ResolutionOutcome | 'unknown';
+  outcome: ResolutionOutcome | "unknown";
   shc: string;
   stationCapability: string | null;
   uldId: string;
@@ -68,21 +77,23 @@ type BenefitPoint = {
 };
 
 const filterClassName =
-  'h-11 rounded-md border border-input bg-background px-3 text-base text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+  "h-11 rounded-md border border-input bg-background px-3 text-base text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 const outcomeColors = [
-  'var(--primary)',
-  'var(--accent)',
-  'var(--muted-foreground)',
-  'var(--destructive)',
-  'var(--border)',
+  "var(--primary)",
+  "var(--accent)",
+  "var(--muted-foreground)",
+  "var(--destructive)",
+  "var(--border)",
 ];
 
 function readIdentifierValue(
   identifiers: string[] | undefined,
   prefix: string,
 ): string | null {
-  const match = identifiers?.find((identifier) => identifier.startsWith(prefix));
+  const match = identifiers?.find((identifier) =>
+    identifier.startsWith(prefix),
+  );
 
   return match ? match.slice(prefix.length) : null;
 }
@@ -108,60 +119,64 @@ function getEventIdentifiers(event: LogisticsEvent): string[] | undefined {
 
 function getEventShc(event: LogisticsEvent | null): string {
   if (!event) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const extendedEvent = event as ExtendedExcursionEvent;
-  const shcFromIdentifiers = readIdentifierValue(getEventIdentifiers(event), 'shc:');
+  const shcFromIdentifiers = readIdentifierValue(
+    getEventIdentifiers(event),
+    "shc:",
+  );
 
-  return extendedEvent.shc ?? shcFromIdentifiers ?? 'Unknown';
+  return extendedEvent.shc ?? shcFromIdentifiers ?? "Unknown";
 }
 
 function getActionReference(action: LogisticsAction): string | null {
-  return readIdentifierValue(action.otherIdentifiers, 'actionRef:');
+  return readIdentifierValue(action.otherIdentifiers, "actionRef:");
 }
 
 function getActionLabel(action: LogisticsAction): string {
   return (
-    readIdentifierValue(action.otherIdentifiers, 'actionLabel:') ?? 'Unspecified action'
+    readIdentifierValue(action.otherIdentifiers, "actionLabel:") ??
+    "Unspecified action"
   );
 }
 
 function getExecutor(action: LogisticsAction): string | null {
-  return readIdentifierValue(action.otherIdentifiers, 'executor:');
+  return readIdentifierValue(action.otherIdentifiers, "executor:");
 }
 
-function getOutcome(action: LogisticsAction): ResolutionOutcome | 'unknown' {
-  const outcome = readIdentifierValue(action.otherIdentifiers, 'outcome:');
+function getOutcome(action: LogisticsAction): ResolutionOutcome | "unknown" {
+  const outcome = readIdentifierValue(action.otherIdentifiers, "outcome:");
 
   if (
-    outcome === 'averted' ||
-    outcome === 'breached-anyway' ||
-    outcome === 'monitoring' ||
-    outcome === 'cancelled'
+    outcome === "averted" ||
+    outcome === "breached-anyway" ||
+    outcome === "monitoring" ||
+    outcome === "cancelled"
   ) {
     return outcome;
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 function getSelectedResolutionId(): string | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
-  return new URLSearchParams(window.location.search).get('resolution');
+  return new URLSearchParams(window.location.search).get("resolution");
 }
 
 export default function SupervisorResolutionsPage() {
   const [rows, setRows] = useState<ResolutionRowData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('all');
-  const [selectedResolutionId, setSelectedResolutionId] = useState<string | null>(
-    null,
-  );
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("all");
+  const [selectedResolutionId, setSelectedResolutionId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,9 +186,14 @@ export default function SupervisorResolutionsPage() {
         auditDb.actions.toArray(),
         auditDb.events.toArray(),
       ]);
-      const eventById = new Map(events.map((event) => [String(event['@id']), event]));
+      const eventById = new Map(
+        events.map((event) => [String(event["@id"]), event]),
+      );
       const actionDefinitions = new Map(
-        ACTION_LIBRARY.map((actionDefinition) => [actionDefinition.id, actionDefinition]),
+        ACTION_LIBRARY.map((actionDefinition) => [
+          actionDefinition.id,
+          actionDefinition,
+        ]),
       );
       const nextRows = actions
         .map<ResolutionRowData | null>((action) => {
@@ -190,7 +210,7 @@ export default function SupervisorResolutionsPage() {
           }
 
           const linkedExcursion = action.servedActivity
-            ? eventById.get(String(action.servedActivity)) ?? null
+            ? (eventById.get(String(action.servedActivity)) ?? null)
             : null;
 
           return {
@@ -200,26 +220,30 @@ export default function SupervisorResolutionsPage() {
             category: definition.category,
             claimedBenefitHours: readNumberValue(
               action.otherIdentifiers,
-              'claimedBenefitHours:',
+              "claimedBenefitHours:",
             ),
             executor: getExecutor(action),
             linkedExcursion,
             measuredBenefitHours: readNumberValue(
               action.otherIdentifiers,
-              'measuredBenefitHours:',
+              "measuredBenefitHours:",
             ),
             outcome: getOutcome(action),
             shc: getEventShc(linkedExcursion),
             stationCapability: readIdentifierValue(
               action.otherIdentifiers,
-              'stationCapability:',
+              "stationCapability:",
             ),
-            uldId: linkedExcursion ? String(linkedExcursion.eventFor) : 'Unknown',
+            uldId: linkedExcursion
+              ? String(linkedExcursion.eventFor)
+              : "Unknown",
           };
         })
         .filter((row): row is ResolutionRowData => row !== null)
         .sort((left, right) =>
-          right.action.actionStartTime.localeCompare(left.action.actionStartTime),
+          right.action.actionStartTime.localeCompare(
+            left.action.actionStartTime,
+          ),
         );
 
       if (!cancelled) {
@@ -243,35 +267,36 @@ export default function SupervisorResolutionsPage() {
 
   const filteredRows = rows.filter((row) => {
     const categoryMatches =
-      categoryFilter === 'all' || row.category === categoryFilter;
+      categoryFilter === "all" || row.category === categoryFilter;
     const outcomeMatches =
-      outcomeFilter === 'all' || row.outcome === outcomeFilter;
+      outcomeFilter === "all" || row.outcome === outcomeFilter;
 
     return categoryMatches && outcomeMatches;
   });
-  const categoryOptions = Array.from(new Set(rows.map((row) => row.category))).sort(
-    (left, right) => left.localeCompare(right),
-  );
+  const categoryOptions = Array.from(
+    new Set(rows.map((row) => row.category)),
+  ).sort((left, right) => left.localeCompare(right));
   const pieData = [
     {
-      count: filteredRows.filter((row) => row.outcome === 'averted').length,
-      name: 'Averted',
+      count: filteredRows.filter((row) => row.outcome === "averted").length,
+      name: "Averted",
     },
     {
-      count: filteredRows.filter((row) => row.outcome === 'breached-anyway').length,
-      name: 'Breached anyway',
+      count: filteredRows.filter((row) => row.outcome === "breached-anyway")
+        .length,
+      name: "Breached anyway",
     },
     {
-      count: filteredRows.filter((row) => row.outcome === 'monitoring').length,
-      name: 'Monitoring',
+      count: filteredRows.filter((row) => row.outcome === "monitoring").length,
+      name: "Monitoring",
     },
     {
-      count: filteredRows.filter((row) => row.outcome === 'cancelled').length,
-      name: 'Cancelled',
+      count: filteredRows.filter((row) => row.outcome === "cancelled").length,
+      name: "Cancelled",
     },
     {
-      count: filteredRows.filter((row) => row.outcome === 'unknown').length,
-      name: 'Unknown',
+      count: filteredRows.filter((row) => row.outcome === "unknown").length,
+      name: "Unknown",
     },
   ].filter((entry) => entry.count > 0);
   const actionFrequencyData = Array.from(
@@ -287,8 +312,8 @@ export default function SupervisorResolutionsPage() {
   const benefitData = filteredRows
     .filter(
       (row) =>
-        typeof row.claimedBenefitHours === 'number' &&
-        typeof row.measuredBenefitHours === 'number',
+        typeof row.claimedBenefitHours === "number" &&
+        typeof row.measuredBenefitHours === "number",
     )
     .map<BenefitPoint>((row) => ({
       actionLabel: row.actionLabel,
@@ -298,14 +323,11 @@ export default function SupervisorResolutionsPage() {
     }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <h1 className="truncate text-base font-semibold text-foreground">
-              Resolution Log
-            </h1>
-          </div>
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="Supervisor audit console"
+        title="Resolution Log"
+        actions={
           <nav className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link
               href="/supervisor/excursions"
@@ -320,26 +342,35 @@ export default function SupervisorResolutionsPage() {
               Resolutions
             </Link>
           </nav>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8">
-        <section className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Supervisor
-          </p>
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Resolution history and benefit calibration
-            </h2>
-            <p className="text-base text-muted-foreground">
-              Action records filtered to known library references, with outcome
-              and benefit aggregates.
-            </p>
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6">
+        <MissionHero
+          eyebrow="Supervisor"
+          title="Resolution history and benefit calibration"
+          description="Action records filtered to known library references, with outcome and benefit aggregates."
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <MetricTile
+              label="Actions"
+              value={filteredRows.length}
+              meta="In active view"
+            />
+            <MetricTile
+              label="Outcome types"
+              value={pieData.length}
+              meta="Recorded states"
+            />
+            <MetricTile
+              label="Benefit points"
+              value={benefitData.length}
+              meta="Claimed vs actual"
+            />
           </div>
-        </section>
+        </MissionHero>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2">
             <CardTitle className="text-lg font-semibold leading-none">
               Filters
@@ -385,7 +416,7 @@ export default function SupervisorResolutionsPage() {
         </Card>
 
         <section className="grid gap-4 xl:grid-cols-3">
-          <Card className="rounded-xl border shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader className="flex flex-col gap-2">
               <CardTitle className="text-lg font-semibold leading-none">
                 Outcome mix
@@ -413,10 +444,10 @@ export default function SupervisorResolutionsPage() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.75rem',
-                        color: 'var(--foreground)',
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "0.75rem",
+                        color: "var(--foreground)",
                       }}
                     />
                   </PieChart>
@@ -429,7 +460,7 @@ export default function SupervisorResolutionsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader className="flex flex-col gap-2">
               <CardTitle className="text-lg font-semibold leading-none">
                 Most-used actions
@@ -441,11 +472,17 @@ export default function SupervisorResolutionsPage() {
             <CardContent className="h-72">
               {actionFrequencyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={actionFrequencyData} margin={{ left: 8, right: 8 }}>
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                  <BarChart
+                    data={actionFrequencyData}
+                    margin={{ left: 8, right: 8 }}
+                  >
+                    <CartesianGrid
+                      stroke="var(--border)"
+                      strokeDasharray="3 3"
+                    />
                     <XAxis
                       dataKey="actionLabel"
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                      tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                       interval={0}
                       angle={-18}
                       height={64}
@@ -453,17 +490,21 @@ export default function SupervisorResolutionsPage() {
                     />
                     <YAxis
                       allowDecimals={false}
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                      tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.75rem',
-                        color: 'var(--foreground)',
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "0.75rem",
+                        color: "var(--foreground)",
                       }}
                     />
-                    <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                    <Bar
+                      dataKey="count"
+                      fill="var(--primary)"
+                      radius={[6, 6, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -474,7 +515,7 @@ export default function SupervisorResolutionsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader className="flex flex-col gap-2">
               <CardTitle className="text-lg font-semibold leading-none">
                 Claimed vs actual benefit
@@ -489,7 +530,7 @@ export default function SupervisorResolutionsPage() {
           </Card>
         </section>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2">
             <CardTitle className="text-lg font-semibold leading-none">
               Resolution list
@@ -502,7 +543,7 @@ export default function SupervisorResolutionsPage() {
             <Table>
               <TableCaption>
                 {isLoading
-                  ? 'Loading resolution actions from IndexedDB.'
+                  ? "Loading resolution actions from IndexedDB."
                   : `${filteredRows.length} resolution actions in view.`}
               </TableCaption>
               <TableHeader>
@@ -519,7 +560,7 @@ export default function SupervisorResolutionsPage() {
               <TableBody>
                 {filteredRows.map((row) => (
                   <ResolutionLogRow
-                    key={row.action['@id']}
+                    key={row.action["@id"]}
                     action={row.action}
                     actionLabel={row.actionLabel}
                     actionRef={row.actionRef}
@@ -532,7 +573,9 @@ export default function SupervisorResolutionsPage() {
                     shc={row.shc}
                     stationCapability={row.stationCapability}
                     uldId={row.uldId}
-                    isSelected={selectedResolutionId === String(row.action['@id'])}
+                    isSelected={
+                      selectedResolutionId === String(row.action["@id"])
+                    }
                   />
                 ))}
                 {!isLoading && filteredRows.length === 0 ? (
@@ -540,7 +583,7 @@ export default function SupervisorResolutionsPage() {
                     <td
                       colSpan={7}
                       className={cn(
-                        'p-6 text-center text-base text-muted-foreground',
+                        "p-6 text-center text-base text-muted-foreground",
                       )}
                     >
                       No resolution actions match the current filters.
@@ -552,6 +595,6 @@ export default function SupervisorResolutionsPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </MissionShell>
   );
 }

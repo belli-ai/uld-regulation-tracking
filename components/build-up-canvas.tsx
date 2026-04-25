@@ -19,6 +19,13 @@ import {
   type BudgetForecast,
 } from "@/components/budget-preflight-row";
 import { DgCheckRow } from "@/components/dg-check-row";
+import {
+  MetricTile,
+  MissionHero,
+  MissionPanel,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
 import { ShcCompatRow } from "@/components/shc-compat-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1020,118 +1027,104 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
 
   if (dataState.status === "loading") {
     return (
-      <main className="min-h-screen bg-background px-4 py-6 text-foreground md:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4">
-          <Card>
-            <CardContent className="flex min-h-40 items-center justify-center">
-              <div className="flex items-center gap-3 text-base text-muted-foreground">
-                <Loader2 className="animate-spin" />
-                Loading build-up canvas…
+      <MissionShell>
+        <main className="px-4 py-6 md:px-6">
+          <div className="grid w-full gap-4">
+            <MissionPanel>
+              <div className="flex min-h-40 items-center justify-center">
+                <div className="flex items-center gap-3 text-base text-muted-foreground">
+                  <Loader2 className="animate-spin" />
+                  Loading build-up canvas…
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+            </MissionPanel>
+          </div>
+        </main>
+      </MissionShell>
     );
   }
 
   if (dataState.status === "error" || !flight || !uld) {
     return (
-      <main className="min-h-screen bg-background px-4 py-6 text-foreground md:px-6">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4">
-          <Card className="border-red-500/60">
-            <CardHeader className="gap-3">
-              <div className="flex items-center gap-3">
-                <ShieldAlert className="text-red-400" />
-                <div className="flex flex-col gap-1">
-                  <CardTitle className="text-xl">
-                    Build-up unavailable
-                  </CardTitle>
-                  <CardDescription className="text-sm md:text-base">
-                    {dataState.status === "error"
-                      ? dataState.message
-                      : "Flight or ULD fixture was not found."}
-                  </CardDescription>
+      <MissionShell>
+        <main className="px-4 py-6 md:px-6">
+          <div className="grid w-full gap-4">
+            <Card className="mission-panel border-red-500/60">
+              <CardHeader className="gap-3">
+                <div className="flex items-center gap-3">
+                  <ShieldAlert className="text-red-400" />
+                  <div className="flex flex-col gap-1">
+                    <CardTitle className="text-xl">
+                      Build-up unavailable
+                    </CardTitle>
+                    <CardDescription className="text-sm md:text-base">
+                      {dataState.status === "error"
+                        ? dataState.message
+                        : "Flight or ULD fixture was not found."}
+                    </CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-      </main>
+              </CardHeader>
+            </Card>
+          </div>
+        </main>
+      </MissionShell>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground md:px-6">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4">
-        <Card className="border-border/70 bg-card/95">
-          <CardHeader className="gap-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="min-h-7">
-                    Build-up canvas
-                  </Badge>
-                  <Badge variant="outline" className="min-h-7">
-                    {uld.uldSerialNumber}
-                  </Badge>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <CardTitle className="text-2xl">
-                    Building {uld.uldSerialNumber} for {flight.flightNumber}
-                  </CardTitle>
-                  <CardDescription className="text-sm md:text-base">
-                    {getLocationCode(String(flight.departureLocation))} to{" "}
-                    {getLocationCode(String(flight.arrivalLocation))} ·{" "}
-                    {getStdLabel(flight)}
-                  </CardDescription>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="min-h-11 self-start"
-                onClick={() => router.push(`/flight/${flight.flightNumber}`)}
-              >
-                <ArrowLeft data-icon="inline-start" />
-                Back to flight
-              </Button>
-            </div>
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="Load-control bay"
+        title={`${flight.flightNumber} / ${uld.uldSerialNumber}`}
+        actions={
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={() => router.push(`/flight/${flight.flightNumber}`)}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            Back to flight
+          </Button>
+        }
+      />
+      <main className="grid w-full gap-5 px-4 py-5 md:px-6">
+        <MissionHero
+          eyebrow="Build-up canvas"
+          title={`Building ${uld.uldSerialNumber}`}
+          description={`${getLocationCode(String(flight.departureLocation))} to ${getLocationCode(
+            String(flight.arrivalLocation),
+          )} on ${flight.flightNumber} · ${getStdLabel(flight)}`}
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <MetricTile
+              label="ULD"
+              value={uld.uldTypeCode}
+              meta={`${uld.ownerCode} · ${uld.serviceabilityCode}`}
+            />
+            <MetricTile
+              label="Pre-cool"
+              value={
+                typeof uld.lastKnownInternalC === "number"
+                  ? `${uld.lastKnownInternalC.toFixed(1)}°C`
+                  : "Pending"
+              }
+              meta="Internal sensor"
+            />
+            <MetricTile
+              label="Projected ambient"
+              value={weather ? weather.airport : "Loading"}
+              meta={
+                weather
+                  ? `Next ${Math.min(weather.hourly.length, 24)}h · ${weather.source}`
+                  : "Weather feed"
+              }
+            />
+          </div>
+        </MissionHero>
 
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  ULD
-                </div>
-                <div className="mt-2 text-base font-semibold">
-                  {uld.uldTypeCode} · {uld.ownerCode} · {uld.serviceabilityCode}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Pre-cool status
-                </div>
-                <div className="mt-2 text-base font-semibold">
-                  {typeof uld.lastKnownInternalC === "number"
-                    ? `${uld.lastKnownInternalC.toFixed(1)}°C internal`
-                    : "No internal temperature yet"}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Projected ambient
-                </div>
-                <div className="mt-2 text-base font-semibold">
-                  {weather
-                    ? `${weather.airport} · next ${Math.min(weather.hourly.length, 24)}h`
-                    : "Loading weather"}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)]">
-          <Card className="h-full">
+        <div className="grid gap-4 xl:grid-cols-[minmax(280px,0.86fr)_minmax(360px,1.2fr)_minmax(320px,0.94fr)]">
+          <Card className="mission-panel h-full border-border/80">
             <CardHeader className="gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-col gap-1">
@@ -1147,7 +1140,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {dropRejection ? (
-                <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
+                <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
                   <div className="font-medium">
                     {dropRejection.awbLabel} rejected
                   </div>
@@ -1170,7 +1163,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     draggable={!disabled}
                     onDragStart={(event) => handleDragStart(waybill, event)}
                     className={cn(
-                      "rounded-xl border border-border/80 bg-muted/30 p-4",
+                      "border border-border/80 bg-muted/30 p-4",
                       disabled && "opacity-50",
                       !disabled && "cursor-grab active:cursor-grabbing",
                     )}
@@ -1202,7 +1195,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="h-full">
+          <Card className="mission-panel h-full border-border/80">
             <CardHeader className="gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-col gap-1">
@@ -1245,7 +1238,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                   }
                 }}
                 className={cn(
-                  "min-h-96 rounded-xl border-2 border-dashed border-border bg-muted/30 p-4 transition-colors",
+                  "min-h-96 border-2 border-dashed border-border bg-muted/30 p-4 transition-colors",
                   dragActive && "border-primary bg-accent/20",
                 )}
               >
@@ -1258,7 +1251,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     {contents.map((waybill) => (
                       <div
                         key={waybill["@id"]}
-                        className="rounded-xl border border-border/80 bg-background/70 p-4"
+                        className="border border-border/80 bg-background/70 p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
@@ -1301,7 +1294,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
               </div>
 
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
+                <div className="border border-border/70 bg-muted/30 px-4 py-3">
                   <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     Total weight
                   </div>
@@ -1309,7 +1302,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     {totalWeightKg(contents).toFixed(0)} kg
                   </div>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
+                <div className="border border-border/70 bg-muted/30 px-4 py-3">
                   <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     Total pieces
                   </div>
@@ -1317,7 +1310,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                     {validatedPieces.length}
                   </div>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
+                <div className="border border-border/70 bg-muted/30 px-4 py-3">
                   <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     Ambient source
                   </div>
@@ -1346,7 +1339,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
               hasPieces={validatedPieces.length > 0}
             />
 
-            <Card>
+            <Card className="mission-panel border-border/80">
               <CardHeader className="gap-3">
                 <div className="flex items-center gap-3">
                   <PackageCheck className="text-primary" />
@@ -1376,28 +1369,28 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                  <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
                     <PlaneTakeoff className="size-4" />
                     {getLocationCode(String(flight.departureLocation))}
                   </span>
-                  <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
                     <PlaneLanding className="size-4" />
                     {getLocationCode(String(flight.arrivalLocation))}
                   </span>
-                  <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
                     <ScanLine className="size-4" />
                     {uld.uldSerialNumber}
                   </span>
                 </div>
 
                 {weatherError ? (
-                  <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+                  <div className="border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
                     {weatherError}
                   </div>
                 ) : null}
 
                 {submitError ? (
-                  <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
+                  <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
                     {submitError}
                   </div>
                 ) : null}
@@ -1428,7 +1421,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
             </Card>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </MissionShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import { ShcBadge } from "@/components/shc-badge";
 import { ThermalBudgetBar } from "@/components/thermal-budget-bar";
+import { missionCardClassName } from "@/components/mission-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +15,12 @@ import {
 import type { ULD } from "@/lib/ontology/one-record";
 import { cn } from "@/lib/utils";
 
-type UldState = "warehouse" | "tarmac" | "in-flight" | "arrived-tarmac" | "arrived-destination";
+type UldState =
+  | "warehouse"
+  | "tarmac"
+  | "in-flight"
+  | "arrived-tarmac"
+  | "arrived-destination";
 
 export type BuiltUldStripEntry = {
   uld: ULD;
@@ -39,13 +45,21 @@ const STATE_LABELS: Record<UldState, string> = {
 
 export function BuiltUldStrip({ entries, onOpenUld }: Props) {
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+    <Card
+      className={cn(
+        missionCardClassName,
+        "flex h-full min-h-0 flex-col overflow-hidden",
+      )}
+    >
       <CardHeader className="gap-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <CardTitle className="text-lg">Built ULDs for this flight</CardTitle>
+            <CardTitle className="text-lg">
+              Built ULDs for this flight
+            </CardTitle>
             <CardDescription>
-              Tracking strip with SHC, AWB count, state, and thermal placeholder.
+              Tracking strip with SHC, AWB count, state, and thermal
+              placeholder.
             </CardDescription>
           </div>
           <Badge variant="outline">{entries.length}</Badge>
@@ -55,7 +69,7 @@ export function BuiltUldStrip({ entries, onOpenUld }: Props) {
       <CardContent className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-3">
           {entries.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               No built ULDs for this flight yet.
             </div>
           ) : null}
@@ -64,8 +78,8 @@ export function BuiltUldStrip({ entries, onOpenUld }: Props) {
             <Button
               key={entry.uld["@id"]}
               className={cn(
-                "h-auto min-h-16 w-full justify-start rounded-lg border border-transparent px-4 py-3 text-left",
-                "hover:border-border hover:bg-muted/60",
+                "h-auto min-h-16 w-full justify-start border border-border/60 bg-background/35 px-4 py-3 text-left",
+                "hover:border-primary/50 hover:bg-primary/5",
               )}
               onClick={() => onOpenUld(entry.uld.uldSerialNumber)}
               variant="ghost"

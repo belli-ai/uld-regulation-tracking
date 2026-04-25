@@ -1,25 +1,31 @@
-'use client';
+"use client";
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState } from "react";
 
-import { AuditTimeline } from '@/components/audit-timeline';
-import { DeviationReportExport } from '@/components/deviation-report-export';
-import { Badge } from '@/components/ui/badge';
+import { AuditTimeline } from "@/components/audit-timeline";
+import { DeviationReportExport } from "@/components/deviation-report-export";
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { deviationReportBuilder } from '@/lib/audit/deviation-report-builder';
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { deviationReportBuilder } from "@/lib/audit/deviation-report-builder";
 import type {
   Loading,
   LogisticsAction,
   LogisticsEvent,
-} from '@/lib/ontology/one-record';
-import { auditDb } from '@/lib/persistence/audit-db';
+} from "@/lib/ontology/one-record";
+import { auditDb } from "@/lib/persistence/audit-db";
 
 type Props = {
   params: Promise<{
@@ -33,12 +39,12 @@ type AuditRecords = {
   loadings: Loading[];
 };
 
-function sortByIsoTimestamp<T extends { actionStartTime?: string; eventDate?: string }>(
-  values: T[],
-): T[] {
+function sortByIsoTimestamp<
+  T extends { actionStartTime?: string; eventDate?: string },
+>(values: T[]): T[] {
   return [...values].sort((left, right) => {
-    const leftTimestamp = left.eventDate ?? left.actionStartTime ?? '';
-    const rightTimestamp = right.eventDate ?? right.actionStartTime ?? '';
+    const leftTimestamp = left.eventDate ?? left.actionStartTime ?? "";
+    const rightTimestamp = right.eventDate ?? right.actionStartTime ?? "";
 
     return leftTimestamp.localeCompare(rightTimestamp);
   });
@@ -53,10 +59,14 @@ function filterAuditRecords(
   const filteredEvents = sortByIsoTimestamp(
     events.filter((event) => String(event.eventFor) === uldId),
   );
-  const relatedEventIds = new Set(filteredEvents.map((event) => String(event['@id'])));
+  const relatedEventIds = new Set(
+    filteredEvents.map((event) => String(event["@id"])),
+  );
   const filteredActions = sortByIsoTimestamp(
     actions.filter((action) => {
-      const servedActivity = action.servedActivity ? String(action.servedActivity) : '';
+      const servedActivity = action.servedActivity
+        ? String(action.servedActivity)
+        : "";
 
       return servedActivity === uldId || relatedEventIds.has(servedActivity);
     }),
@@ -82,7 +92,7 @@ export default function AuditPage({ params }: Props) {
     events: [],
     loadings: [],
   });
-  const [markdown, setMarkdown] = useState<string>('');
+  const [markdown, setMarkdown] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,27 +104,30 @@ export default function AuditPage({ params }: Props) {
       setError(null);
 
       try {
-        const [allEvents, allActions, allLoadings, reportMarkdown] = await Promise.all([
-          auditDb.events.toArray(),
-          auditDb.actions.toArray(),
-          auditDb.loadings.toArray(),
-          deviationReportBuilder.buildMarkdown(uldId),
-        ]);
+        const [allEvents, allActions, allLoadings, reportMarkdown] =
+          await Promise.all([
+            auditDb.events.toArray(),
+            auditDb.actions.toArray(),
+            auditDb.loadings.toArray(),
+            deviationReportBuilder.buildMarkdown(uldId),
+          ]);
 
         if (!active) {
           return;
         }
 
-        setRecords(filterAuditRecords(uldId, allEvents, allActions, allLoadings));
+        setRecords(
+          filterAuditRecords(uldId, allEvents, allActions, allLoadings),
+        );
         setMarkdown(reportMarkdown);
       } catch (caughtError) {
-        console.error('Failed to load audit timeline', caughtError);
+        console.error("Failed to load audit timeline", caughtError);
 
         if (!active) {
           return;
         }
 
-        setError('Unable to load audit records from local storage.');
+        setError("Unable to load audit records from local storage.");
       } finally {
         if (active) {
           setLoading(false);
@@ -133,55 +146,56 @@ export default function AuditPage({ params }: Props) {
     records.events.length + records.actions.length + records.loadings.length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-6 py-8">
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="outline" className="text-xs font-semibold uppercase tracking-[0.18em]">
-              Supervisor audit
-            </Badge>
+    <MissionShell>
+      <MissionTopBar eyebrow="Supervisor audit" title="Audit timeline" />
+      <main className="grid min-h-screen w-full gap-5 px-4 py-5 sm:px-6">
+        <MissionHero
+          eyebrow="Supervisor audit"
+          title="Audit timeline"
+          description="Consolidated event, action, and loading history for one ULD."
+          actions={
             <Badge variant="secondary" className="text-xs font-semibold">
               {totalRecords} records
             </Badge>
+          }
+        >
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile
+              label="ULD identifier"
+              value={uldId}
+              className="md:col-span-2"
+            />
+            <MetricTile label="Events" value={records.events.length} />
+            <MetricTile label="Actions" value={records.actions.length} />
           </div>
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Audit timeline
-            </h1>
-            <p className="text-base text-muted-foreground">
-              Consolidated event, action, and loading history for one ULD.
-            </p>
-          </div>
-          <Card className="border-border/80 bg-card/80">
-            <CardHeader className="flex flex-col gap-2 p-5">
-              <CardDescription>ULD identifier</CardDescription>
-              <CardTitle className="break-all font-mono text-lg text-foreground">
-                {uldId}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </section>
+        </MissionHero>
 
         {error ? (
-          <Card className="border-destructive/40 bg-card/90">
+          <Card className="mission-panel border-destructive/40">
             <CardHeader className="p-5">
-              <CardTitle className="text-lg text-destructive">Audit unavailable</CardTitle>
+              <CardTitle className="text-lg text-destructive">
+                Audit unavailable
+              </CardTitle>
               <CardDescription>{error}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
 
-        <Card className="border-border/80 bg-card/85">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2 p-5">
-            <CardTitle className="text-lg text-foreground">Chronological trail</CardTitle>
+            <CardTitle className="text-lg text-foreground">
+              Chronological trail
+            </CardTitle>
             <CardDescription>
               Timeline nodes are sorted by event timestamp or action start time.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {loading ? (
-              <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-border bg-background/40 px-4">
-                <p className="text-sm text-muted-foreground">Loading audit records…</p>
+              <div className="flex min-h-48 items-center justify-center border border-dashed border-border bg-background/40 px-4">
+                <p className="text-sm text-muted-foreground">
+                  Loading audit records…
+                </p>
               </div>
             ) : (
               <AuditTimeline
@@ -193,9 +207,11 @@ export default function AuditPage({ params }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-border/80 bg-card/85">
+        <Card className="mission-panel border-border/80">
           <CardHeader className="flex flex-col gap-2 p-5">
-            <CardTitle className="text-lg text-foreground">Deviation report</CardTitle>
+            <CardTitle className="text-lg text-foreground">
+              Deviation report
+            </CardTitle>
             <CardDescription>
               Auto-drafted Markdown generated from the stored audit history.
             </CardDescription>
@@ -209,14 +225,15 @@ export default function AuditPage({ params }: Props) {
               uldId={uldId}
             />
             <Separator />
-            <div className="prose prose-invert max-w-none rounded-lg border border-border bg-background/40 p-4">
+            <div className="prose prose-invert max-w-none border border-border bg-background/40 p-4">
               <pre className="overflow-x-auto whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
-                {markdown || '# Deviation Report\n\nNo deviation report available for this ULD yet.'}
+                {markdown ||
+                  "# Deviation Report\n\nNo deviation report available for this ULD yet."}
               </pre>
             </div>
           </CardContent>
         </Card>
       </main>
-    </div>
+    </MissionShell>
   );
 }

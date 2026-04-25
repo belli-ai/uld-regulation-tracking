@@ -6,7 +6,14 @@ import type { LatLngBoundsExpression, LatLngExpression } from "leaflet";
 import L from "leaflet";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
-import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  Marker,
+  Popup,
+  Polyline,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 
 type Props = {
   origin: { code: string; name: string; latitude: number; longitude: number };
@@ -34,9 +41,18 @@ delete (
   }
 )._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).toString(),
-  iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).toString(),
-  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).toString(),
+  iconRetinaUrl: new URL(
+    "leaflet/dist/images/marker-icon-2x.png",
+    import.meta.url,
+  ).toString(),
+  iconUrl: new URL(
+    "leaflet/dist/images/marker-icon.png",
+    import.meta.url,
+  ).toString(),
+  shadowUrl: new URL(
+    "leaflet/dist/images/marker-shadow.png",
+    import.meta.url,
+  ).toString(),
 });
 
 function clamp(value: number, min: number, max: number): number {
@@ -100,7 +116,9 @@ function interpolateGreatCircle(
   };
 
   return {
-    latitude: toDegrees(Math.atan2(point.z, Math.sqrt(point.x ** 2 + point.y ** 2))),
+    latitude: toDegrees(
+      Math.atan2(point.z, Math.sqrt(point.x ** 2 + point.y ** 2)),
+    ),
     longitude: normaliseLongitude(toDegrees(Math.atan2(point.y, point.x))),
   };
 }
@@ -125,7 +143,12 @@ function FitRouteBounds({ bounds }: { bounds: LatLngBoundsExpression }) {
   return null;
 }
 
-export function FlightOverviewMap({ origin, arrival, flightProgress, label }: Props) {
+export function FlightOverviewMap({
+  origin,
+  arrival,
+  flightProgress,
+  label,
+}: Props) {
   const { resolvedTheme } = useTheme();
   const tile = TILE_CONFIG[resolvedTheme === "dark" ? "dark" : "light"];
   const routePoints = buildRoutePoints(origin, arrival);
@@ -139,12 +162,15 @@ export function FlightOverviewMap({ origin, arrival, flightProgress, label }: Pr
     <MapContainer
       center={[origin.latitude, origin.longitude]}
       zoom={3}
-      className="size-full rounded-xl"
+      className="size-full"
       scrollWheelZoom={false}
     >
       <FitRouteBounds bounds={bounds} />
       <TileLayer attribution={tile.attribution} url={tile.url} />
-      <Polyline positions={routePoints} pathOptions={{ color: "var(--primary)", weight: 3 }} />
+      <Polyline
+        positions={routePoints}
+        pathOptions={{ color: "var(--primary)", weight: 3 }}
+      />
       <Marker position={[origin.latitude, origin.longitude]}>
         <Popup>
           <div className="flex flex-col gap-1 text-sm">
@@ -165,7 +191,9 @@ export function FlightOverviewMap({ origin, arrival, flightProgress, label }: Pr
         <Popup>
           <div className="flex flex-col gap-1 text-sm">
             <span className="font-semibold">{label}</span>
-            <span>Flight progress {Math.round(clamp(flightProgress, 0, 1) * 100)}%</span>
+            <span>
+              Flight progress {Math.round(clamp(flightProgress, 0, 1) * 100)}%
+            </span>
           </div>
         </Popup>
       </Marker>

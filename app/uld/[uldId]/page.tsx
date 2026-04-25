@@ -17,6 +17,13 @@ import {
 } from "recharts";
 
 import { ActionCard } from "@/components/action-card";
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+  missionCardClassName,
+} from "@/components/mission-control";
 import { ShcBadge } from "@/components/shc-badge";
 import { ThermalBudgetBar } from "@/components/thermal-budget-bar";
 import { Badge } from "@/components/ui/badge";
@@ -75,9 +82,7 @@ const AirportMap = dynamic(
   () => import("@/components/airport-map").then((module) => module.AirportMap),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-full w-full animate-pulse rounded-xl bg-muted" />
-    ),
+    loading: () => <div className="h-full w-full animate-pulse bg-muted" />,
   },
 );
 
@@ -88,9 +93,7 @@ const FlightOverviewMap = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-full w-full animate-pulse rounded-xl bg-muted" />
-    ),
+    loading: () => <div className="h-full w-full animate-pulse bg-muted" />,
   },
 );
 
@@ -1092,9 +1095,9 @@ export default function UldDetailPage() {
     !mapGeojson
   ) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <main className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6 py-8">
-          <Card className="w-full max-w-xl rounded-xl border bg-card shadow-sm">
+      <MissionShell>
+        <main className="flex min-h-screen w-full items-center justify-center px-6 py-8">
+          <Card className="mission-panel w-full border">
             <CardHeader>
               <CardTitle className="text-2xl">ULD not found</CardTitle>
               <CardDescription>
@@ -1103,7 +1106,7 @@ export default function UldDetailPage() {
             </CardHeader>
           </Card>
         </main>
-      </div>
+      </MissionShell>
     );
   }
 
@@ -1118,116 +1121,76 @@ export default function UldDetailPage() {
       : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="ULD incident command"
+        title={inventoryUld.uldSerialNumber}
+        actions={
+          <>
             <Button asChild variant="ghost" size="sm">
               <Link href="/">Back</Link>
             </Button>
-            <h1 className="truncate text-base font-semibold">
-              {inventoryUld.uldSerialNumber}
-            </h1>
+            <ShcBadge shc={topShc} />
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-mono text-xs font-semibold",
+                inferenceBadgeClass,
+              )}
+            >
+              {classification.source === "measured" ? "Measured" : "Inferred"}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-mono text-xs font-semibold",
+                getWeatherBadgeClass(weatherSource),
+              )}
+            >
+              {weatherSource === "live"
+                ? "LIVE"
+                : weatherSource === "mock"
+                  ? "MOCK"
+                  : "WEATHER"}
+            </Badge>
+          </>
+        }
+      />
+
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6">
+        <MissionHero
+          eyebrow="Thermal risk detail"
+          title={inventoryUld.uldSerialNumber}
+          description={`${uldSpecs[inventoryUld.uldProductCode ?? ""]?.label ?? "Generic passive"} · ${fallbackFlightNumber ?? "No flight assigned"}`}
+        >
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <MetricTile
+              label="Current state"
+              value={toTitleCase(classification.stage)}
+              meta={toTitleCase(classification.internalSubState)}
+            />
+            <MetricTile
+              label="Confidence"
+              value={`${Math.round(classification.confidence * 100)}%`}
+              meta={classification.source}
+            />
+            <MetricTile
+              label="Internal"
+              value={`${internalTemperature.toFixed(1)}°C`}
+              meta={`Max ${threshold.maxTemperature.value.toFixed(0)}°C`}
+            />
+            <MetricTile
+              label="Last update"
+              value={formatTimestamp(latestTimestamp)}
+              meta={
+                inventoryUld.iotDeviceId ? "Tracker-equipped" : "Passive ULD"
+              }
+            />
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              "font-mono text-xs font-semibold",
-              getWeatherBadgeClass(weatherSource),
-            )}
-          >
-            {weatherSource === "live"
-              ? "LIVE"
-              : weatherSource === "mock"
-                ? "MOCK"
-                : "WEATHER"}
-          </Badge>
-        </div>
-      </header>
+        </MissionHero>
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8">
-        <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-          <Card className="rounded-xl border bg-card shadow-sm">
-            <CardHeader className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  ULD detail
-                </p>
-                <ShcBadge shc={topShc} />
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-mono text-xs font-semibold",
-                    inferenceBadgeClass,
-                  )}
-                >
-                  {classification.source === "measured"
-                    ? "Measured"
-                    : "Inferred"}
-                </Badge>
-              </div>
-              <div className="flex flex-col gap-2">
-                <CardTitle className="text-2xl">
-                  {inventoryUld.uldSerialNumber}
-                </CardTitle>
-                <CardDescription>
-                  {uldSpecs[inventoryUld.uldProductCode ?? ""]?.label ??
-                    "Generic passive"}{" "}
-                  • {fallbackFlightNumber ?? "No flight assigned"}
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Current state
-                </p>
-                <p className="pt-2 text-lg font-semibold">
-                  {toTitleCase(classification.stage)}
-                </p>
-                <p className="pt-1 text-sm text-muted-foreground">
-                  {toTitleCase(classification.internalSubState)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Confidence
-                </p>
-                <p className="pt-2 text-lg font-semibold">
-                  {Math.round(classification.confidence * 100)}%
-                </p>
-                <p className="pt-1 text-sm text-muted-foreground">
-                  {classification.source}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Internal
-                </p>
-                <p className="pt-2 text-lg font-semibold">
-                  {internalTemperature.toFixed(1)}°C
-                </p>
-                <p className="pt-1 text-sm text-muted-foreground">
-                  Max {threshold.maxTemperature.value.toFixed(0)}°C
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Last update
-                </p>
-                <p className="pt-2 text-lg font-semibold">
-                  {formatTimestamp(latestTimestamp)}
-                </p>
-                <p className="pt-1 text-sm text-muted-foreground">
-                  {inventoryUld.iotDeviceId
-                    ? "Tracker-equipped"
-                    : "Passive ULD"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border bg-card shadow-sm">
+        <section className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+          <Card className={cn(missionCardClassName)}>
             <CardHeader>
               <CardTitle className="text-lg">Thermal budget</CardTitle>
               <CardDescription>
@@ -1241,7 +1204,7 @@ export default function UldDetailPage() {
                 warning={budgetForecast.warning}
               />
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <div className="border border-border bg-muted/40 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Flight
                   </p>
@@ -1249,7 +1212,7 @@ export default function UldDetailPage() {
                     {fallbackFlightNumber ?? "Unassigned"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <div className="border border-border bg-muted/40 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Pending log
                   </p>
@@ -1263,7 +1226,7 @@ export default function UldDetailPage() {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="rounded-xl border bg-card shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader>
               <CardTitle className="text-lg">
                 {showFlightOverview ? "Flight overview map" : "Airport map"}
@@ -1275,7 +1238,7 @@ export default function UldDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[360px] overflow-hidden rounded-xl border border-border bg-muted/20">
+              <div className="h-[360px] overflow-hidden border border-border bg-muted/20">
                 {showFlightOverview ? (
                   <FlightOverviewMap
                     origin={{ code: originAirport.iata, ...originAirport }}
@@ -1295,7 +1258,7 @@ export default function UldDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border bg-card shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader>
               <CardTitle className="text-lg">State inference</CardTitle>
               <CardDescription>
@@ -1304,7 +1267,7 @@ export default function UldDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
+              <div className="border border-border bg-muted/40 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-muted-foreground">Stage</span>
                   <span className="font-semibold">
@@ -1338,7 +1301,7 @@ export default function UldDetailPage() {
                   </span>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
+              <div className="border border-border bg-muted/40 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Route
                 </p>
@@ -1349,7 +1312,7 @@ export default function UldDetailPage() {
                   Progress {Math.round(currentFlightProgress * 100)}%
                 </p>
               </div>
-              <div className="rounded-xl border border-border bg-muted/40 p-4">
+              <div className="border border-border bg-muted/40 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Zone / fallback
                 </p>
@@ -1368,7 +1331,7 @@ export default function UldDetailPage() {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <Card className="rounded-xl border bg-card shadow-sm">
+          <Card className="mission-panel border-border/80">
             <CardHeader>
               <CardTitle className="text-lg">Thermal trace</CardTitle>
               <CardDescription>
@@ -1418,6 +1381,7 @@ export default function UldDetailPage() {
                     />
                     {budgetForecast.breachAt ? (
                       <ReferenceLine
+                        yAxisId="temp"
                         x={`${Math.round(budgetForecast.budgetH * 60)}m`}
                         stroke="var(--destructive)"
                       />
@@ -1456,7 +1420,7 @@ export default function UldDetailPage() {
           </Card>
 
           <div className="flex flex-col gap-4">
-            <Card className="rounded-xl border bg-card shadow-sm">
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Recommended actions</CardTitle>
                 <CardDescription>
@@ -1481,7 +1445,7 @@ export default function UldDetailPage() {
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+                  <div className="border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
                     No viable action at the current state.
                   </div>
                 )}
@@ -1497,7 +1461,7 @@ export default function UldDetailPage() {
             <TabsTrigger value="raw">Raw measurements</TabsTrigger>
           </TabsList>
           <TabsContent value="history">
-            <Card className="rounded-xl border bg-card shadow-sm">
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">History</CardTitle>
                 <CardDescription>
@@ -1509,7 +1473,7 @@ export default function UldDetailPage() {
                   history.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex flex-col gap-1 rounded-xl border border-border bg-muted/30 p-4"
+                      className="flex flex-col gap-1 border border-border bg-muted/30 p-4"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-base font-semibold">
@@ -1528,7 +1492,7 @@ export default function UldDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+                  <div className="border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
                     No linked excursion or resolution history yet.
                   </div>
                 )}
@@ -1536,7 +1500,7 @@ export default function UldDetailPage() {
             </Card>
           </TabsContent>
           <TabsContent value="timeline">
-            <Card className="rounded-xl border bg-card shadow-sm">
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Timeline</CardTitle>
                 <CardDescription>
@@ -1556,7 +1520,7 @@ export default function UldDetailPage() {
             </Card>
           </TabsContent>
           <TabsContent value="raw">
-            <Card className="rounded-xl border bg-card shadow-sm">
+            <Card className="mission-panel border-border/80">
               <CardHeader>
                 <CardTitle className="text-lg">Raw measurements</CardTitle>
                 <CardDescription>
@@ -1564,7 +1528,7 @@ export default function UldDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <pre className="max-h-[360px] overflow-auto rounded-xl border border-border bg-muted/30 p-4 text-xs leading-6 text-foreground">
+                <pre className="max-h-[360px] overflow-auto border border-border bg-muted/30 p-4 text-xs leading-6 text-foreground">
                   {JSON.stringify(measurements, null, 2)}
                 </pre>
               </CardContent>
@@ -1572,6 +1536,6 @@ export default function UldDetailPage() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </MissionShell>
   );
 }

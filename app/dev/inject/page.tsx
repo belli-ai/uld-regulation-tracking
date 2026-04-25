@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { notFound, useRouter } from "next/navigation";
 
+import { MissionShell } from "@/components/mission-control";
 import { isDemoMode } from "@/lib/env";
 
 export default function DevInjectPage() {
@@ -17,8 +18,10 @@ export default function DevInjectPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="text-base text-muted-foreground">Redirecting to demo control...</div>
-    </div>
+    <MissionShell className="flex items-center justify-center">
+      <div className="text-base text-muted-foreground">
+        Redirecting to demo control...
+      </div>
+    </MissionShell>
   );
 }

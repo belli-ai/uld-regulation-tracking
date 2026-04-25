@@ -1,40 +1,68 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import flightsData from '@/public/data/flights.json';
-import rawScenariosData from '@/public/data/scenarios.json';
-import rawUldSpecsData from '@/public/config/uld-specs.json';
-import rawShcConfigData from '@/public/config/shc.json';
-import rawWeatherData from '@/public/data/weather/DXB.json';
-import rawInventoryData from '@/public/data/uld-inventory.json';
-import { PushTimeCard, type PushTimeCardData } from '@/components/push-time-card';
+import { useEffect, useState } from "react";
+import flightsData from "@/public/data/flights.json";
+import rawScenariosData from "@/public/data/scenarios.json";
+import rawUldSpecsData from "@/public/config/uld-specs.json";
+import rawShcConfigData from "@/public/config/shc.json";
+import rawWeatherData from "@/public/data/weather/DXB.json";
+import rawInventoryData from "@/public/data/uld-inventory.json";
+import {
+  PushTimeCard,
+  type PushTimeCardData,
+} from "@/components/push-time-card";
+import {
+  MetricTile,
+  MissionHero,
+  MissionPanel,
+  MissionShell,
+  MissionTopBar,
+} from "@/components/mission-control";
 import {
   UldTrackerTable,
   type TrackerStage,
   type TrackerStatus,
   type UldTrackerRow,
-} from '@/components/uld-tracker-table';
-import { WeatherSourceBadge } from '@/components/weather-source-badge';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/uld-tracker-table";
+import { WeatherSourceBadge } from "@/components/weather-source-badge";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { adaptMockFlights } from '@/lib/adapters/flights';
-import { adaptMockUldInventory } from '@/lib/adapters/uld-inventory';
-import { adaptMockWeather, type CanonicalWeather } from '@/lib/adapters/weather';
-import { classifyState, resetStateClassifier } from '@/lib/inference/state-classifier';
-import { loadAirportPolygons, type AirportPolygons } from '@/lib/inference/airport-polygons-loader';
-import { toIRI, type Loading, type LogisticsAction, type LogisticsEvent, type Measurement, type TemperatureInstructions, type TransportMovement, type ULD } from '@/lib/ontology/one-record';
-import { auditDb } from '@/lib/persistence/audit-db';
-import { integrateBudget } from '@/lib/physics/pcm-model';
-import { startTrackerFeed } from '@/lib/simulator/tracker-feed';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/card";
+import { adaptMockFlights } from "@/lib/adapters/flights";
+import { adaptMockUldInventory } from "@/lib/adapters/uld-inventory";
+import {
+  adaptMockWeather,
+  type CanonicalWeather,
+} from "@/lib/adapters/weather";
+import {
+  classifyState,
+  resetStateClassifier,
+} from "@/lib/inference/state-classifier";
+import {
+  loadAirportPolygons,
+  type AirportPolygons,
+} from "@/lib/inference/airport-polygons-loader";
+import {
+  toIRI,
+  type Loading,
+  type LogisticsAction,
+  type LogisticsEvent,
+  type Measurement,
+  type TemperatureInstructions,
+  type TransportMovement,
+  type ULD,
+} from "@/lib/ontology/one-record";
+import { auditDb } from "@/lib/persistence/audit-db";
+import { integrateBudget } from "@/lib/physics/pcm-model";
+import { startTrackerFeed } from "@/lib/simulator/tracker-feed";
+import { cn } from "@/lib/utils";
 
-type WeatherSource = 'live' | 'mock';
+type WeatherSource = "live" | "mock";
 
 type AuditSnapshot = {
   actions: LogisticsAction[];
@@ -75,14 +103,14 @@ type RawShcEntry = {
 type TrackerMeasurementsByUld = Record<string, Measurement[]>;
 
 type SchedulerSnapshot = {
-  holdDecision: 'HOLD' | 'PUSH';
+  holdDecision: "HOLD" | "PUSH";
   maxWaitAirMinutes: number;
   pushTimeLabel: string;
   reason: string;
 };
 
-const DXB_STATION = 'DXB';
-const DUBAI_TIME_ZONE = 'Asia/Dubai';
+const DXB_STATION = "DXB";
+const DUBAI_TIME_ZONE = "Asia/Dubai";
 const RESOURCE_FALLBACK = {
   freeCoolDollies: 8,
   freeCoolRoomSlots: 200,
@@ -108,20 +136,20 @@ const FALLBACK_EXPOSURE_RATIO: Record<string, number> = {
   default: 0.64,
 };
 const ULD_SHC_OVERRIDES: Record<string, string> = {
-  'AAU-66610EK': 'CRT',
-  'AKE-12345EK': 'COL',
-  'AKE-22219EK': 'COL',
-  'AKH-77701EK': 'AVI',
-  'AKH-77702EK': 'AVI',
-  'AKW-44401EK': 'COL',
-  'AAY-55501EK': 'HEG',
-  'RKN-99001EK': 'PER',
-  'RKN-99002EK': 'FRO',
+  "AAU-66610EK": "CRT",
+  "AKE-12345EK": "COL",
+  "AKE-22219EK": "COL",
+  "AKH-77701EK": "AVI",
+  "AKH-77702EK": "AVI",
+  "AKW-44401EK": "COL",
+  "AAY-55501EK": "HEG",
+  "RKN-99001EK": "PER",
+  "RKN-99002EK": "FRO",
 };
 const ULD_PHYSICS_SPECS = {
   AKH_HORSE_STALL: {
     autonomyHours: 12,
-    id: 'AKH_HORSE_STALL',
+    id: "AKH_HORSE_STALL",
     pcmHeatOfFusionKJ_kg: 0,
     pcmMassKg: 0,
     pcmMeltEnd: 999,
@@ -132,7 +160,7 @@ const ULD_PHYSICS_SPECS = {
   },
   ENVIROTAINER_RAP_COL: {
     autonomyHours: 96,
-    id: 'ENVIROTAINER_RAP_COL',
+    id: "ENVIROTAINER_RAP_COL",
     pcmHeatOfFusionKJ_kg: 334,
     pcmMassKg: 150,
     pcmMeltEnd: 8,
@@ -143,7 +171,7 @@ const ULD_PHYSICS_SPECS = {
   },
   ENVIROTAINER_RKN_FRO: {
     autonomyHours: 120,
-    id: 'ENVIROTAINER_RKN_FRO',
+    id: "ENVIROTAINER_RKN_FRO",
     pcmHeatOfFusionKJ_kg: 334,
     pcmMassKg: 100,
     pcmMeltEnd: -18,
@@ -154,7 +182,7 @@ const ULD_PHYSICS_SPECS = {
   },
   GENERIC_PASSIVE: {
     autonomyHours: 6,
-    id: 'GENERIC_PASSIVE',
+    id: "GENERIC_PASSIVE",
     pcmHeatOfFusionKJ_kg: 0,
     pcmMassKg: 0,
     pcmMeltEnd: 999,
@@ -165,7 +193,7 @@ const ULD_PHYSICS_SPECS = {
   },
   SONOCO_PEGASUS_CRT: {
     autonomyHours: 48,
-    id: 'SONOCO_PEGASUS_CRT',
+    id: "SONOCO_PEGASUS_CRT",
     pcmHeatOfFusionKJ_kg: 334,
     pcmMassKg: 50,
     pcmMeltEnd: 8,
@@ -176,7 +204,7 @@ const ULD_PHYSICS_SPECS = {
   },
   VA_Q_TAINER_XL: {
     autonomyHours: 72,
-    id: 'VA_Q_TAINER_XL',
+    id: "VA_Q_TAINER_XL",
     pcmHeatOfFusionKJ_kg: 334,
     pcmMassKg: 60,
     pcmMeltEnd: 8,
@@ -202,17 +230,27 @@ function buildInventoryById(): Record<string, InventoryRecord> {
   const rawInventory = Array.isArray(rawInventoryData) ? rawInventoryData : [];
 
   canonicalInventory.forEach((uld, index) => {
-    const rawEntry = rawInventory[index] as Partial<InventoryRecord> | undefined;
+    const rawEntry = rawInventory[index] as
+      | Partial<InventoryRecord>
+      | undefined;
     byId[uld.uldSerialNumber] = {
       ...uld,
       iotDeviceId:
-        typeof rawEntry?.iotDeviceId === 'string' ? rawEntry.iotDeviceId : undefined,
+        typeof rawEntry?.iotDeviceId === "string"
+          ? rawEntry.iotDeviceId
+          : undefined,
       lastKnownInternalC:
-        typeof rawEntry?.lastKnownInternalC === 'number' ? rawEntry.lastKnownInternalC : undefined,
+        typeof rawEntry?.lastKnownInternalC === "number"
+          ? rawEntry.lastKnownInternalC
+          : undefined,
       lastKnownLocation:
-        typeof rawEntry?.lastKnownLocation === 'string' ? rawEntry.lastKnownLocation : undefined,
+        typeof rawEntry?.lastKnownLocation === "string"
+          ? rawEntry.lastKnownLocation
+          : undefined,
       uldProductCode:
-        typeof rawEntry?.uldProductCode === 'string' ? rawEntry.uldProductCode : undefined,
+        typeof rawEntry?.uldProductCode === "string"
+          ? rawEntry.uldProductCode
+          : undefined,
     };
   });
 
@@ -220,15 +258,18 @@ function buildInventoryById(): Record<string, InventoryRecord> {
 }
 
 function getFallbackScenario(): RawScenario | null {
-  const scenarios = ((rawScenariosData as { scenarios?: unknown }).scenarios ?? []) as RawScenario[];
-  return scenarios.find((scenario) => scenario.id === 'dxb-cascading-delays') ?? null;
+  const scenarios = ((rawScenariosData as { scenarios?: unknown }).scenarios ??
+    []) as RawScenario[];
+  return (
+    scenarios.find((scenario) => scenario.id === "dxb-cascading-delays") ?? null
+  );
 }
 
 function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.filter((entry): entry is string => typeof entry === 'string');
+  return value.filter((entry): entry is string => typeof entry === "string");
 }
 
 function getFallbackBuiltUldIds(): string[] {
@@ -261,7 +302,9 @@ function getSimulationBaseMs(): number {
 }
 
 function getFlightStdMs(flight: TransportMovement): number | null {
-  const stdTimestamp = flight.movementTimes.find((entry) => entry.type === 'STD')?.timestamp;
+  const stdTimestamp = flight.movementTimes.find(
+    (entry) => entry.type === "STD",
+  )?.timestamp;
 
   if (!stdTimestamp) {
     return null;
@@ -272,7 +315,7 @@ function getFlightStdMs(flight: TransportMovement): number | null {
 }
 
 function asUldId(value: string): string {
-  return value.split(':').at(-1) ?? value;
+  return value.split(":").at(-1) ?? value;
 }
 
 function getWeatherForTime(weather: CanonicalWeather, timeMs: number): number {
@@ -305,7 +348,9 @@ function getWeatherForTime(weather: CanonicalWeather, timeMs: number): number {
     const next = readings[index + 1];
 
     if (timeMs >= current.timestampMs && timeMs <= next.timestampMs) {
-      const ratio = (timeMs - current.timestampMs) / (next.timestampMs - current.timestampMs);
+      const ratio =
+        (timeMs - current.timestampMs) /
+        (next.timestampMs - current.timestampMs);
       return current.ambientC + (next.ambientC - current.ambientC) * ratio;
     }
   }
@@ -326,12 +371,12 @@ function buildAmbientForecast(
       }
 
       return {
-        '@id': toIRI(`urn:cargo:measurement:ambient:${index}`),
-        '@type': 'Measurement' as const,
-        bySensor: toIRI('urn:cargo:sensor:ambient'),
+        "@id": toIRI(`urn:cargo:measurement:ambient:${index}`),
+        "@type": "Measurement" as const,
+        bySensor: toIRI("urn:cargo:sensor:ambient"),
         measurementTimestamp: new Date(timestampMs).toISOString(),
         measurementValue: {
-          unit: 'C',
+          unit: "C",
           value: entry.ambientC,
         },
       };
@@ -344,22 +389,22 @@ function buildAmbientForecast(
 
   return [
     {
-      '@id': toIRI('urn:cargo:measurement:ambient:fallback:0'),
-      '@type': 'Measurement',
-      bySensor: toIRI('urn:cargo:sensor:ambient'),
+      "@id": toIRI("urn:cargo:measurement:ambient:fallback:0"),
+      "@type": "Measurement",
+      bySensor: toIRI("urn:cargo:sensor:ambient"),
       measurementTimestamp: new Date(nowMs).toISOString(),
       measurementValue: {
-        unit: 'C',
+        unit: "C",
         value: getWeatherForTime(weather, nowMs),
       },
     },
     {
-      '@id': toIRI('urn:cargo:measurement:ambient:fallback:1'),
-      '@type': 'Measurement',
-      bySensor: toIRI('urn:cargo:sensor:ambient'),
+      "@id": toIRI("urn:cargo:measurement:ambient:fallback:1"),
+      "@type": "Measurement",
+      bySensor: toIRI("urn:cargo:sensor:ambient"),
       measurementTimestamp: new Date(nowMs + 6 * 60 * 60 * 1000).toISOString(),
       measurementValue: {
-        unit: 'C',
+        unit: "C",
         value: getWeatherForTime(weather, nowMs + 6 * 60 * 60 * 1000),
       },
     },
@@ -372,18 +417,16 @@ function getUldSpecRecord(uld: InventoryRecord): {
   supportedShc: string[];
 } {
   const rawRecord = (rawUldSpecsData as Record<string, UldSpecRecord>)[
-    uld.uldProductCode ?? 'GENERIC_PASSIVE'
+    uld.uldProductCode ?? "GENERIC_PASSIVE"
   ];
 
   return {
     autonomyHours:
-      typeof rawRecord?.ratedAutonomyHoursAt25C === 'number'
+      typeof rawRecord?.ratedAutonomyHoursAt25C === "number"
         ? rawRecord.ratedAutonomyHoursAt25C
         : ULD_PHYSICS_SPECS.GENERIC_PASSIVE.autonomyHours,
     label:
-      typeof rawRecord?.label === 'string'
-        ? rawRecord.label
-        : uld.uldTypeCode,
+      typeof rawRecord?.label === "string" ? rawRecord.label : uld.uldTypeCode,
     supportedShc: readStringArray(rawRecord?.supportedShc),
   };
 }
@@ -391,7 +434,8 @@ function getUldSpecRecord(uld: InventoryRecord): {
 function getUldPhysicsSpec(uld: InventoryRecord) {
   return (
     ULD_PHYSICS_SPECS[
-      (uld.uldProductCode ?? 'GENERIC_PASSIVE') as keyof typeof ULD_PHYSICS_SPECS
+      (uld.uldProductCode ??
+        "GENERIC_PASSIVE") as keyof typeof ULD_PHYSICS_SPECS
     ] ?? ULD_PHYSICS_SPECS.GENERIC_PASSIVE
   );
 }
@@ -403,7 +447,7 @@ function getShcCode(uld: InventoryRecord): string {
     return override;
   }
 
-  return getUldSpecRecord(uld).supportedShc[0] ?? 'GEN';
+  return getUldSpecRecord(uld).supportedShc[0] ?? "GEN";
 }
 
 function getThresholdInstructions(shcCode: string): TemperatureInstructions {
@@ -418,28 +462,36 @@ function getThresholdInstructions(shcCode: string): TemperatureInstructions {
   const maxUnit = shcEntry?.temperatureInstructions?.maxTemperature?.unit;
 
   return {
-    '@id': toIRI(`urn:cargo:tempinstr:${shcCode}`),
-    '@type': 'TemperatureInstructions',
+    "@id": toIRI(`urn:cargo:tempinstr:${shcCode}`),
+    "@type": "TemperatureInstructions",
     minTemperature: {
-      unit: minUnit === 'F' ? 'F' : 'C',
-      value: typeof minValue === 'number' ? minValue : 15,
+      unit: minUnit === "F" ? "F" : "C",
+      value: typeof minValue === "number" ? minValue : 15,
     },
     maxTemperature: {
-      unit: maxUnit === 'F' ? 'F' : 'C',
-      value: typeof maxValue === 'number' ? maxValue : 25,
+      unit: maxUnit === "F" ? "F" : "C",
+      value: typeof maxValue === "number" ? maxValue : 25,
     },
   };
 }
 
-function getFlightByNumber(flightNumber: string | null): TransportMovement | null {
+function getFlightByNumber(
+  flightNumber: string | null,
+): TransportMovement | null {
   if (!flightNumber) {
     return null;
   }
 
-  return fallbackFlights.find((flight) => flight.flightNumber === flightNumber) ?? null;
+  return (
+    fallbackFlights.find((flight) => flight.flightNumber === flightNumber) ??
+    null
+  );
 }
 
-function getFlightNumberForUld(uldId: string, builtUldIds: string[]): string | null {
+function getFlightNumberForUld(
+  uldId: string,
+  builtUldIds: string[],
+): string | null {
   const mappedFlight = fallbackFlightMap[uldId];
 
   if (mappedFlight) {
@@ -451,31 +503,34 @@ function getFlightNumberForUld(uldId: string, builtUldIds: string[]): string | n
     return null;
   }
 
-  return fallbackFlights[fallbackIndex % fallbackFlights.length]?.flightNumber ?? null;
+  return (
+    fallbackFlights[fallbackIndex % fallbackFlights.length]?.flightNumber ??
+    null
+  );
 }
 
 function toStageLabel(stage: string): string {
   switch (stage) {
-    case 'in-warehouse':
-      return 'Warehouse';
-    case 'in-tarmac':
-      return 'Tarmac';
-    case 'in-flight':
-      return 'In flight';
-    case 'arrived-tarmac':
-      return 'Arrived tarmac';
-    case 'arrived-destination':
-      return 'Destination';
+    case "in-warehouse":
+      return "Warehouse";
+    case "in-tarmac":
+      return "Tarmac";
+    case "in-flight":
+      return "In flight";
+    case "arrived-tarmac":
+      return "Arrived tarmac";
+    case "arrived-destination":
+      return "Destination";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }
 
 function formatClock(date: Date): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
     hour12: false,
-    minute: '2-digit',
+    minute: "2-digit",
     timeZone: DUBAI_TIME_ZONE,
   }).format(date);
 }
@@ -486,11 +541,14 @@ function parseRelevantAudit(snapshot: AuditSnapshot) {
   const latestActionByUld = new Map<string, LogisticsAction>();
 
   snapshot.events.forEach((event) => {
-    eventsById.set(event['@id'], event);
+    eventsById.set(event["@id"], event);
     const uldId = asUldId(String(event.eventFor));
     const previous = latestEventByUld.get(uldId);
 
-    if (!previous || Date.parse(previous.eventDate) < Date.parse(event.eventDate)) {
+    if (
+      !previous ||
+      Date.parse(previous.eventDate) < Date.parse(event.eventDate)
+    ) {
       latestEventByUld.set(uldId, event);
     }
   });
@@ -522,23 +580,26 @@ function parseRelevantAudit(snapshot: AuditSnapshot) {
   };
 }
 
-function getBudgetState(percent: number): 'green' | 'yellow' | 'red' {
+function getBudgetState(percent: number): "green" | "yellow" | "red" {
   if (percent > 50) {
-    return 'green';
+    return "green";
   }
 
   if (percent >= 30) {
-    return 'yellow';
+    return "yellow";
   }
 
-  return 'red';
+  return "red";
 }
 
-function getLinearInterpolatedMinutes(curve: Record<string, unknown>, ambientC: number): number {
+function getLinearInterpolatedMinutes(
+  curve: Record<string, unknown>,
+  ambientC: number,
+): number {
   const points = Object.entries(curve)
     .map(([key, value]) => {
       const match = /^ambient(-?\d+(?:\.\d+)?)c$/i.exec(key);
-      if (!match || typeof value !== 'number' || Number.isNaN(value)) {
+      if (!match || typeof value !== "number" || Number.isNaN(value)) {
         return null;
       }
 
@@ -547,7 +608,9 @@ function getLinearInterpolatedMinutes(curve: Record<string, unknown>, ambientC: 
         minutes: value,
       };
     })
-    .filter((entry): entry is { ambientC: number; minutes: number } => entry !== null)
+    .filter(
+      (entry): entry is { ambientC: number; minutes: number } => entry !== null,
+    )
     .sort((left, right) => left.ambientC - right.ambientC);
 
   if (points.length === 0) {
@@ -567,7 +630,8 @@ function getLinearInterpolatedMinutes(curve: Record<string, unknown>, ambientC: 
     const next = points[index + 1];
 
     if (ambientC >= current.ambientC && ambientC <= next.ambientC) {
-      const ratio = (ambientC - current.ambientC) / (next.ambientC - current.ambientC);
+      const ratio =
+        (ambientC - current.ambientC) / (next.ambientC - current.ambientC);
       return current.minutes + (next.minutes - current.minutes) * ratio;
     }
   }
@@ -592,16 +656,20 @@ function buildSchedulerSnapshot(
     shcEntry?.maxWaitMinutes ?? {},
     ambientC,
   );
-  const exposureRatio = FALLBACK_EXPOSURE_RATIO[shcCode] ?? FALLBACK_EXPOSURE_RATIO.default;
+  const exposureRatio =
+    FALLBACK_EXPOSURE_RATIO[shcCode] ?? FALLBACK_EXPOSURE_RATIO.default;
   const fallbackLoadedAtMs = nowMs - maxWaitAirMinutes * exposureRatio * 60_000;
   const loadedAtMs = loading
     ? Date.parse(loading.actionStartTime)
     : fallbackLoadedAtMs;
   const pushTimeMs = loadedAtMs + maxWaitAirMinutes * 60_000;
-  const towEstimateMinutes = TOW_ESTIMATE_MINUTES[shcCode] ?? TOW_ESTIMATE_MINUTES.default;
+  const towEstimateMinutes =
+    TOW_ESTIMATE_MINUTES[shcCode] ?? TOW_ESTIMATE_MINUTES.default;
   const remainingMinutes = (pushTimeMs - nowMs) / 60_000;
-  const holdDecision = remainingMinutes > towEstimateMinutes ? 'HOLD' : 'PUSH';
-  const etdLabel = flight ? formatClock(new Date(getFlightStdMs(flight) ?? nowMs)) : '--:--';
+  const holdDecision = remainingMinutes > towEstimateMinutes ? "HOLD" : "PUSH";
+  const etdLabel = flight
+    ? formatClock(new Date(getFlightStdMs(flight) ?? nowMs))
+    : "--:--";
 
   return {
     holdDecision,
@@ -624,25 +692,25 @@ function getStatus(
   if (
     internalC < threshold.minTemperature.value ||
     internalC > threshold.maxTemperature.value ||
-    latestEvent?.eventCode === 'BREACH_ACTUAL'
+    latestEvent?.eventCode === "BREACH_ACTUAL"
   ) {
-    return 'Excursion';
+    return "Excursion";
   }
 
   if (latestAction) {
-    return 'Action in progress';
+    return "Action in progress";
   }
 
   if (
-    latestEvent?.eventCode === 'BREACH_PREDICTED' ||
-    latestEvent?.eventCode === 'WARNING_BUDGET_LOW' ||
-    scheduler.holdDecision === 'HOLD' ||
+    latestEvent?.eventCode === "BREACH_PREDICTED" ||
+    latestEvent?.eventCode === "WARNING_BUDGET_LOW" ||
+    scheduler.holdDecision === "HOLD" ||
     budgetPercent < 30
   ) {
-    return 'Alert';
+    return "Alert";
   }
 
-  return 'OK';
+  return "OK";
 }
 
 function buildRows(
@@ -655,7 +723,8 @@ function buildRows(
 ): { heldCards: PushTimeCardData[]; rows: UldTrackerRow[] } {
   const rows: UldTrackerRow[] = [];
   const heldCards: PushTimeCardData[] = [];
-  const { latestActionByUld, latestEventByUld } = parseRelevantAudit(auditSnapshot);
+  const { latestActionByUld, latestEventByUld } =
+    parseRelevantAudit(auditSnapshot);
   const loadingByUld = new Map<string, Loading>();
 
   auditSnapshot.loadings.forEach((loading) => {
@@ -688,11 +757,11 @@ function buildRows(
     const stageResult =
       polygons !== null
         ? classifyState(uldId, recentMeasurements, polygons)
-        : { stage: 'in-warehouse' as TrackerStage };
+        : { stage: "in-warehouse" as TrackerStage };
     const currentInternalC =
       [...recentMeasurements]
         .reverse()
-        .find((measurement) => measurement.measurementValue.unit === 'C')
+        .find((measurement) => measurement.measurementValue.unit === "C")
         ?.measurementValue.value ??
       inventoryEntry.lastKnownInternalC ??
       threshold.minTemperature.value;
@@ -718,7 +787,10 @@ function buildRows(
     const budgetRemainingHours = Math.max(0, budget.budgetSec / 3600);
     const budgetRemainingPercent =
       autonomyHours > 0
-        ? Math.max(0, Math.min(100, (budgetRemainingHours / autonomyHours) * 100))
+        ? Math.max(
+            0,
+            Math.min(100, (budgetRemainingHours / autonomyHours) * 100),
+          )
         : 0;
     const status = getStatus(
       currentInternalC,
@@ -736,7 +808,9 @@ function buildRows(
       budgetRemainingPercent,
       budgetState: getBudgetState(budgetRemainingPercent),
       flightNumber,
-      flightTimeLabel: flightStdMs ? formatClock(new Date(flightStdMs)) : '--:--',
+      flightTimeLabel: flightStdMs
+        ? formatClock(new Date(flightStdMs))
+        : "--:--",
       internalC: currentInternalC,
       shcCode,
       stage: stageResult.stage,
@@ -748,10 +822,10 @@ function buildRows(
     });
 
     if (
-      scheduler.holdDecision === 'HOLD' &&
-      stageResult.stage !== 'in-flight' &&
-      stageResult.stage !== 'arrived-tarmac' &&
-      stageResult.stage !== 'arrived-destination'
+      scheduler.holdDecision === "HOLD" &&
+      stageResult.stage !== "in-flight" &&
+      stageResult.stage !== "arrived-tarmac" &&
+      stageResult.stage !== "arrived-destination"
     ) {
       heldCards.push({
         flightNumber,
@@ -769,14 +843,15 @@ function buildRows(
 
 export default function SupervisorPage() {
   const [weather, setWeather] = useState<CanonicalWeather>(defaultWeather);
-  const [weatherSource, setWeatherSource] = useState<WeatherSource>('mock');
+  const [weatherSource, setWeatherSource] = useState<WeatherSource>("mock");
   const [auditSnapshot, setAuditSnapshot] = useState<AuditSnapshot>({
     actions: [],
     events: [],
     loadings: [],
   });
   const [polygons, setPolygons] = useState<AirportPolygons | null>(null);
-  const [trackerMeasurements, setTrackerMeasurements] = useState<TrackerMeasurementsByUld>({});
+  const [trackerMeasurements, setTrackerMeasurements] =
+    useState<TrackerMeasurementsByUld>({});
   const [builtUldIds, setBuiltUldIds] = useState<string[]>(fallbackBuiltUldIds);
   const [logicalNowMs, setLogicalNowMs] = useState<number>(simulationBaseMs);
   const [loading, setLoading] = useState(true);
@@ -796,17 +871,19 @@ export default function SupervisorPage() {
       setError(null);
 
       try {
-        const [weatherResponse, airportPolygons, events, actions, loadings] = await Promise.all([
-          fetch('/api/weather?airport=DXB', { cache: 'no-store' }),
-          loadAirportPolygons(),
-          auditDb.events.toArray(),
-          auditDb.actions.toArray(),
-          auditDb.loadings.toArray(),
-        ]);
+        const [weatherResponse, airportPolygons, events, actions, loadings] =
+          await Promise.all([
+            fetch("/api/weather?airport=DXB", { cache: "no-store" }),
+            loadAirportPolygons(),
+            auditDb.events.toArray(),
+            auditDb.actions.toArray(),
+            auditDb.loadings.toArray(),
+          ]);
 
         if (!cancelled) {
           if (weatherResponse.ok) {
-            const weatherPayload = (await weatherResponse.json()) as CanonicalWeather;
+            const weatherPayload =
+              (await weatherResponse.json()) as CanonicalWeather;
             setWeather(weatherPayload);
             setWeatherSource(weatherPayload.source);
           }
@@ -817,16 +894,24 @@ export default function SupervisorPage() {
           const auditedUlds = Array.from(
             new Set(
               loadings
-                .flatMap((loading) => loading.loadedUnits.map((unit) => asUldId(String(unit))))
+                .flatMap((loading) =>
+                  loading.loadedUnits.map((unit) => asUldId(String(unit))),
+                )
                 .filter((uldId) => uldId in inventoryById),
             ),
           );
 
-          setBuiltUldIds(auditedUlds.length > 0 ? auditedUlds : fallbackBuiltUldIds);
+          setBuiltUldIds(
+            auditedUlds.length > 0 ? auditedUlds : fallbackBuiltUldIds,
+          );
         }
       } catch (caughtError: unknown) {
         if (!cancelled) {
-          setError(caughtError instanceof Error ? caughtError.message : 'Unable to load dashboard');
+          setError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Unable to load dashboard",
+          );
         }
       } finally {
         if (!cancelled) {
@@ -845,7 +930,8 @@ export default function SupervisorPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setLogicalNowMs(
-        clockAnchor.baseMs + (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER,
+        clockAnchor.baseMs +
+          (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER,
       );
     }, 500);
 
@@ -862,7 +948,10 @@ export default function SupervisorPage() {
     const feedEntries = builtUldIds
       .map((uldId) => {
         const feed = startTrackerFeed(uldId, fallbackScenario as never, () => {
-          return clockAnchor.baseMs + (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER;
+          return (
+            clockAnchor.baseMs +
+            (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER
+          );
         });
 
         if (feed === null) {
@@ -871,13 +960,22 @@ export default function SupervisorPage() {
 
         return { feed, uldId };
       })
-      .filter((entry): entry is { feed: NonNullable<ReturnType<typeof startTrackerFeed>>; uldId: string } => entry !== null);
+      .filter(
+        (
+          entry,
+        ): entry is {
+          feed: NonNullable<ReturnType<typeof startTrackerFeed>>;
+          uldId: string;
+        } => entry !== null,
+      );
 
     const subscriptions = feedEntries.map(({ feed, uldId }) =>
       feed.subscribe((measurements) => {
         setTrackerMeasurements((current) => ({
           ...current,
-          [uldId]: [...(current[uldId] ?? []), ...measurements].slice(-TRACKER_WINDOW),
+          [uldId]: [...(current[uldId] ?? []), ...measurements].slice(
+            -TRACKER_WINDOW,
+          ),
         }));
       }),
     );
@@ -898,16 +996,19 @@ export default function SupervisorPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 h-14 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-2">
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="Supervisor operations wall"
+        title="Live ULD tracker"
+        actions={
+          <>
             <WeatherSourceBadge source={weatherSource} />
-            <Badge variant="outline" className="font-mono text-xs font-semibold">
+            <Badge
+              variant="outline"
+              className="font-mono text-xs font-semibold"
+            >
               {DXB_STATION}
             </Badge>
-          </div>
-          <div className="flex items-center gap-2">
             <Badge
               variant="outline"
               className="font-mono text-xs font-semibold text-muted-foreground"
@@ -920,69 +1021,92 @@ export default function SupervisorPage() {
             >
               {RESOURCE_FALLBACK.freeCoolRoomSlots} cool-room slots free
             </Badge>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8">
-        <section className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Supervisor dashboard
-          </p>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold text-foreground">Live ULD tracker</h1>
-            <p className="text-base text-muted-foreground">
-              All built ULDs across today&apos;s DXB outbound flights, with thermal state and push-time risk.
-            </p>
-          </div>
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="flex min-w-0 flex-col gap-5">
+          <MissionHero
+            eyebrow="Supervisor dashboard"
+            title="Live ULD tracker"
+            description="All built ULDs across today's DXB outbound flights, with thermal state, push-time risk, and mitigation status."
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MetricTile
+                label="Tracked ULDs"
+                value={rows.length}
+                meta="Built units"
+              />
+              <MetricTile
+                label="Active holds"
+                value={heldCards.length}
+                meta="Scheduler lane"
+              />
+              <MetricTile
+                label="Updated"
+                value={formatClock(new Date(logicalNowMs))}
+                meta="DXB local"
+              />
+            </div>
+          </MissionHero>
+
+          {error ? (
+            <Card className="mission-panel border-destructive/40">
+              <CardContent className="p-6">
+                <p className="text-base text-destructive">{error}</p>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <MissionPanel
+            title="DXB outbound tracker"
+            description="Sort by budget, stage, or status to prioritize supervisor attention."
+            contentClassName="p-0"
+          >
+            <UldTrackerTable rows={rows} />
+          </MissionPanel>
         </section>
 
-        {error ? (
-          <Card className="rounded-xl border border-destructive/40">
-            <CardContent className="p-6">
-              <p className="text-base text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card className="rounded-xl border shadow-sm">
-          <CardHeader className="gap-1">
-            <CardTitle className="text-lg font-semibold leading-none">DXB outbound tracker</CardTitle>
-            <CardDescription className="text-sm">
-              Sort by budget, stage, or status to prioritize supervisor attention.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <UldTrackerTable rows={rows} />
-          </CardContent>
-        </Card>
-
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <section className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
+          <MetricTile
+            label="Free dollies"
+            value={RESOURCE_FALLBACK.freeCoolDollies}
+            meta="Cooling resource"
+          />
+          <MetricTile
+            label="Cool-room slots"
+            value={RESOURCE_FALLBACK.freeCoolRoomSlots}
+            meta="Warehouse reserve"
+          />
           {heldCards.length > 0 ? (
             heldCards.map((card) => <PushTimeCard key={card.uldId} {...card} />)
           ) : (
-            <Card className="rounded-xl border border-dashed shadow-sm md:col-span-2 lg:col-span-3">
+            <Card className="mission-panel border-dashed">
               <CardHeader className="gap-1">
                 <CardTitle className="text-lg font-semibold leading-none">
                   No active hold windows
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Sensitive ULDs will surface here when the push-time scheduler moves them into hold.
+                  Sensitive ULDs will surface here when the push-time scheduler
+                  moves them into hold.
                 </CardDescription>
               </CardHeader>
             </Card>
           )}
-        </section>
 
-        <div
-          className={cn(
-            'font-mono text-xs text-muted-foreground',
-            loading ? 'opacity-100' : 'opacity-80',
-          )}
-        >
-          {loading ? 'Refreshing supervisor feed…' : `Updated ${formatClock(new Date(logicalNowMs))} DXB`}
-        </div>
+          <div
+            className={cn(
+              "font-mono text-xs text-muted-foreground",
+              loading ? "opacity-100" : "opacity-80",
+            )}
+          >
+            {loading
+              ? "Refreshing supervisor feed…"
+              : `Updated ${formatClock(new Date(logicalNowMs))} DXB`}
+          </div>
+        </section>
       </main>
-    </div>
+    </MissionShell>
   );
 }

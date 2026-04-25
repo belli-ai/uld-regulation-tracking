@@ -10,6 +10,7 @@ import uldInventorySource from "@/public/data/uld-inventory.json";
 import { excursionLogger } from "@/lib/audit/excursion-logger";
 import { adaptMockFlights } from "@/lib/adapters/flights";
 import { adaptAllMockShipments } from "@/lib/adapters/shipments";
+import { simulationTickMs } from "@/lib/env";
 import {
   type IRI,
   toIRI,
@@ -827,7 +828,7 @@ function ensureTickLoop(): void {
   clockInterval = window.setInterval(() => {
     const speedMultiplier = useDemoClockStore.getState().speedMultiplier;
     void advanceClockBy(speedMultiplier);
-  }, 1000);
+  }, simulationTickMs);
 }
 
 export const demoScenarioRunner = {

@@ -8,10 +8,21 @@ import {
   BuiltUldStrip,
   type BuiltUldStripEntry,
 } from "@/components/built-uld-strip";
+import {
+  MetricTile,
+  MissionHero,
+  MissionShell,
+  MissionTopBar,
+  StatusRail,
+} from "@/components/mission-control";
 import { UldInventoryPanel } from "@/components/uld-inventory-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { ULD, TransportMovement, Waybill } from "@/lib/ontology/one-record";
+import type {
+  ULD,
+  TransportMovement,
+  Waybill,
+} from "@/lib/ontology/one-record";
 import {
   useInventoryStore,
   type InventoryUld,
@@ -60,7 +71,12 @@ function buildWorkspaceEntries(
       uld,
       awbCount: waybills.length,
       currentState: "warehouse",
-      shc: shcCodes.length === 1 ? shcCodes[0] : shcCodes.length > 1 ? "MIX" : "TBD",
+      shc:
+        shcCodes.length === 1
+          ? shcCodes[0]
+          : shcCodes.length > 1
+            ? "MIX"
+            : "TBD",
       thermalBudgetLabel: "Budget pending",
     };
   });
@@ -141,8 +157,9 @@ export default function FlightWorkspacePage() {
 
         startTransition(() => {
           setFlight(
-            flightsData.find((candidate) => candidate.flightNumber === flightNo) ??
-              null,
+            flightsData.find(
+              (candidate) => candidate.flightNumber === flightNo,
+            ) ?? null,
           );
           setShipments(shipmentsData);
           hydrateInventory(inventoryData);
@@ -190,7 +207,8 @@ export default function FlightWorkspacePage() {
 
   function handleBuildNewUld() {
     const nextAvailable = inventory.find(
-      (uld) => isEligibleInventoryUld(uld) && uld.buildUpStatus !== "in-build-up",
+      (uld) =>
+        isEligibleInventoryUld(uld) && uld.buildUpStatus !== "in-build-up",
     );
 
     if (!nextAvailable) {
@@ -209,61 +227,103 @@ export default function FlightWorkspacePage() {
   )}`;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="Flight workspace"
+        title={flightNo}
+        actions={
+          <>
             <Button asChild size="sm" variant="ghost">
               <Link href="/">Flights</Link>
             </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                Workspace
-              </span>
-              <span className="text-sm text-muted-foreground">/</span>
-              <span className="text-sm font-semibold">{flightNo}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
             <Badge variant="secondary">{headerRoute}</Badge>
             <Badge variant="outline">ETD {formatFlightTime(flight)}</Badge>
-            <Badge variant="outline">{shipments.length} AWBs</Badge>
-            <Badge variant="outline">{availableInventoryCount} ready ULDs</Badge>
             {error ? <Badge variant="destructive">{error}</Badge> : null}
-            {!error && isLoading ? <Badge variant="secondary">Loading</Badge> : null}
-          </div>
-        </div>
-      </header>
+            {!error && isLoading ? (
+              <Badge variant="secondary">Loading</Badge>
+            ) : null}
+          </>
+        }
+      />
 
-      <main className="mx-auto grid h-[calc(100vh-3.5rem)] max-w-7xl grid-cols-[1fr_1fr] grid-rows-[1fr_auto] gap-6 px-6 py-8">
-        <div className="min-h-0">
-          <AwbManifestPanel
-            shipments={shipments}
-            assignedUldByWaybill={assignedUldByWaybill}
-            isLoading={isLoading}
-            onOpenAssignedUld={openAssignedUld}
-          />
-        </div>
-
-        <div className="min-h-0">
-          <UldInventoryPanel
-            flightNo={flightNo}
-            inventory={inventory}
-            isLoading={isLoading}
-            onBuildNewUld={handleBuildNewUld}
-            onOpenBuildUp={openBuildUp}
-          />
-        </div>
-
-        <div className="col-span-2 min-h-0">
-          <BuiltUldStrip
-            entries={builtEntries}
-            onOpenUld={(uldSerialNumber) =>
-              router.push(`/uld/${encodeURIComponent(uldSerialNumber)}`)
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
+        <section className="flex min-w-0 flex-col gap-5 xl:col-span-2">
+          <MissionHero
+            eyebrow="Load planning console"
+            title={flightNo}
+            description={`${headerRoute} mission workspace. Build ULDs from manifest demand, available equipment, and cold-chain readiness.`}
+            actions={
+              <Button
+                disabled={availableInventoryCount === 0}
+                onClick={handleBuildNewUld}
+              >
+                + Build new ULD
+              </Button>
             }
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MetricTile
+                label="Manifest"
+                value={shipments.length}
+                meta="AWBs queued"
+              />
+              <MetricTile
+                label="Inventory"
+                value={availableInventoryCount}
+                meta="Ready ULDs"
+              />
+              <MetricTile
+                label="Built"
+                value={builtEntries.length}
+                meta="ULDs signed off"
+              />
+            </div>
+          </MissionHero>
+
+          <div className="grid min-h-[560px] gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div className="min-h-0">
+              <AwbManifestPanel
+                shipments={shipments}
+                assignedUldByWaybill={assignedUldByWaybill}
+                isLoading={isLoading}
+                onOpenAssignedUld={openAssignedUld}
+              />
+            </div>
+
+            <div className="min-h-0">
+              <BuiltUldStrip
+                entries={builtEntries}
+                onOpenUld={(uldSerialNumber) =>
+                  router.push(`/uld/${encodeURIComponent(uldSerialNumber)}`)
+                }
+              />
+            </div>
+          </div>
+        </section>
+
+        <StatusRail className="min-h-0 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)]">
+          <MetricTile label="Route" value={headerRoute} meta="Airport pair" />
+          <MetricTile
+            label="ETD"
+            value={formatFlightTime(flight)}
+            meta="Scheduled push"
           />
-        </div>
+          <MetricTile
+            label="AWBs"
+            value={shipments.length}
+            meta="Manifest demand"
+          />
+          <div className="min-h-0 flex-1">
+            <UldInventoryPanel
+              flightNo={flightNo}
+              inventory={inventory}
+              isLoading={isLoading}
+              onBuildNewUld={handleBuildNewUld}
+              onOpenBuildUp={openBuildUp}
+            />
+          </div>
+        </StatusRail>
       </main>
-    </div>
+    </MissionShell>
   );
 }

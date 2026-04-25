@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { missionCardClassName } from "@/components/mission-control";
 import {
   Card,
   CardContent,
@@ -10,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { RankedAction } from "@/lib/recommender/ranker";
+import { cn } from "@/lib/utils";
 
 type Props = {
   action: RankedAction;
@@ -26,12 +28,19 @@ function formatCost(action: RankedAction): string {
   return `${action.costTier} cost`;
 }
 
-export function ActionCard({ action, onExecute, onRequest, onEscalate }: Props) {
+export function ActionCard({
+  action,
+  onExecute,
+  onRequest,
+  onEscalate,
+}: Props) {
   return (
-    <Card className="rounded-xl border bg-card shadow-sm">
+    <Card className={cn(missionCardClassName)}>
       <CardHeader className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-lg font-semibold leading-none">{action.label}</CardTitle>
+          <CardTitle className="text-lg font-semibold leading-none">
+            {action.label}
+          </CardTitle>
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             #{action.rank}
           </span>
@@ -42,23 +51,29 @@ export function ActionCard({ action, onExecute, onRequest, onEscalate }: Props) 
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-muted/40 p-3">
+          <div className="border border-border/70 bg-background/45 p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Benefit
             </p>
-            <p className="pt-1 text-base text-foreground">{formatBenefit(action)}</p>
+            <p className="pt-1 text-base text-foreground">
+              {formatBenefit(action)}
+            </p>
           </div>
-          <div className="rounded-xl border border-border bg-muted/40 p-3">
+          <div className="border border-border/70 bg-background/45 p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Cost
             </p>
-            <p className="pt-1 text-base capitalize text-foreground">{formatCost(action)}</p>
+            <p className="pt-1 text-base capitalize text-foreground">
+              {formatCost(action)}
+            </p>
           </div>
-          <div className="rounded-xl border border-border bg-muted/40 p-3">
+          <div className="border border-border/70 bg-background/45 p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Execution
             </p>
-            <p className="pt-1 text-base text-foreground">{action.executionMinutes} min</p>
+            <p className="pt-1 text-base text-foreground">
+              {action.executionMinutes} min
+            </p>
           </div>
         </div>
       </CardContent>

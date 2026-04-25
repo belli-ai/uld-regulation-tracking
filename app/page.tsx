@@ -3,6 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FlightCard } from "@/components/flight-card";
+import {
+  MetricTile,
+  MissionHero,
+  MissionPanel,
+  MissionShell,
+  MissionTopBar,
+  StatusRail,
+} from "@/components/mission-control";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useFlightsStore } from "@/lib/stores/flights-store";
@@ -10,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 function LoadingSkeleton() {
   return (
-    <Card className="bg-card text-card-foreground rounded-xl border py-6 shadow-sm">
+    <Card className="bg-card text-card-foreground border py-6 shadow-sm">
       <div className="flex flex-col gap-4 px-6">
         <div className="h-3 w-20 animate-pulse rounded-full bg-muted" />
         <div className="h-8 w-28 animate-pulse rounded-md bg-muted" />
@@ -61,6 +69,14 @@ function getWeatherBadgeLabel(weatherSource: "live" | "mock" | null): string {
   return "WEATHER";
 }
 
+function getExtendedFlightValue(flight: unknown, key: string): unknown {
+  return (flight as Record<string, unknown>)[key];
+}
+
+function getNumberValue(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const flights = useFlightsStore((state) => state.flights);
@@ -73,15 +89,26 @@ export default function HomePage() {
     void loadFlights();
   }, [loadFlights]);
 
+  const totalAwbs = flights.reduce(
+    (sum, flight) =>
+      sum + getNumberValue(getExtendedFlightValue(flight, "awbCount")),
+    0,
+  );
+  const totalBuiltUlds = flights.reduce(
+    (sum, flight) =>
+      sum + getNumberValue(getExtendedFlightValue(flight, "builtUldCount")),
+    0,
+  );
+  const atRiskFlights = flights.filter(
+    (flight) => getExtendedFlightValue(flight, "atRisk") === true,
+  ).length;
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <h1 className="truncate text-base font-semibold text-foreground">
-              Cool-Chain Copilot
-            </h1>
-          </div>
+    <MissionShell>
+      <MissionTopBar
+        eyebrow="DXB mission control"
+        title="Cool-Chain Copilot"
+        actions={
           <Badge
             variant="outline"
             className={cn(
@@ -91,58 +118,100 @@ export default function HomePage() {
           >
             {getWeatherBadgeLabel(weatherSource)}
           </Badge>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        <section className="flex flex-col gap-2 pb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            DXB outbound
-          </p>
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Today&apos;s flights
-            </h2>
-            <p className="text-base text-muted-foreground">
-              Track outbound departures, weather source, and build readiness.
-            </p>
-          </div>
-        </section>
-
-        {error ? (
-          <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-border bg-card px-6 text-center">
-            <p className="text-base text-destructive">{error}</p>
-          </div>
-        ) : null}
-
-        {!error && loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }, (_, index) => (
-              <LoadingSkeleton key={index} />
-            ))}
-          </div>
-        ) : null}
-
-        {!error && !loading && flights.length === 0 ? (
-          <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 text-center">
-            <p className="text-base text-muted-foreground">
-              No outbound flights today
-            </p>
-          </div>
-        ) : null}
-
-        {!error && !loading && flights.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {flights.map((flight) => (
-              <FlightCard
-                key={flight["@id"]}
-                flight={flight}
-                onClick={() => router.push("/flight/" + flight.flightNumber)}
+      <main className="grid w-full gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          <MissionHero
+            eyebrow="Outbound operations board"
+            title="Today's flights"
+            description="Track DXB departures, build readiness, ambient source, and cold-chain priority from one command surface."
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MetricTile
+                label="Flights"
+                value={flights.length}
+                meta="DXB outbound"
               />
-            ))}
-          </div>
-        ) : null}
+              <MetricTile label="AWBs" value={totalAwbs} meta="Manifest load" />
+              <MetricTile
+                label="Built ULDs"
+                value={totalBuiltUlds}
+                meta="Signed off"
+              />
+            </div>
+          </MissionHero>
+
+          {error ? (
+            <MissionPanel>
+              <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
+                <p className="text-base text-destructive">{error}</p>
+              </div>
+            </MissionPanel>
+          ) : null}
+
+          {!error && loading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }, (_, index) => (
+                <LoadingSkeleton key={index} />
+              ))}
+            </div>
+          ) : null}
+
+          {!error && !loading && flights.length === 0 ? (
+            <MissionPanel>
+              <div className="flex min-h-[320px] items-center justify-center px-6 text-center">
+                <p className="text-base text-muted-foreground">
+                  No outbound flights today
+                </p>
+              </div>
+            </MissionPanel>
+          ) : null}
+
+          {!error && !loading && flights.length > 0 ? (
+            <MissionPanel
+              title="Departure board"
+              description="Select a flight to open build-up operations."
+              contentClassName="grid gap-4 md:grid-cols-2 2xl:grid-cols-3"
+            >
+              {flights.map((flight) => (
+                <FlightCard
+                  key={flight["@id"]}
+                  flight={flight}
+                  onClick={() => router.push("/flight/" + flight.flightNumber)}
+                />
+              ))}
+            </MissionPanel>
+          ) : null}
+        </div>
+
+        <StatusRail className="lg:sticky lg:top-20 lg:self-start">
+          <MetricTile
+            label="Station"
+            value="DXB"
+            meta="Outbound cold-chain hub"
+          />
+          <MetricTile
+            label="Risk watch"
+            value={atRiskFlights}
+            meta={atRiskFlights === 1 ? "Flight flagged" : "Flights flagged"}
+          />
+          <MetricTile
+            label="Weather"
+            value={getWeatherBadgeLabel(weatherSource)}
+            meta="Source currently active"
+          />
+          <MissionPanel
+            title="Command cue"
+            description="Demo path begins with EK0083, then advances to build-up and ULD detail."
+            contentClassName="text-sm text-muted-foreground"
+          >
+            Prioritize flights with built ULD risk, then drill into the
+            workspace.
+          </MissionPanel>
+        </StatusRail>
       </main>
-    </div>
+    </MissionShell>
   );
 }

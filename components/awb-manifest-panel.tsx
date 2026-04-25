@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { missionCardClassName } from "@/components/mission-control";
 import {
   Card,
   CardContent,
@@ -25,9 +26,10 @@ function formatAwbNumber(waybill: Waybill) {
 
 function totalWeightKg(waybill: Waybill) {
   return waybill.pieces.reduce((sum, piece) => {
-    const weight = piece.grossWeight.unit === "lb"
-      ? piece.grossWeight.value * 0.453592
-      : piece.grossWeight.value;
+    const weight =
+      piece.grossWeight.unit === "lb"
+        ? piece.grossWeight.value * 0.453592
+        : piece.grossWeight.value;
 
     return sum + weight;
   }, 0);
@@ -52,7 +54,12 @@ export function AwbManifestPanel({
   onOpenAssignedUld,
 }: Props) {
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+    <Card
+      className={cn(
+        missionCardClassName,
+        "flex h-full min-h-0 flex-col overflow-hidden",
+      )}
+    >
       <CardHeader className="gap-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
@@ -68,13 +75,13 @@ export function AwbManifestPanel({
       <CardContent className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-3">
           {isLoading && shipments.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               Loading manifest...
             </div>
           ) : null}
 
           {!isLoading && shipments.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               No AWBs available for this flight.
             </div>
           ) : null}
@@ -87,8 +94,8 @@ export function AwbManifestPanel({
               <Button
                 key={waybill["@id"]}
                 className={cn(
-                  "h-auto min-h-16 w-full justify-start rounded-lg border border-transparent px-4 py-3 text-left",
-                  "hover:border-border hover:bg-muted/60",
+                  "h-auto min-h-16 w-full justify-start border border-border/60 bg-background/35 px-4 py-3 text-left",
+                  "hover:border-primary/50 hover:bg-primary/5",
                   !isClickable &&
                     "cursor-default hover:border-transparent hover:bg-muted/30",
                 )}
@@ -113,7 +120,9 @@ export function AwbManifestPanel({
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                       <span>{totalWeightKg(waybill).toFixed(0)} kg</span>
                       <span>{waybill.pieces.length} pcs</span>
-                      <span>{assignedUld ? `Built in ${assignedUld}` : "Unassigned"}</span>
+                      <span>
+                        {assignedUld ? `Built in ${assignedUld}` : "Unassigned"}
+                      </span>
                     </div>
                   </div>
                 </div>
