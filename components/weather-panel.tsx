@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Clock, CloudSun } from "lucide-react";
 
 import {
@@ -84,8 +85,17 @@ export function WeatherPanel({
   isRefreshing = false,
   description = "DXB ramp now and forecast.",
 }: Props) {
-  const current = getCurrentReading(weather, nowMs);
-  const prediction = getPrediction(weather, nowMs);
+  // nowMs depends on the localStorage scenario anchor + Date.now(), both
+  // unavailable / different on the server, so server vs first-client render
+  // would sample different ambient values → React hydration mismatch.
+  // Render placeholders until after mount, then swap in the real values.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const current = mounted ? getCurrentReading(weather, nowMs) : null;
+  const prediction = mounted ? getPrediction(weather, nowMs) : [];
 
   return (
     <Card className="mission-panel border-border/80">
@@ -105,10 +115,16 @@ export function WeatherPanel({
               <CloudSun data-icon="inline-start" />
               Current
             </div>
-            <div className="mt-2 font-mono text-3xl font-bold text-foreground">
+            <div
+              className="mt-2 font-mono text-3xl font-bold text-foreground"
+              suppressHydrationWarning
+            >
               {current ? `${current.ambientC.toFixed(1)}C` : "--.-C"}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p
+              className="mt-1 text-sm text-muted-foreground"
+              suppressHydrationWarning
+            >
               {typeof current?.humidityPct === "number"
                 ? `${current.humidityPct.toFixed(0)}% humidity`
                 : "Humidity unavailable"}
