@@ -511,13 +511,16 @@ function getStatus(
   threshold: TemperatureInstructions,
   budgetPercent: number,
   scheduler: SchedulerSnapshot,
-  latestEvent: LogisticsEvent | undefined,
+  _latestEvent: LogisticsEvent | undefined,
   latestAction: LogisticsAction | undefined,
 ): TrackerStatus {
+  // Drive status off current observable state, not stored audit events.
+  // Otherwise an old BREACH_ACTUAL event keeps showing "Excursion" even
+  // after the ULD recovered (e.g. moved back to cool room). Snapshot
+  // always reflects current internal temp + budget tone.
   if (
     internalC < threshold.minTemperature.value ||
-    internalC > threshold.maxTemperature.value ||
-    latestEvent?.eventCode === "BREACH_ACTUAL"
+    internalC > threshold.maxTemperature.value
   ) {
     return "Excursion";
   }
@@ -526,12 +529,7 @@ function getStatus(
     return "Action in progress";
   }
 
-  if (
-    latestEvent?.eventCode === "BREACH_PREDICTED" ||
-    latestEvent?.eventCode === "WARNING_BUDGET_LOW" ||
-    scheduler.holdDecision === "HOLD" ||
-    budgetPercent < 30
-  ) {
+  if (scheduler.holdDecision === "HOLD" || budgetPercent < 30) {
     return "Alert";
   }
 
