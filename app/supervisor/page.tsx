@@ -29,6 +29,7 @@ import {
 import { WeatherSourceBadge } from "@/components/weather-source-badge";
 import { WeatherPanel } from "@/components/weather-panel";
 import { useSimulationNow } from "@/lib/clock/use-simulation-now";
+import { getEffectiveSimulationNowMs } from "@/lib/clock/simulation-clock";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -667,8 +668,10 @@ export default function SupervisorPage() {
   const [trackerMeasurements, setTrackerMeasurements] =
     useState<TrackerMeasurementsByUld>({});
   const [builtUldIds, setBuiltUldIds] = useState<string[]>([]);
-  const [logicalNowMs, setLogicalNowMs] = useState<number>(simulationBaseMs);
+  // Single sim clock — same source the recalculator and weather panel
+  // use, so the supervisor header agrees with /flight/[no]/monitor.
   const simulationNowMs = useSimulationNow();
+  const logicalNowMs = simulationNowMs;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clockAnchor] = useState(() => ({
@@ -741,31 +744,17 @@ export default function SupervisorPage() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setLogicalNowMs(
-        clockAnchor.baseMs +
-          (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER,
-      );
-    }, 500);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [clockAnchor]);
-
-  useEffect(() => {
     if (builtUldIds.length === 0 || !fallbackScenario) {
       return;
     }
 
     const feedEntries = builtUldIds
       .map((uldId) => {
-        const feed = startTrackerFeed(uldId, fallbackScenario as never, () => {
-          return (
-            clockAnchor.baseMs +
-            (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER
-          );
-        });
+        const feed = startTrackerFeed(
+          uldId,
+          fallbackScenario as never,
+          getEffectiveSimulationNowMs,
+        );
 
         if (feed === null) {
           return null;
