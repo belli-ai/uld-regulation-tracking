@@ -307,6 +307,7 @@ export function computeThermalStatus(ctx: ThermalContext): ThermalStatus {
     maxInternalTemperatureC: ctx.threshold.maxTemperature.value,
     warningBudgetPercent: EXCURSION_THRESHOLD.warningBudgetPercent,
   });
+  // publish handled at client call site
 
   return {
     stage: ctx.stage,

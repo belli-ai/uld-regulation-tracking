@@ -511,3 +511,10 @@ export function startTrackerFeed(
     stop,
   };
 }
+
+export type TrackerFeedSource = "synthetic" | "one-connect";
+
+export function getActiveTrackerFeedSource(): TrackerFeedSource {
+  if (typeof window === "undefined") return "synthetic";
+  return "synthetic";
+}

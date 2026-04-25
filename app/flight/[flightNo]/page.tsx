@@ -25,6 +25,10 @@ import {
   type AutoBuildUldSpec,
 } from "@/lib/build-up/auto-build";
 import { signOff } from "@/lib/build-up/sign-off";
+import {
+  publishLoading,
+  publishLogisticsEvent,
+} from "@/lib/adapters/one-connect/publish-client";
 import type {
   LogisticsEvent,
   ULD,
@@ -546,6 +550,8 @@ export default function FlightWorkspacePage() {
           sealNumber,
           "warehouse-cool-room",
         );
+        publishLoading(loading);
+        publishLogisticsEvent(event);
         await auditDb.loadings.put(loading, loading["@id"]);
         await auditDb.events.put(event, event["@id"]);
 

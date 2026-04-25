@@ -937,6 +937,7 @@ export function buildExcursionEventForUld(
   observedAt: string,
 ): LogisticsEvent | null {
   return excursionLogger.detect(
+    // publish handled at client call site
     {
       ambientTemperatureC: useScenarioRunnerStore.getState().weather.ambientC,
       internalTemperatureC: uld.internalTemperatureC,
