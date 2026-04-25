@@ -844,7 +844,10 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   }, [flightNo, uldId]);
 
   const flight = dataState.status === "ready" ? dataState.value.flight : null;
-  const manifest = dataState.status === "ready" ? dataState.value.manifest : [];
+  const manifest = useMemo(
+    () => (dataState.status === "ready" ? dataState.value.manifest : []),
+    [dataState],
+  );
   const uld = dataState.status === "ready" ? dataState.value.uld : null;
   const projectedAmbient = useMemo(
     () => (weather ? toAmbientCurve(weather.hourly) : []),

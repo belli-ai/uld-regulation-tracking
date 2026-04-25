@@ -556,7 +556,10 @@ export default function FlightMonitorPage() {
   const route = `${formatLocation(flight?.departureLocation)}→${formatLocation(
     flight?.arrivalLocation,
   )}`;
-  const flightShipments = shipmentsByFlight[flightNo] ?? [];
+  const flightShipments = useMemo(
+    () => shipmentsByFlight[flightNo] ?? [],
+    [flightNo],
+  );
   const { waybillByPiece, waybillIds } = useMemo(
     () => createFlightMaps(flightShipments),
     [flightShipments],

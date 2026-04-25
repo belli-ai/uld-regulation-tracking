@@ -1,6 +1,6 @@
 # Plan — Cool-Chain Copilot (Jettainer ULD Hackathon)
 
-> **Reframed:** flight-centric warehousing app at a single station (DXB) with cool-chain intelligence baked in. Desktop-first. Next.js FE + small API routes (no DB). Data models aligned to **IATA ONE Record v3.2** ontology so external API integration (DG check, real flights, real ULD telemetry) is a localised swap.
+> **Reframed:** flight-centric warehousing app at a single station (DXB) with cool-chain intelligence baked in. Desktop-first. Next.js FE + small API routes (no DB). Data models aligned to **IATA ONE Record v3.2** ontology so external API integration (DG check, One Connect Waybill stream, live ULD location + temperature telemetry) is a localised swap.
 
 > **Implementation tracking** lives in [`MILESTONES.md`](./MILESTONES.md) — milestone status board, per-milestone success/test criteria, revisions, and multi-agent workflow rules.
 >
@@ -38,7 +38,7 @@ User-driven additions (preserved):
 | State machine surface | **5-stage simplified** (warehouse → tarmac → in-flight → arrived-tarmac → arrived-destination); rich internal model behind it |
 | Cuts | Transit sub-states (through-stage vs breakdown) — dropped |
 | Data models | **IATA ONE Record v3.2 ontology** (`https://onerecord.iata.org/ns/cargo#`) |
-| External APIs | Open-Meteo (weather) + hackathon-provided DG check API; shipment data API stretch |
+| External APIs | Open-Meteo (weather) + DG AutoCheck; **One Connect / 1Neo-Connect** for Waybill subscriptions and ULD location + temperature telemetry |
 
 ## Stack Posture
 
@@ -87,7 +87,7 @@ User-driven additions (preserved):
 │                               │                                            │
 │              ┌────────────────┼─────────────────────┐                     │
 │              ▼                ▼                     ▼                     │
-│       /public/data       Open-Meteo          Hackathon DG API             │
+│       /public/data       Open-Meteo          DG AutoCheck + One Connect   │
 │       (mock JSON         (live weather)      (real, spec TBD)             │
 │        in IATA shape)                                                     │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -518,15 +518,48 @@ export function temperatureInstructionsForShc(shc: string, cfg: ShcConfig): Temp
 |---|---|---|---|
 | Weather (current + forecast) | **Live primary** | `https://api.open-meteo.com/v1/forecast?...` (proxied via `/api/weather`) | Real ambient + hourly forecast for DXB |
 | Weather fallback | Mock | `/public/data/weather/DXB.json` | Pre-baked ambient when Open-Meteo unavailable |
-| Synthetic ULD tracker feed | Mock-only | In-browser tick loop | 10-min logical cadence (compressed to ~1 sec real-time): GPS, ambient °C, shock, BLE |
+| ULD telemetry stream | **Live primary + synthetic fallback** | One Connect subscription/proxy notifications → `/api/one-connect/uld-telemetry`; fallback in-browser tick loop | Location/GPS + ambient/internal temperature as `:Measurement[]` for state inference, thermal budget, alerts. Synthetic feed remains deterministic demo fallback. |
 | Flight schedule + delay | Mock | `/api/flights` → `/public/data/flights.json` | Today's outbound at DXB as `:TransportMovement[]`. Adapter shape ready for real carrier API. |
-| Shipment manifest (per flight) | Mock | `/api/flights/[no]/shipments` → `/public/data/shipments.json` | AWBs as `:Waybill[]` with pieces + SHC. Real carrier API integration is stretch. |
+| Shipment manifest (per flight) | **Live optional + mock fallback** | One Connect Waybill subscription/proxy notifications; fallback `/api/flights/[no]/shipments` → `/public/data/shipments.json` | AWBs as `:Waybill[]` with pieces + SHC. One Connect hydrates the same canonical shapes used by the mock adapter. |
 | ULD inventory | Mock | `/api/uld-inventory` → `/public/data/uld-inventory.json` | Available ULDs at DXB as `:ULD[]`. |
 | DG check | **Live** (hackathon-provided) | `POST /api/dg/check` → external API | Per-piece DG validation. Adapter to/from `:DgDeclaration`. Spec arrives during hackathon. |
 | Static airport polygon GeoJSON | Mock | `/public/data/airports/DXB.geojson` | Geofence boundaries (apron, cool room, build-up area, gates) for DXB |
 | Station capability registry | Mock | `/public/config/stations.json` | Cool-dolly count, cool-room slots, GPU policy, CEIV cert (DXB only) |
 | ULD product specs | Mock | `/public/config/uld-specs.json` | PCM autonomy curves for Envirotainer RAP-COL, va-Q-tainer, Sonoco Pegasus |
 | Demo scenario script | Mock | `/public/data/scenarios.json` | Scripted timeline of injectable events |
+
+### One Connect / 1Neo-Connect integration pattern
+
+The hackathon One Connect collection in `one-connect/collection.json` exposes:
+
+- OAuth client-credentials token retrieval from `{{idp_url}}`.
+- `GET {{1R_api_url}}` for ONE Record server information / connectivity checks.
+- `POST {{1R_api_url}}/logistics-objects` for publishing canonical objects as JSON-LD.
+- `POST {{taxon_1R_url}}/subscriptions` for `Waybill` and ULD-related topic subscriptions.
+- `GET {{proxy_url}}/notifications?limit=20` for cached notification polling when local webhooks are unavailable.
+
+**Inbound telemetry** is now a first-class integration. One Connect subscription notifications for ULD / IoT / Sensor / Measurement objects are normalized server-side into the existing canonical stream:
+
+```
+One Connect notification
+  → fetch linked LogisticsObject(s) when needed
+  → adaptOneConnectMeasurement(...)
+  → Measurement[] with measurementValue, measurementTimestamp, recordedGeolocation, bySensor
+  → state inference + PCM physics + recommender
+```
+
+The adapter should preserve the existing `lib/simulator/tracker-feed.ts` listener contract so UI and compute modules do not care whether a measurement came from One Connect or the synthetic scenario runner. When `ONE_CONNECT_ENABLED !== 'true'`, the current in-browser tracker simulator remains the default for deterministic demo playback.
+
+**Inbound Waybills** use the same pattern: One Connect notifications hydrate `:Waybill[]` and `:Piece[]`, while `public/data/shipments.json` remains the fallback. The flight workspace continues consuming `/api/flights/[flightNo]/shipments`.
+
+**Outbound publish** happens after the app adds value:
+
+- Build-up sign-off publishes `:Loading` + `BUILD_UP_COMPLETE`.
+- State inference may publish state-change `:LogisticsEvent`s.
+- Breach prediction / actual excursion publishes `WARNING_BUDGET_LOW`, `BREACH_PREDICTED`, `BREACH_ACTUAL`.
+- Resolution actions publish `:LogisticsAction` records linked by `servedActivity`.
+
+Credentials live only in `.env.local`; the committed `one-connect/environment.example.json` is a placeholder. Never commit exported Postman environments with real `client_secret` values.
 
 ### Open-Meteo integration pattern
 
@@ -557,7 +590,7 @@ export async function GET(req: NextRequest) {
 
 Client caches response in `sessionStorage` per session for deterministic demo. UI surfaces `🟢 LIVE` / `⚪ MOCK` badge from the `source` field.
 
-**ULD tracker note**: real ULD telemetry is impossible without Jettainer JettPulse partnership (closed B2B API). Synthetic tracker feed is unavoidable for hackathon. Adapter shape (`:IotDevice` → `:Sensor[]` → `:Measurement[]`) ready for real swap later.
+**ULD tracker note**: One Connect can provide a ULD subscription stream with location and temperature data for the hackathon path. Synthetic tracker feed is no longer the architectural primary; it is the deterministic fallback used when `ONE_CONNECT_ENABLED !== 'true'` or when notification polling is unavailable.
 
 ## Map / Geo Visualisation
 
@@ -587,7 +620,7 @@ CartoDB tiles are CDN-hosted, retina (`{r}` → `@2x`), and have a generous unau
 
 - **Airport coordinates** — see [`MOCK_DATA.md`](./MOCK_DATA.md) → **Airport coordinates**. DXB origin + FRA / LHR / JFK / SIN arrivals.
 - **DXB sub-zone polygons** — see `public/data/airports/DXB.geojson` (lat/lon polygons per MOCK_DATA.md → DXB Geofence). Approximate; not survey-grade.
-- **In-flight ULD position** — interpolated by the tracker simulator (M8) along a great-circle path between airport coords; rendered as a moving pin on the flight overview map.
+- **In-flight ULD position** — live from One Connect `:Measurement.recordedGeolocation` when available; otherwise interpolated by the tracker simulator (M8) along a great-circle path between airport coords and rendered as a moving pin on the flight overview map.
 
 ### Implementation pattern
 

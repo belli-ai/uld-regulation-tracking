@@ -1,0 +1,41 @@
+{
+  "name": "BELLI One Connect example",
+  "values": [
+    {
+      "key": "client_id",
+      "value": "replace-with-client-id",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "client_secret",
+      "value": "replace-with-client-secret",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "idp_url",
+      "value": "https://example.com/auth/realms/onerecord/protocol/openid-connect/token",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "1R_api_url",
+      "value": "https://example.com/api/BELLI",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "proxy_url",
+      "value": "https://example.com/proxy/BELLI",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "taxon_1R_url",
+      "value": "https://example.com/api/TRAXON",
+      "type": "default",
+      "enabled": true
+    }
+  ]
+}

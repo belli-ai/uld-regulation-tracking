@@ -1,6 +1,6 @@
 # Milestones — Cool-Chain Copilot
 
-Implementation plan for the project described in **PLAN.md**. 23 milestones across 4 phases, designed for multi-agent parallel execution: most subsystem work in Phase 2 and most UI work in Phase 3 are independent and can run concurrently when their phase-gate is clear.
+Implementation plan for the project described in **PLAN.md**. 24 milestones across 4 phases, designed for multi-agent parallel execution: most subsystem work in Phase 2 and most UI work in Phase 3 are independent and can run concurrently when their phase-gate is clear.
 
 > **Source of truth**: this file tracks live milestone status and revisions. **PLAN.md** describes the design and is intentionally kept stable; cite section names from PLAN.md (e.g. _"see PLAN.md → Data Models"_) when a milestone references design content.
 
@@ -17,6 +17,7 @@ Tracks structural changes to this Milestones plan. Per-milestone revisions live 
 | 1.4 | 2026-04-25 | Lead   | Cohesion review: fixed mechanical gaps. M19 file list added missing `time-of-day-change.ts` + `alert.ts` event handlers (matching PLAN.md → Demo Control Panel event types). M14 component ownership table added `flight-overview-map.tsx`. M0 deps added `tsx`. M5 success criteria split into tracker-equipped vs passive-ULD inference paths. M8 success criteria added passive-ULD skip. M3 success criteria added concrete DG stub rule table. MOCK_DATA: AKH ULDs now reference `AKH_HORSE_STALL` product code (not Generic passive). Added `ENVIROTAINER_RKN_FRO` product spec; RKN-99002EK retyped to FRO so the FRO AWB has a compatible ULD. AWB → ULD compatibility map documented. |
 | 1.5 | 2026-04-25 | Lead   | Clarifications resolved (Q1, Q2, Q3): **Q1** DG flow = pre-issued by shipper, build-up validates only — M9 contract changed from `dgChecker.check` to `dgChecker.validate` returning `{ status: 'non-dg' \| 'valid' \| 'rejected', declaration?, reason? }`. M3 stub rule table updated to look up by piece IRI. **Q2** PLAN.md Demo Scenario prose table aligned 1:1 with `dxb-warehouse-demo` JSON event timeline (15 rows, t=0–180s). **Q3** scenarios.json validated by Zod schema in `lib/simulator/scenario-schema.ts` (M2 owner, M19 importer); `zod` added to M0 deps.                                                                                                                 |
 | 1.6 | 2026-04-25 | Lead   | DG API spec received (Q4+Q5 partial): **DG AutoCheck Connect API v1** at `dg-autocheck-api/`. Async workflow (create → upload → user-verify-in-vendor-UI → webhook). M23 fully rewritten with concrete endpoint mappings, OAuth client, webhook listener with SHA-256 signature verification, modal iframe, status polling fallback, env var contract, and explicit stub-vs-autocheck mode toggle (stub stays demo default). PLAN.md → Build-Up Flow updated with two-mode semantics. MOCK_DATA → DG section reframed: stub fixtures = post-AutoCheck cache shape. M23 hours bumped 2 → 6. Pending: DGAC sandbox credentials.                                                                  |
+| 1.7 | 2026-04-25 | Lead   | One Connect / 1Neo-Connect scope added: live ULD subscription stream with location + temperature becomes the primary telemetry source, with synthetic tracker feed retained as fallback. Waybill subscription remains optional live manifest hydration. Added M24 for OAuth client, subscription management, cached notification polling, `:Measurement[]` normalization, and outbound publish of build-up/excursion/resolution records. Secrets must stay in `.env.local`; `one-connect/environment.json` is ignored. |
 
 ## How agents work this plan
 
@@ -37,7 +38,7 @@ Tracks structural changes to this Milestones plan. Per-milestone revisions live 
 | **Phase 2 — Core subsystems** | M4 ∥ M5 ∥ M6 ∥ M7 ∥ M8 ∥ M9 ∥ M10                   | All parallel (independent TS modules, no shared UI)            | All Phase 2 ✅ before Phase 3 |
 | **Phase 3 — UI screens**      | M11 ∥ M12 ∥ M13 ∥ M14 ∥ M15 ∥ M16 ∥ M17 ∥ M18 ∥ M19 | Mostly parallel — each owns a route or component cluster       | All Phase 3 ✅ before Phase 4 |
 | **Phase 4 — Polish & demo**   | M20 → M21 → M22                                     | Sequential                                                     | —                             |
-| **Cross-phase**               | M23 (Real DG API swap)                              | Triggered by external spec arrival; can land any time after M3 | —                             |
+| **Cross-phase**               | M23 (Real DG API swap), M24 (One Connect live telemetry) | Triggered by external spec/API availability; can land any time after M3 | —                             |
 
 ## Milestone status board
 
@@ -69,6 +70,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M21 | Pitch deck                                   | 4     | 🔘     | —      | No            | M20        |
 | M22 | End-to-end rehearsal & bug fixes             | 4     | 🔘     | —      | No            | M21        |
 | M23 | Real DG API integration swap                 | ×     | 🔘     | —      | Cross-phase   | M3 + spec  |
+| M24 | One Connect live ULD telemetry + Waybill stream | ×  | 🟡     | Codex  | Cross-phase   | M3 + One Connect sandbox |
 
 ---
 
@@ -1157,3 +1159,76 @@ For the **scripted 3-min demo**, default to **stub mode** — eliminates depende
 |---|---|---|
 | 2026-04-25 | Initial scope; awaits DG API spec from hackathon organisers | Lead |
 | 2026-04-25 | DG API spec received: **DG AutoCheck Connect API v1** (`dg-autocheck-api/`). Async workflow (not stateless): create → upload → user-completes-in-vendor-UI → webhook. M23 expanded into a 6-hour milestone covering OAuth client, lifecycle endpoints, webhook listener with SHA-256 verification, modal iframe, state polling fallback. Stub mode preserved as demo default. New env var contract documented. | Lead |
+
+### M24 — One Connect live ULD telemetry + Waybill stream
+
+Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and `PLAN.md` → **One Connect / 1Neo-Connect integration pattern**. One Connect can provide subscription streams for Waybill and ULD-related updates, including location and temperature telemetry. The app treats One Connect as the live primary source for ULD measurements, while the existing synthetic tracker remains the deterministic demo fallback.
+
+| Field           | Value                                                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Status          | 🟡 In progress                                                                                                               |
+| Owner           | Codex                                                                                                                        |
+| Phase           | × (cross-phase)                                                                                                              |
+| Parallel-safe   | Yes — implemented behind `ONE_CONNECT_ENABLED`; does not block mock/demo flows and can land independently after M3/M8.        |
+| Blocked by      | M3 (API adapter layer), M8 (tracker feed contract), One Connect sandbox credentials / reachable tenant                       |
+| Blocks          | Optional live demo path, pitch proof point for ONE Record-native adoption                                                     |
+| Estimated hours | 5 (OAuth client + subscription setup + notification polling + JSON-LD adapters + telemetry source switch + publish endpoints) |
+
+**Files**
+
+- `one-connect/collection.json` (committed Postman collection with variable references only)
+- `one-connect/environment.example.json` (safe placeholder values; real `environment.json` stays ignored)
+- `.gitignore` (ignore `one-connect/environment.json`)
+- `.env.local.example` (`ONE_CONNECT_*` env var contract)
+- `lib/adapters/one-connect/client.ts` (OAuth token cache, base JSON-LD fetch, server-info, logistics-object read/create)
+- `lib/adapters/one-connect/json-ld.ts` (canonical `@type` / IRI mapping to `cargo:*` and `api:*` JSON-LD wire shape)
+- `lib/adapters/one-connect/telemetry.ts` (One Connect notification/logistics object → canonical `:Measurement[]`)
+- `lib/adapters/one-connect/waybills.ts` (One Connect Waybill/Piece graph → canonical `:Waybill[]`)
+- `app/api/one-connect/server-info/route.ts` (connectivity badge)
+- `app/api/one-connect/subscriptions/route.ts` (create Waybill + ULD telemetry subscriptions)
+- `app/api/one-connect/notifications/route.ts` (poll cached proxy notifications)
+- `app/api/one-connect/uld-telemetry/route.ts` (normalized live measurement feed)
+- `app/api/one-connect/publish/route.ts` (publish `:Loading`, `:LogisticsEvent`, `:LogisticsAction`)
+- `lib/simulator/tracker-feed.ts` or a wrapper source module (select live One Connect feed when enabled; synthetic fallback otherwise)
+
+**Subscription topics**
+
+| Need | One Connect topic |
+| --- | --- |
+| AWB manifest hydration | `https://onerecord.iata.org/ns/cargo#Waybill` |
+| ULD inventory/status updates | `https://onerecord.iata.org/ns/cargo#ULD` |
+| IoT device / sensor topology | `https://onerecord.iata.org/ns/cargo#IotDevice`, `https://onerecord.iata.org/ns/cargo#Sensor` |
+| Location + temperature telemetry | `https://onerecord.iata.org/ns/cargo#Measurement` |
+| Build-up / state / excursion event fan-out | `LOGISTICS_EVENT_RECEIVED` subscription event type |
+
+**Success criteria**
+
+- [ ] OAuth 2.0 client-credentials flow implemented for One Connect; token cached until shortly before expiry
+- [ ] `GET /api/one-connect/server-info` returns live server metadata when enabled, and a stable disabled response when `ONE_CONNECT_ENABLED !== 'true'`
+- [ ] Subscription creator can register Waybill and ULD/Measurement topic subscriptions using `application/ld+json`
+- [ ] Cached notification polling reads `{{proxy_url}}/notifications?limit=...` and stores enough cursor/dedupe state to avoid replay loops during a session
+- [ ] ULD telemetry notifications normalize into canonical `Measurement[]` with `measurementValue`, `measurementTimestamp`, `recordedGeolocation`, and `bySensor`
+- [ ] State inference and thermal physics consume live One Connect measurements without UI changes
+- [ ] Synthetic tracker remains the default fallback when One Connect is disabled, unreachable, or returns no telemetry for a ULD
+- [ ] Waybill notifications can hydrate canonical `Waybill[]` / `Piece[]`; mock shipment fixtures remain fallback
+- [ ] Build-up sign-off, warning/breach events, and resolution actions can be published back through `POST /logistics-objects`
+- [ ] No real One Connect secrets are committed; credentials read only from env vars
+
+**Test criteria**
+
+- [ ] Unit tests cover JSON-LD telemetry normalization, including temperature-only, location-only, and combined location+temperature measurements
+- [ ] Unit tests cover Waybill graph normalization with linked Pieces and SHC code-list IRIs
+- [ ] Route tests or mocked fetch tests verify token caching and `Authorization: Bearer` headers
+- [ ] Disabled mode: app runs with no One Connect env vars and existing demo tracker still works
+- [ ] Live mode smoke: server-info succeeds against sandbox; notification poll returns or safely handles empty stream
+- [ ] Manual: ULD detail map and thermal budget update from a live normalized measurement
+- [ ] `pnpm typecheck && pnpm lint && pnpm build` exits 0
+
+**Hackathon execution note**
+
+Keep `ONE_CONNECT_ENABLED=false` for the primary scripted run unless the sandbox is stable. The strongest B-side proof point is a live server-info badge plus one ULD measurement flowing from One Connect into the existing ULD detail / supervisor surfaces. If the stream is intermittent, use a captured notification fixture to exercise the same adapter.
+
+**Revisions**
+| Date | Change | By |
+|---|---|---|
+| 2026-04-25 | Initial One Connect scope added after confirmation that the API can retrieve ULD subscription streams with location and temperature data. Live telemetry is primary; synthetic tracker remains fallback. | Codex |

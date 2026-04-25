@@ -337,14 +337,6 @@ function awbNumber(waybill: Waybill): string {
   return `${waybill.waybillPrefix}-${waybill.waybillNumber}`;
 }
 
-function findInventoryRecord(uldId: string): InventoryUldRecord | null {
-  return (
-    INVENTORY.find((record) => record.uldSerialNumber === uldId) ??
-    INVENTORY.find((record) => record["@id"] === uldId) ??
-    null
-  );
-}
-
 function selectedFlightsForScenario(scenario: Scenario): DemoFlightRuntime[] {
   const allowed = scenario.initial_state?.flights;
   const relevantFlights =
@@ -378,19 +370,6 @@ function selectedWaybillsForScenario(
   }
 
   return filtered;
-}
-
-function shcForUld(assignedAwbs: string[]): string[] {
-  const shc = new Set<string>();
-
-  for (const awb of assignedAwbs) {
-    const waybill = findWaybill(awb);
-    if (waybill) {
-      shc.add(waybill.shc);
-    }
-  }
-
-  return [...shc];
 }
 
 function scenarioUlds(scenario: Scenario): Record<string, DemoUldRuntime> {
