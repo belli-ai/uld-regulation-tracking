@@ -66,7 +66,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M17 | Audit timeline + deviation report               | 3     | 🟢     | master | Yes           | Phase 2                  |
 | M18 | Admin config (`/admin/config`)                  | 3     | 🟢     | master | Yes           | Phase 2                  |
 | M19 | Scenario runner + Demo control panel            | 3     | 🟢     | master | Yes           | Phase 2                  |
-| M20 | Polish — notifications, theming, charts         | 4     | 🔘     | —      | No            | Phase 3                  |
+| M20 | Polish — notifications, theming, charts         | 4     | 🟡     | master | No            | Phase 3                  |
 | M21 | Pitch deck                                      | 4     | 🔘     | —      | No            | M20                      |
 | M22 | End-to-end rehearsal & bug fixes                | 4     | 🔘     | —      | No            | M21                      |
 | M23 | Real DG API integration swap                    | ×     | 🔘     | —      | Cross-phase   | M3 + spec                |
@@ -978,8 +978,8 @@ Components ownership map (first writer = owner):
 
 | Field           | Value                             |
 | --------------- | --------------------------------- |
-| Status          | 🔘 Not started                    |
-| Owner           | —                                 |
+| Status          | 🟡 In progress                    |
+| Owner           | master                            |
 | Phase           | 4                                 |
 | Parallel-safe   | No (touches multiple UI surfaces) |
 | Blocked by      | Phase 3                           |
