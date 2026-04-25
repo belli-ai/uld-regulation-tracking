@@ -48,7 +48,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M0  | Project scaffold                             | 1     | 🟢     | master | No            | —          |
 | M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
 | M2  | Mock data fixtures                           | 1     | 🟡     | master | Yes (∥ M3)    | M1         |
-| M3  | API route adapter layer                      | 1     | 🟡     | master | Yes (∥ M2)    | M1         |
+| M3  | API route adapter layer                      | 1     | 🟢     | master | Yes (∥ M2)    | M1         |
 | M4  | Physics engine                               | 2     | 🔘     | —      | Yes           | Phase 1    |
 | M5  | State inference (5-stage)                    | 2     | 🔘     | —      | Yes           | Phase 1    |
 | M6  | Action recommender + ranker                  | 2     | 🔘     | —      | Yes           | Phase 1    |
@@ -232,7 +232,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 
 | Field           | Value                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------- |
-| Status          | 🟡 In progress                                                                              |
+| Status          | 🟢 Done                                                                                     |
 | Owner           | master                                                                                      |
 | Phase           | 1                                                                                           |
 | Parallel-safe   | Yes (∥ M2; M3 routes that need fixtures depend on M2 landing first or use stubs in interim) |
@@ -282,6 +282,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | Date | Change | By |
 |---|---|---|
 | 2026-04-25 | Initial scope | Lead |
+| 2026-04-25 | Completed by master + m3-dev (team `cool-chain-foundation`). 5 routes + 5 adapters + 5 test files. Vitest 4.1.5 + @vitest/coverage-v8 added as devDeps; `test` script + `vitest.config.ts` added (deviation — M0 didn't include test infra). DG check uses `{ results: DgValidationResult[] }` (success-criteria canonical, supersedes stale test-criteria `{ declarations }`). 19/19 tests pass. typecheck + lint green. Build deferred until M2 fixtures land. | master |
 
 ---
 
