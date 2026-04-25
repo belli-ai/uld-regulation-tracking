@@ -16,20 +16,35 @@ type NonDgValidationResult = {
 };
 
 type ValidDgValidationResult = {
+  acceptanceCheckId?: string;
   piece: Piece;
   status: "valid";
   declaration: DgDeclaration;
+  vendorStatus?: string;
+};
+
+type PendingDgValidationResult = {
+  acceptanceCheckId: string;
+  declaration?: DgDeclaration;
+  piece: Piece;
+  requestedUrl?: string;
+  requestedUrlExpiresAt?: string;
+  status: "pending";
+  vendorStatus?: string;
 };
 
 type RejectedDgValidationResult = {
+  acceptanceCheckId?: string;
   piece: Piece;
   status: "rejected";
   declaration: DgDeclaration;
   reason: string;
+  vendorStatus?: string;
 };
 
 export type DgValidationResult =
   | NonDgValidationResult
+  | PendingDgValidationResult
   | ValidDgValidationResult
   | RejectedDgValidationResult;
 
@@ -83,6 +98,23 @@ function normalizeResult(
     return { piece, status: "non-dg" };
   }
 
+  if (result.status === "pending") {
+    if (typeof result.acceptanceCheckId !== "string") {
+      return { piece, status: "non-dg" };
+    }
+
+    const declaration = toDeclaration(result.declaration);
+    return {
+      acceptanceCheckId: result.acceptanceCheckId,
+      declaration,
+      piece,
+      requestedUrl: result.requestedUrl,
+      requestedUrlExpiresAt: result.requestedUrlExpiresAt,
+      status: "pending",
+      vendorStatus: result.vendorStatus,
+    };
+  }
+
   const declaration = toDeclaration(result.declaration);
   if (!declaration) {
     return { piece, status: "non-dg" };
@@ -90,17 +122,21 @@ function normalizeResult(
 
   if (result.status === "rejected") {
     return {
+      acceptanceCheckId: result.acceptanceCheckId,
       piece,
       status: "rejected",
       declaration,
       reason: result.reason?.trim() || "DG validation rejected",
+      vendorStatus: result.vendorStatus,
     };
   }
 
   return {
+    acceptanceCheckId: result.acceptanceCheckId,
     piece,
     status: "valid",
     declaration,
+    vendorStatus: result.vendorStatus,
   };
 }
 
@@ -146,5 +182,25 @@ export const dgChecker = {
     return pieces.map((piece) =>
       normalizeResult(piece, byPieceIri.get(piece["@id"])),
     );
+  },
+  async readStatus(
+    acceptanceCheckId: string,
+    piece: Piece,
+  ): Promise<DgValidationResult> {
+    const response = await fetch(
+      `/api/dg/check/${encodeURIComponent(acceptanceCheckId)}`,
+      {
+        method: "GET",
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`DG status poll failed with status ${response.status}`);
+    }
+
+    const payload = (await response.json()) as {
+      result?: AdapterDgValidationResult;
+    };
+    return normalizeResult(piece, payload.result);
   },
 };

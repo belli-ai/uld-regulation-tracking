@@ -47,3 +47,6 @@ coverage/
 
 # Local fixture overrides (if anyone bolts a personal sandbox on)
 public/data/local-overrides/
+
+# Local One Connect/Postman environment exports can contain client secrets.
+one-connect/environment.json

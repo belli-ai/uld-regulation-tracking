@@ -24,7 +24,16 @@ import {
   type ULD,
 } from "@/lib/ontology/one-record";
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
-import { computeThermalStatus } from "@/lib/physics/thermal-status";
+import {
+  buildStageAmbientCurve,
+  computeThermalStatus,
+} from "@/lib/physics/thermal-status";
+import { integrateBudget } from "@/lib/physics/pcm-model";
+import { getUldSpec } from "@/lib/physics/uld-specs-loader";
+import { getSimulationNowMs } from "@/lib/clock/simulation-clock";
+import { getShiftedFlights, shiftTimestamps } from "@/lib/data/flights-shifted";
+import { parseShcConfig, type ShcConfig } from "@/lib/scheduler/shc-loader";
+import { pushTime } from "@/lib/scheduler/push-time";
 import rawShcConfig from "@/public/config/shc.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
@@ -58,9 +67,15 @@ const inventoryById: Record<string, InventoryRecord> = (() => {
   return out;
 })();
 
-let cachedWeather: CanonicalWeather = adaptMockWeather(
-  rawWeatherData as unknown,
-  "DXB",
+function applyShiftToWeather(weather: CanonicalWeather): CanonicalWeather {
+  return {
+    ...weather,
+    hourly: shiftTimestamps(weather.hourly),
+  };
+}
+
+let cachedWeather: CanonicalWeather = applyShiftToWeather(
+  adaptMockWeather(rawWeatherData as unknown, "DXB"),
 );
 let cachedPolygons: AirportPolygons | null = null;
 let polygonLoadStarted = false;
@@ -92,7 +107,7 @@ async function refreshWeather(nowMs: number): Promise<void> {
     if (!response.ok) return;
     const payload = (await response.json()) as CanonicalWeather;
     if (payload && Array.isArray(payload.hourly)) {
-      cachedWeather = payload;
+      cachedWeather = applyShiftToWeather(payload);
     }
   } catch {
     // Keep prior cachedWeather; mock fallback acceptable.
@@ -173,11 +188,16 @@ function deriveStage(
   polygons: AirportPolygons | null,
   events: LogisticsEvent[],
 ): Stage {
+  const eventStage = stageFromEvents(uldId, events);
+  if (eventStage) {
+    return eventStage;
+  }
+
   if (polygons && measurements.length > 0) {
     const result = classifyState(uldId, measurements, polygons);
     return result.stage as Stage;
   }
-  return stageFromEvents(uldId, events) ?? "in-warehouse";
+  return "in-warehouse";
 }
 
 function asUldId(value: string | undefined): string | null {
@@ -190,9 +210,13 @@ type FlightSummary = {
   flightNumber: string | null;
 };
 
-async function listBuiltUlds(): Promise<FlightSummary[]> {
+type FlightSummaryFull = FlightSummary & {
+  loadedAtMs: number | null;
+};
+
+async function listBuiltUlds(): Promise<FlightSummaryFull[]> {
   const loadings = await auditDb.loadings.toArray().catch(() => []);
-  const seen = new Map<string, FlightSummary>();
+  const seen = new Map<string, FlightSummaryFull>();
   for (const loading of loadings) {
     const uldId = asUldId(loading.loadedUnits?.[0]);
     if (!uldId) continue;
@@ -202,15 +226,42 @@ async function listBuiltUlds(): Promise<FlightSummary[]> {
       );
       return typeof tag === "string" ? tag.replace("flight:", "") : null;
     })();
-    seen.set(uldId, { uldId, flightNumber });
+    const loadedAtMs = (() => {
+      const ts = Date.parse(loading.actionStartTime);
+      return Number.isFinite(ts) ? ts : null;
+    })();
+    seen.set(uldId, { uldId, flightNumber, loadedAtMs });
   }
   return Array.from(seen.values());
+}
+
+const cachedShcConfig: ShcConfig = parseShcConfig(rawShcConfig);
+
+const TOW_ESTIMATE_MINUTES_BY_SHC: Record<string, number> = {
+  AVI: 5,
+  PER: 12,
+  COL: 18,
+  CRT: 25,
+  FRO: 20,
+  HEG: 6,
+};
+
+function getStdMsForFlight(flightNumber: string | null): number | null {
+  if (!flightNumber) return null;
+  const flight = getShiftedFlights().find(
+    (f) => f.flightNumber === flightNumber,
+  );
+  if (!flight) return null;
+  const std = flight.movementTimes.find((m) => m.type === "STD")?.timestamp;
+  if (!std) return null;
+  const ms = Date.parse(std);
+  return Number.isFinite(ms) ? ms : null;
 }
 
 let inFlight = false;
 
 export async function recalculateAll(
-  nowMs: number = Date.now(),
+  nowMs: number = getSimulationNowMs(),
 ): Promise<void> {
   if (typeof window === "undefined") return;
   if (inFlight) return;
@@ -230,7 +281,10 @@ export async function recalculateAll(
     const events = await auditDb.events.toArray().catch(() => []);
     const snapshots: UldThermalSnapshot[] = [];
 
-    for (const { uldId, flightNumber } of built) {
+    const priorSnapshots = await auditDb.uldStatus.toArray().catch(() => []);
+    const priorByUld = new Map(priorSnapshots.map((s) => [s.uldId, s]));
+
+    for (const { uldId, flightNumber, loadedAtMs } of built) {
       const inventory = inventoryById[uldId];
       if (!inventory) continue;
 
@@ -238,6 +292,28 @@ export async function recalculateAll(
       const threshold = getThresholdInstructions(shcCode);
       const measurements: Measurement[] = readWindowMeasurements(uldId);
       const stage = deriveStage(uldId, measurements, polygons, events);
+
+      // Bridge integrate from the prior snapshot so internal temp evolves
+      // tick-over-tick. Without this, internalC is rebooted each tick to
+      // lastKnownInventoryC and the budget never moves with sim time.
+      const prior = priorByUld.get(uldId);
+      const bootstrappedInventory = bridgeInternalC(
+        inventory,
+        prior,
+        cachedWeather,
+        stage,
+        threshold,
+        nowMs,
+      );
+
+      // Cap forecast horizon at hours-until-ETD so budget reflects only
+      // the time the ULD actually has under our control. Past departure
+      // it's the receiving station's clock.
+      const stdMsForHorizon = getStdMsForFlight(flightNumber);
+      const etdHorizonHours =
+        stdMsForHorizon !== null
+          ? Math.max(0, (stdMsForHorizon - nowMs) / 3_600_000)
+          : 12;
 
       const thermal = computeThermalStatus({
         flightId: flightNumber
@@ -251,9 +327,67 @@ export async function recalculateAll(
         shcCode,
         stage,
         threshold,
-        uld: inventory,
+        uld: bootstrappedInventory,
         weather: cachedWeather,
+        horizonHours: etdHorizonHours,
       });
+
+      const position = derivePosition(measurements, inventory, polygons);
+
+      // Status badge — single source for supervisor / monitor / uld-detail.
+      // Excursion takes priority over Alert; Alert uses 20% of the SHC
+      // band as the "approaching threshold" buffer.
+      const minC = threshold.minTemperature.value;
+      const maxC = threshold.maxTemperature.value;
+      const ALERT_BUFFER_RATIO = 0.2;
+      const alertBuffer = Math.max(0.5, (maxC - minC) * ALERT_BUFFER_RATIO);
+      let status: "Excursion" | "Alert" | "Action in progress" | "OK" = "OK";
+      if (thermal.internalC < minC || thermal.internalC > maxC) {
+        status = "Excursion";
+      } else if (
+        thermal.internalC <= minC + alertBuffer ||
+        thermal.internalC >= maxC - alertBuffer ||
+        thermal.budgetPercent < 30
+      ) {
+        status = "Alert";
+      }
+
+      // Push-time scheduler: when should this ULD leave the cool room
+      // for the tarmac? Combines current ambient, SHC max-wait curve,
+      // loadedAt (from auditDb.loadings), and flight STD.
+      const stdMs = getStdMsForFlight(flightNumber);
+      let pushTimeMs: number | null = null;
+      let holdDecision: "PUSH" | "HOLD" | "RELEASED" | null = null;
+      let holdReason: string | null = null;
+      let maxWaitMinutes: number | null = null;
+
+      if (loadedAtMs !== null && stdMs !== null) {
+        const towMin =
+          TOW_ESTIMATE_MINUTES_BY_SHC[shcCode] ??
+          TOW_ESTIMATE_MINUTES_BY_SHC.CRT;
+        const released =
+          stage === "in-tarmac" ||
+          stage === "in-flight" ||
+          stage === "arrived-tarmac" ||
+          stage === "arrived-destination";
+        const result = pushTime(
+          { uldId, shcCode, loadedAt: new Date(loadedAtMs) },
+          {
+            std: new Date(stdMs),
+            etd: new Date(stdMs),
+            towEstimateMinutes: towMin,
+          },
+          { ambientC: thermal.effectiveAmbientC },
+          cachedShcConfig,
+          nowMs,
+        );
+        pushTimeMs = result.pushTime.getTime();
+        holdDecision = released ? "RELEASED" : result.holdDecision;
+        holdReason = result.reason;
+        maxWaitMinutes = Number.isFinite(result.maxWaitAir)
+          ? result.maxWaitAir
+          : null;
+      }
 
       snapshots.push({
         ambientC: thermal.ambientC,
@@ -270,12 +404,86 @@ export async function recalculateAll(
         stage: thermal.stage,
         uldId,
         uldProductCode: inventory.uldProductCode ?? null,
+        latestLat: position.lat,
+        latestLon: position.lon,
+        zoneName: position.zoneName,
+        trackerSource: position.source,
+        lastMeasurementMs: position.lastMeasurementMs,
+        pushTimeMs,
+        holdDecision,
+        holdReason,
+        maxWaitMinutes,
+        status: holdDecision === "HOLD" && status === "OK" ? "Alert" : status,
         updatedMs: nowMs,
       });
     }
 
     if (snapshots.length > 0) {
       await auditDb.uldStatus.bulkPut(snapshots);
+    }
+
+    // Persist excursion LogisticsEvents on status transitions so the
+    // /supervisor/excursions log + /uld/[id] history populate from the
+    // recalculator instead of needing each page to detect locally.
+    // Dedupe: only write when this tick's status differs from the prior
+    // snapshot's status (prevents flooding the audit table every 5s).
+    const transitions: LogisticsEvent[] = [];
+    for (const snap of snapshots) {
+      const priorStatus = priorByUld.get(snap.uldId)?.status;
+      if (priorStatus === snap.status) continue;
+      if (snap.status === "OK" || snap.status === "Action in progress")
+        continue;
+
+      const eventCode =
+        snap.status === "Excursion"
+          ? "BREACH_ACTUAL"
+          : snap.budgetPercent < 30
+            ? "WARNING_BUDGET_LOW"
+            : "BREACH_PREDICTED";
+      const observedAt = new Date(nowMs).toISOString();
+      const event: LogisticsEvent = {
+        "@id": toIRI(
+          `urn:cool-chain:event:${eventCode}:${encodeURIComponent(observedAt)}:${encodeURIComponent(snap.uldId)}`,
+        ),
+        "@type": "LogisticsEvent",
+        eventCode,
+        eventName:
+          eventCode === "BREACH_ACTUAL"
+            ? "Thermal breach actual"
+            : eventCode === "BREACH_PREDICTED"
+              ? "Thermal breach predicted"
+              : "Thermal budget low",
+        eventDate: observedAt,
+        eventFor: toIRI(snap.uldId),
+        eventLocation: toIRI(`urn:cargo:zone:DXB-${snap.stage}`),
+        eventTimeType: "actual",
+        otherIdentifiers: [
+          `shc:${snap.shcCode}`,
+          `state:${snap.stage}`,
+          `internalTemperatureC:${snap.internalC.toFixed(2)}`,
+          `ambientTemperatureC:${snap.effectiveAmbientC.toFixed(2)}`,
+          `budgetPercent:${snap.budgetPercent.toFixed(1)}`,
+          ...(snap.predictedBreachMinutes !== null
+            ? [
+                `predictedBreachInMinutes:${snap.predictedBreachMinutes.toFixed(1)}`,
+              ]
+            : []),
+          ...(snap.flightNumber ? [`flight:${snap.flightNumber}`] : []),
+          ...(eventCode === "BREACH_ACTUAL"
+            ? [
+                `rootCause:Internal ${snap.internalC.toFixed(1)}C breached ${snap.shcCode} band`,
+              ]
+            : []),
+        ],
+      };
+      transitions.push(event);
+    }
+    if (transitions.length > 0) {
+      await Promise.all(
+        transitions.map((event) =>
+          auditDb.events.put(event, event["@id"]).catch(() => null),
+        ),
+      );
     }
   } catch (error) {
     console.warn("[recalculator] tick failed", error);
@@ -299,4 +507,147 @@ export function pushMeasurementForRecalc(
 
 function readWindowMeasurements(uldId: string): Measurement[] {
   return measurementWindow[uldId] ?? [];
+}
+
+type PositionSnapshot = {
+  lat: number | null;
+  lon: number | null;
+  zoneName: string | null;
+  source: "measured" | "inferred";
+  lastMeasurementMs: number | null;
+};
+
+function parseZoneFromIri(value: string | undefined): string | null {
+  if (!value) return null;
+  const tail = value.split(":").at(-1) ?? value;
+  const dashIdx = tail.indexOf("-");
+  return dashIdx >= 0 ? tail.slice(dashIdx + 1) : tail;
+}
+
+function findGpsMeasurement(
+  measurements: Measurement[],
+): Measurement | undefined {
+  for (let i = measurements.length - 1; i >= 0; i -= 1) {
+    const m = measurements[i];
+    const geo = (m as { recordedGeolocation?: unknown }).recordedGeolocation;
+    if (
+      geo &&
+      typeof (geo as { latitude?: unknown }).latitude === "number" &&
+      typeof (geo as { longitude?: unknown }).longitude === "number"
+    ) {
+      return m;
+    }
+  }
+  return undefined;
+}
+
+function zoneCenterFromPolygons(
+  polygons: AirportPolygons | null,
+  zoneName: string | null,
+): { lat: number; lon: number } | null {
+  if (!polygons || !zoneName) return null;
+  const zones = (polygons as unknown as { zones?: unknown }).zones;
+  if (!Array.isArray(zones)) return null;
+  for (const zone of zones) {
+    const z = zone as {
+      name?: unknown;
+      id?: unknown;
+      center?: { lat?: unknown; lon?: unknown };
+    };
+    const id = typeof z.id === "string" ? z.id : null;
+    const name = typeof z.name === "string" ? z.name : null;
+    if (id !== zoneName && name !== zoneName) continue;
+    const lat = z.center?.lat;
+    const lon = z.center?.lon;
+    if (typeof lat === "number" && typeof lon === "number") {
+      return { lat, lon };
+    }
+  }
+  return null;
+}
+
+function derivePosition(
+  measurements: Measurement[],
+  inventory: InventoryRecord,
+  polygons: AirportPolygons | null,
+): PositionSnapshot {
+  const gps = findGpsMeasurement(measurements);
+  if (gps) {
+    const geo = (
+      gps as {
+        recordedGeolocation?: { latitude?: number; longitude?: number };
+      }
+    ).recordedGeolocation;
+    const ts = Date.parse(gps.measurementTimestamp);
+    return {
+      lat: geo?.latitude ?? null,
+      lon: geo?.longitude ?? null,
+      zoneName: parseZoneFromIri(inventory.lastKnownLocation),
+      source: "measured",
+      lastMeasurementMs: Number.isFinite(ts) ? ts : null,
+    };
+  }
+
+  const zoneName = parseZoneFromIri(inventory.lastKnownLocation);
+  const center = zoneCenterFromPolygons(polygons, zoneName);
+  return {
+    lat: center?.lat ?? null,
+    lon: center?.lon ?? null,
+    zoneName,
+    source: "inferred",
+    lastMeasurementMs: null,
+  };
+}
+
+// Cap on how much sim time a single bridge step covers. Prevents tab
+// throttling or long pauses from forecasting hours forward in one shot.
+const MAX_BRIDGE_HOURS = 6;
+
+function bridgeInternalC(
+  inventory: InventoryRecord,
+  prior: { internalC: number; updatedMs: number } | undefined,
+  weather: CanonicalWeather,
+  stage:
+    | "in-warehouse"
+    | "in-tarmac"
+    | "in-flight"
+    | "arrived-tarmac"
+    | "arrived-destination",
+  threshold: TemperatureInstructions,
+  nowMs: number,
+): InventoryRecord {
+  if (!prior || prior.updatedMs >= nowMs) return inventory;
+  const elapsedMs = nowMs - prior.updatedMs;
+  const elapsedHours = elapsedMs / 3_600_000;
+  if (elapsedHours <= 0) return inventory;
+
+  const hours = Math.min(elapsedHours, MAX_BRIDGE_HOURS);
+  const stepHours = Math.min(0.25, hours / 4);
+  const bridgeCurve = buildStageAmbientCurve(weather, stage, prior.updatedMs, {
+    hours,
+    stepHours,
+  });
+
+  const spec = (() => {
+    try {
+      return getUldSpec(inventory.uldProductCode ?? "GENERIC_PASSIVE");
+    } catch {
+      return getUldSpec("GENERIC_PASSIVE");
+    }
+  })();
+
+  const result = integrateBudget(
+    spec,
+    prior.internalC,
+    bridgeCurve,
+    60,
+    threshold,
+  );
+  const finalTrace = result.tempTrace[result.tempTrace.length - 1];
+  const bridgedC = finalTrace?.T ?? prior.internalC;
+
+  return {
+    ...inventory,
+    lastKnownInternalC: bridgedC,
+  };
 }

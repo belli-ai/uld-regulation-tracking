@@ -81,10 +81,13 @@ describe("budgetPreflight.forecast", () => {
       projectedAmbient,
     );
 
+    // 3h budget against ENVIROTAINER_RAP_COL's 96h rated autonomy = ~3.1%
+    // remaining → red. Aligned with thermal-status percent-of-autonomy
+    // thresholds so all surfaces agree on tone.
     expect(result).toEqual({
       budgetH: 3,
       breachAt: "2026-04-25T14:20:00.000Z",
-      warning: "yellow",
+      warning: "red",
     });
   });
 });

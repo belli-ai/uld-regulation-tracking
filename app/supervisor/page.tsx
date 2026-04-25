@@ -8,6 +8,7 @@ import rawUldSpecsData from "@/public/config/uld-specs.json";
 import rawShcConfigData from "@/public/config/shc.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
+import { OneConnectBadge } from "@/components/one-connect-badge";
 import {
   PushTimeCard,
   type PushTimeCardData,
@@ -27,6 +28,8 @@ import {
 } from "@/components/uld-tracker-table";
 import { WeatherSourceBadge } from "@/components/weather-source-badge";
 import { WeatherPanel } from "@/components/weather-panel";
+import { useSimulationNow } from "@/lib/clock/use-simulation-now";
+import { getEffectiveSimulationNowMs } from "@/lib/clock/simulation-clock";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -508,13 +511,16 @@ function getStatus(
   threshold: TemperatureInstructions,
   budgetPercent: number,
   scheduler: SchedulerSnapshot,
-  latestEvent: LogisticsEvent | undefined,
+  _latestEvent: LogisticsEvent | undefined,
   latestAction: LogisticsAction | undefined,
 ): TrackerStatus {
+  // Drive status off current observable state, not stored audit events.
+  // Otherwise an old BREACH_ACTUAL event keeps showing "Excursion" even
+  // after the ULD recovered (e.g. moved back to cool room). Snapshot
+  // always reflects current internal temp + budget tone.
   if (
     internalC < threshold.minTemperature.value ||
-    internalC > threshold.maxTemperature.value ||
-    latestEvent?.eventCode === "BREACH_ACTUAL"
+    internalC > threshold.maxTemperature.value
   ) {
     return "Excursion";
   }
@@ -523,12 +529,7 @@ function getStatus(
     return "Action in progress";
   }
 
-  if (
-    latestEvent?.eventCode === "BREACH_PREDICTED" ||
-    latestEvent?.eventCode === "WARNING_BUDGET_LOW" ||
-    scheduler.holdDecision === "HOLD" ||
-    budgetPercent < 30
-  ) {
+  if (scheduler.holdDecision === "HOLD" || budgetPercent < 30) {
     return "Alert";
   }
 
@@ -665,7 +666,10 @@ export default function SupervisorPage() {
   const [trackerMeasurements, setTrackerMeasurements] =
     useState<TrackerMeasurementsByUld>({});
   const [builtUldIds, setBuiltUldIds] = useState<string[]>([]);
-  const [logicalNowMs, setLogicalNowMs] = useState<number>(simulationBaseMs);
+  // Single sim clock — same source the recalculator and weather panel
+  // use, so the supervisor header agrees with /flight/[no]/monitor.
+  const simulationNowMs = useSimulationNow();
+  const logicalNowMs = simulationNowMs;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clockAnchor] = useState(() => ({
@@ -738,31 +742,17 @@ export default function SupervisorPage() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setLogicalNowMs(
-        clockAnchor.baseMs +
-          (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER,
-      );
-    }, 500);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [clockAnchor]);
-
-  useEffect(() => {
     if (builtUldIds.length === 0 || !fallbackScenario) {
       return;
     }
 
     const feedEntries = builtUldIds
       .map((uldId) => {
-        const feed = startTrackerFeed(uldId, fallbackScenario as never, () => {
-          return (
-            clockAnchor.baseMs +
-            (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER
-          );
-        });
+        const feed = startTrackerFeed(
+          uldId,
+          fallbackScenario as never,
+          getEffectiveSimulationNowMs,
+        );
 
         if (feed === null) {
           return null;
@@ -816,8 +806,8 @@ export default function SupervisorPage() {
   );
 
   // Single source of truth: snapshot from auditDb.uldStatus written by the
-  // global recalculator. Local compute is only used for fields the snapshot
-  // doesn't carry (status badge, flight number, push-time scheduler).
+  // global recalculator. Status badge now also comes from the snapshot so
+  // supervisor / monitor / uld-detail never disagree.
   const rows: UldTrackerRow[] = localRows
     .filter((row) => snapshotByUld.has(row.uldId))
     .map((row) => {
@@ -831,6 +821,7 @@ export default function SupervisorPage() {
         internalC: snap.internalC,
         stage: snap.stage as TrackerStage,
         stageLabel: toStageLabel(snap.stage as TrackerStage),
+        status: snap.status as TrackerStatus,
       };
     });
 
@@ -842,6 +833,7 @@ export default function SupervisorPage() {
         actions={
           <>
             <WeatherSourceBadge source={weatherSource} />
+            <OneConnectBadge />
             <Badge
               variant="outline"
               className="font-mono text-xs font-semibold"
@@ -910,7 +902,7 @@ export default function SupervisorPage() {
         <section className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
           <WeatherPanel
             weather={weather}
-            nowMs={logicalNowMs}
+            nowMs={simulationNowMs}
             isRefreshing={loading}
             description="DXB ramp now and forecast."
           />

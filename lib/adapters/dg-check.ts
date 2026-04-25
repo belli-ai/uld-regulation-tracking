@@ -6,13 +6,17 @@ import {
   type Piece,
 } from "@/lib/ontology/one-record";
 
-export type DgValidationStatus = "non-dg" | "valid" | "rejected";
+export type DgValidationStatus = "non-dg" | "pending" | "valid" | "rejected";
 
 export type DgValidationResult = {
   pieceIri: IRI;
   status: DgValidationStatus;
+  acceptanceCheckId?: string;
   declaration?: DgDeclaration;
+  requestedUrl?: string;
+  requestedUrlExpiresAt?: string;
   reason?: string;
+  vendorStatus?: string;
 };
 
 export type AircraftCategory = "passenger" | "cargo";
@@ -37,6 +41,12 @@ type RawDgFixture = {
   shippingRefNo?: unknown;
   complianceDeclarationText?: unknown;
 };
+
+export type DgFixtureMap = Record<string, RawDgFixture>;
+
+export function getDgCheckMode(): "autocheck" | "stub" {
+  return process.env.DG_AUTOCHECK_ENABLED === "true" ? "autocheck" : "stub";
+}
 
 function asString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.length === 0) {
@@ -144,7 +154,7 @@ export function evaluateDgCheck(
 // DgValidationResult shape so downstream consumers do not change.
 export function runStubDgCheck(
   request: DgCheckRequest,
-  fixtures: Record<string, RawDgFixture>,
+  fixtures: DgFixtureMap,
 ): DgValidationResult[] {
   const index = buildPieceIriIndex(fixtures);
   return evaluateDgCheck(request, index);

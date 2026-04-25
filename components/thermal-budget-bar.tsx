@@ -9,15 +9,15 @@ type Props = {
   warning: "green" | "yellow" | "red";
 };
 
-function formatBreachAt(value: string | Date | null): string {
+function formatBreachAt(value: string | Date | null): string | null {
   if (value === null) {
-    return "Stable";
+    return null;
   }
 
   const parsed = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(parsed.getTime())) {
-    return "Unknown";
+    return null;
   }
 
   return new Intl.DateTimeFormat("en-GB", {
@@ -55,7 +55,14 @@ export function ThermalBudgetBar({ budgetH, breachAt, warning }: Props) {
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{warning.toUpperCase()}</span>
-        <span>Breach at {formatBreachAt(breachAt)}</span>
+        <span>
+          {(() => {
+            const formatted = formatBreachAt(breachAt);
+            return formatted === null
+              ? "No breach predicted"
+              : `Breach at ${formatted}`;
+          })()}
+        </span>
       </div>
     </div>
   );

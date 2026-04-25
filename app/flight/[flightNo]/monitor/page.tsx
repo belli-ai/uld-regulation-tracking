@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useSimulationNow } from "@/lib/clock/use-simulation-now";
 import {
   ArrowLeft,
   Box,
@@ -95,6 +96,10 @@ type MonitorRow = {
   stageLabel: string;
   trackerLabel: string;
   excursion: ThermalStatus["excursionEventCode"];
+  status: "Excursion" | "Alert" | "Action in progress" | "OK";
+  pushTimeMs: number | null;
+  holdDecision: "PUSH" | "HOLD" | "RELEASED" | null;
+  maxWaitMinutes: number | null;
   uld: InventoryUld;
 };
 
@@ -488,6 +493,10 @@ function createMonitorRows(
       stageLabel: meta.label,
       trackerLabel: uld.iotDeviceId ? `${uld.iotDeviceId} online` : "Inferred",
       excursion: thermal.excursionEventCode,
+      status: "OK",
+      pushTimeMs: null,
+      holdDecision: null,
+      maxWaitMinutes: null,
       uld,
     };
   });
@@ -547,7 +556,7 @@ export default function FlightMonitorPage() {
   );
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [isLoadingAudit, setIsLoadingAudit] = useState(true);
-  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+  const currentTimeMs = useSimulationNow();
   const [weather, setWeather] = useState<CanonicalWeather>(fallbackWeather);
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
 
@@ -556,7 +565,10 @@ export default function FlightMonitorPage() {
   const route = `${formatLocation(flight?.departureLocation)}→${formatLocation(
     flight?.arrivalLocation,
   )}`;
-  const flightShipments = shipmentsByFlight[flightNo] ?? [];
+  const flightShipments = useMemo(
+    () => shipmentsByFlight[flightNo] ?? [],
+    [flightNo],
+  );
   const { waybillByPiece, waybillIds } = useMemo(
     () => createFlightMaps(flightShipments),
     [flightShipments],
@@ -597,16 +609,6 @@ export default function FlightMonitorPage() {
       cancelled = true;
     };
   }, [flightNo]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTimeMs(Date.now());
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -686,6 +688,10 @@ export default function FlightMonitorPage() {
           STAGE_META[snap.stage as MonitorStage]?.label ?? row.stageLabel,
         locationLabel:
           STAGE_META[snap.stage as MonitorStage]?.location ?? row.locationLabel,
+        pushTimeMs: snap.pushTimeMs,
+        holdDecision: snap.holdDecision,
+        maxWaitMinutes: snap.maxWaitMinutes,
+        status: snap.status,
       };
     });
   const assignedAwbIds = new Set<IRI>();
@@ -894,14 +900,46 @@ export default function FlightMonitorPage() {
                     {row.stage === "in-tarmac" ? (
                       <Badge variant="outline">Awaiting load</Badge>
                     ) : null}
-                    {row.excursion === "BREACH_ACTUAL" ? (
+                    {row.status === "Excursion" ? (
                       <Badge variant="destructive">Excursion</Badge>
-                    ) : row.excursion === "BREACH_PREDICTED" ? (
-                      <Badge variant="destructive">Breach predicted</Badge>
-                    ) : row.excursion === "WARNING_BUDGET_LOW" ? (
-                      <Badge variant="outline">Budget low</Badge>
+                    ) : row.status === "Alert" ? (
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500/40 bg-yellow-500/10 text-yellow-500"
+                      >
+                        Alert
+                      </Badge>
+                    ) : row.status === "Action in progress" ? (
+                      <Badge variant="outline">Action in progress</Badge>
                     ) : null}
                   </div>
+                  {row.pushTimeMs !== null && row.holdDecision !== null ? (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      {row.holdDecision === "HOLD" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-yellow-500/40 bg-yellow-500/10 text-yellow-500"
+                        >
+                          Hold until {formatDubaiTime(row.pushTimeMs)}
+                        </Badge>
+                      ) : row.holdDecision === "PUSH" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                        >
+                          Push by {formatDubaiTime(row.pushTimeMs)}
+                        </Badge>
+                      ) : row.holdDecision === "RELEASED" ? (
+                        <Badge variant="outline">In transit</Badge>
+                      ) : null}
+                      {row.maxWaitMinutes !== null ? (
+                        <span className="font-mono text-muted-foreground">
+                          max wait {row.maxWaitMinutes.toFixed(0)} min @{" "}
+                          {row.effectiveAmbientC.toFixed(1)}C
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {row.stage === "in-warehouse" ? (
                       <Button

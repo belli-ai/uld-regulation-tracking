@@ -26,6 +26,22 @@ export type UldThermalSnapshot = {
   predictedBreachMinutes: number | null;
   shcCode: string;
   uldProductCode: string | null;
+  // Position + provenance (persisted so /uld/[id] map and supervisor row
+  // both read the same coordinates as the recalculator computed.)
+  latestLat: number | null;
+  latestLon: number | null;
+  zoneName: string | null;
+  trackerSource: "measured" | "inferred";
+  lastMeasurementMs: number | null;
+  // Push-time scheduler output, computed every tick from current ambient
+  // + flight STD + SHC max-wait curve. Single source for hold/release UX.
+  pushTimeMs: number | null;
+  holdDecision: "PUSH" | "HOLD" | "RELEASED" | null;
+  holdReason: string | null;
+  maxWaitMinutes: number | null;
+  // Single status badge derived once in the recalculator, consumed by all
+  // pages so supervisor / monitor / uld-detail never disagree.
+  status: "Excursion" | "Alert" | "Action in progress" | "OK";
   updatedMs: number;
 };
 
@@ -49,6 +65,28 @@ export class AuditDB extends Dexie {
       actions: ", performedAt, actionStartTime, servedActivity",
       loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
       uldStatus: "uldId, stage, budgetTone, updatedMs",
+    });
+
+    this.version(4).stores({
+      events: ", eventFor, eventDate, eventCode",
+      actions: ", performedAt, actionStartTime, servedActivity",
+      loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
+      uldStatus: "uldId, stage, budgetTone, zoneName, updatedMs",
+    });
+
+    this.version(5).stores({
+      events: ", eventFor, eventDate, eventCode",
+      actions: ", performedAt, actionStartTime, servedActivity",
+      loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
+      uldStatus: "uldId, stage, budgetTone, zoneName, holdDecision, updatedMs",
+    });
+
+    this.version(6).stores({
+      events: ", eventFor, eventDate, eventCode",
+      actions: ", performedAt, actionStartTime, servedActivity",
+      loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
+      uldStatus:
+        "uldId, stage, status, budgetTone, zoneName, holdDecision, updatedMs",
     });
 
     this.events = this.table("events");

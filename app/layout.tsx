@@ -3,6 +3,9 @@ import { Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { RecalculatorRoot } from "@/components/recalculator-root";
+import { ResetButton } from "@/components/reset-button";
+import { ScenarioRouteFollower } from "@/components/scenario-route-follower";
+import { SimulateToggle } from "@/components/simulate-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
 import { isDemoMode } from "@/lib/env";
 
@@ -37,7 +40,10 @@ export default function RootLayout({ children }: Props) {
           enableSystem={false}
         >
           <RecalculatorRoot />
+          <ScenarioRouteFollower />
           {children}
+          <SimulateToggle />
+          <ResetButton />
         </ThemeProvider>
       </body>
     </html>

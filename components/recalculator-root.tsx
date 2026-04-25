@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { getEffectiveSimulationNowMs } from "@/lib/clock/simulation-clock";
 import { recalculateAll } from "@/lib/physics/recalculator";
 
 const TICK_MS = 5_000;
@@ -12,7 +13,7 @@ export function RecalculatorRoot() {
 
     async function tick() {
       if (cancelled) return;
-      await recalculateAll();
+      await recalculateAll(getEffectiveSimulationNowMs());
     }
 
     void tick();

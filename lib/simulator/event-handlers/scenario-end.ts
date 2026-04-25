@@ -12,6 +12,7 @@ export async function handleScenarioEnd(
       typeof event.summary === "string"
         ? event.summary
         : `Scenario finished at t=${ctx.stores.demoClock.getState().currentTickSec}s`,
+    routeAutomationEnabled: false,
     statusMessage: "Scenario complete",
   });
   ctx.addLog(`Scenario ended: ${ctx.currentScenario.id}`, "success");

@@ -1,0 +1,206 @@
+{
+  "info": {
+    "_postman_id": "c800f197-e636-4ec6-a36a-e818f96baa60",
+    "name": "1Neo-Connect first steps 2026 HKG",
+    "description": "This collection helps you to get started with the 1Neo-Connect Azure deployment for the hackathon.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "38950925"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Retrieve access token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();\r",
+                  "pm.collectionVariables.set(\"token\", jsonData.access_token);\r",
+                  "console.log(\"Token saved to {{token}}\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{client_secret}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{idp_url}}",
+              "host": ["{{idp_url}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ONE Record API",
+      "item": [
+        {
+          "name": "Get ServerInformation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{1R_api_url}}",
+              "host": ["{{1R_api_url}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create a LogisticsObject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/ld+json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/ld+json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"@context\": {\r\n        \"cargo\": \"https://onerecord.iata.org/ns/cargo#\"\r\n    },\r\n    \"@type\": \"cargo:Piece\",\r\n    \"cargo:coload\": {\r\n        \"@type\": \"http://www.w3.org/2001/XMLSchema#boolean\",\r\n        \"@value\": \"false\"\r\n    },\r\n    \"cargo:specialHandlingCodes\": [\r\n        {\r\n            \"@id\": \"https://onerecord.iata.org/ns/code-lists/SpecialHandlingCode#VAL\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{1R_api_url}}/logistics-objects",
+              "host": ["{{1R_api_url}}"],
+              "path": ["logistics-objects"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AWB Stream",
+      "item": [
+        {
+          "name": "Subscribe to Waybill topic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/ld+json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/ld+json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"@context\": {\r\n    \"api\": \"https://onerecord.iata.org/ns/api#\"\r\n  },\r\n  \"@type\": \"api:Subscription\",\r\n  \"api:hasSubscriber\": \"{{1R_api_url}}/logistics-objects/DATA_HOLDER\",\r\n  \"api:hasTopicType\": \"https://onerecord.iata.org/ns/api#LOGISTICS_OBJECT_TYPE\",\r\n  \"api:includeSubscriptionEventType\": [\r\n    {\r\n      \"@id\": \"https://onerecord.iata.org/ns/api#LOGISTICS_OBJECT_CREATED\"\r\n    },\r\n    {\r\n      \"@id\": \"https://onerecord.iata.org/ns/api#LOGISTICS_OBJECT_UPDATED\"\r\n    },\r\n    {\r\n      \"@id\": \"https://onerecord.iata.org/ns/api#LOGISTICS_EVENT_RECEIVED\"\r\n    }\r\n  ],\r\n  \"api:hasTopic\": {\r\n    \"@type\": \"http://www.w3.org/2001/XMLSchema#anyURI\",\r\n    \"@value\": \"https://onerecord.iata.org/ns/cargo#Waybill\"\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{taxon_1R_url}}/subscriptions",
+              "host": ["{{taxon_1R_url}}"],
+              "path": ["subscriptions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve cached Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{proxy_url}}/notifications?limit=20",
+              "host": ["{{proxy_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}

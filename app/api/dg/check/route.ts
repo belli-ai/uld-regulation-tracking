@@ -1,13 +1,17 @@
 import { z } from "zod";
 import {
+  getDgCheckMode,
   runStubDgCheck,
   type DgCheckRequest,
   type DgValidationResult,
 } from "@/lib/adapters/dg-check";
+import { runAutocheckDgCheck } from "@/lib/adapters/dg-autocheck/acceptance-check";
+import { DgAutocheckHttpError } from "@/lib/adapters/dg-autocheck/client";
 import { toIRI } from "@/lib/ontology/one-record";
 import dgDeclarationsFixture from "@/public/data/dg-declarations.json";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const pieceSchema = z
   .object({
@@ -84,9 +88,40 @@ export async function POST(req: Request) {
     flight: parsed.data.flight,
   };
 
-  const results: DgValidationResult[] = runStubDgCheck(
-    request,
-    fixtures as Parameters<typeof runStubDgCheck>[1],
-  );
-  return Response.json({ results });
+  try {
+    const results: DgValidationResult[] =
+      getDgCheckMode() === "autocheck"
+        ? await runAutocheckDgCheck(
+            request,
+            fixtures as Parameters<typeof runAutocheckDgCheck>[1],
+          )
+        : runStubDgCheck(
+            request,
+            fixtures as Parameters<typeof runStubDgCheck>[1],
+          );
+
+    return Response.json({ mode: getDgCheckMode(), results });
+  } catch (error) {
+    console.error("DG check adapter failed", error);
+    if (error instanceof DgAutocheckHttpError) {
+      return Response.json(
+        {
+          error: error.message,
+          upstreamStatus: error.status,
+          upstreamResponse: error.responseText || undefined,
+        },
+        { status: 502 },
+      );
+    }
+
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "DG validation request failed",
+      },
+      { status: 502 },
+    );
+  }
 }
