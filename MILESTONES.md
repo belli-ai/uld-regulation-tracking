@@ -1206,7 +1206,7 @@ Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and 
 - [x] OAuth 2.0 client-credentials flow implemented for One Connect; token cached until shortly before expiry
 - [x] `GET /api/one-connect/server-info` returns live server metadata when enabled, and a stable disabled response when `ONE_CONNECT_ENABLED !== 'true'`
 - [x] Subscription creator can register Waybill and ULD/Measurement topic subscriptions using `application/ld+json`
-- [x] Cached notification polling reads `{{proxy_url}}/notifications?limit=...` and stores enough cursor/dedupe state to avoid replay loops during a session
+- [~] Cached notification polling reads `{{proxy_url}}/notifications?limit=...` — works; dedupe is per-call within `notificationsToMeasurements` (Set keyed by Notification `@id`). Session-level cursor not implemented because no current page polls `uld-telemetry` on a loop. If a page adds polling, route must be upgraded with module-level `seenNotificationIds`.
 - [x] ULD telemetry notifications normalize into canonical `Measurement[]` with `measurementValue`, `measurementTimestamp`, `recordedGeolocation`, and `bySensor`
 - [~] State inference and thermal physics consume live One Connect measurements without UI changes — adapter ready; tracker-feed selector currently a stub (additive `getActiveTrackerFeedSource()`); full live promotion deferred until sandbox emits `:Measurement` notifications
 - [x] Synthetic tracker remains the default fallback when One Connect is disabled, unreachable, or returns no telemetry for a ULD
