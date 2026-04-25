@@ -4,7 +4,11 @@ import type { RunnerContext } from "@/lib/simulator/scenario-runner";
 import type { ScenarioEvent } from "@/lib/simulator/scenario-schema";
 
 const LOCATION_BY_STATE: Record<
-  "in-warehouse" | "in-tarmac" | "in-flight" | "arrived-tarmac" | "arrived-destination",
+  | "in-warehouse"
+  | "in-tarmac"
+  | "in-flight"
+  | "arrived-tarmac"
+  | "arrived-destination",
   string
 > = {
   "arrived-destination": "urn:cargo:zone:DEST-warehouse",
@@ -27,10 +31,7 @@ export async function handleUldStateForce(
       ? event.state
       : null;
 
-  if (
-    typeof event.uldId !== "string" ||
-    forcedState === null
-  ) {
+  if (typeof event.uldId !== "string" || forcedState === null) {
     return;
   }
 
@@ -63,7 +64,7 @@ export async function handleUldStateForce(
     eventTimeType: "actual",
   };
 
-  await ctx.auditDb.events.put(stateEvent);
+  await ctx.auditDb.events.put(stateEvent, stateEvent["@id"]);
   ctx.updateUld(event.uldId, (uld) => ({
     ...uld,
     auditEventIds: [...uld.auditEventIds, stateEvent["@id"]],

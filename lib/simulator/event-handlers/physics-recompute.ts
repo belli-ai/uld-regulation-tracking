@@ -17,7 +17,9 @@ function buildAmbientCurve(nowIso: string, ambientC: number): Measurement[] {
     "@id": toIRI(`urn:cool-chain:ambient:${startMs}:${index}`),
     "@type": "Measurement" as const,
     bySensor: toIRI("urn:cargo:sensor:ambient-sim"),
-    measurementTimestamp: new Date(startMs + index * 60 * 60 * 1000).toISOString(),
+    measurementTimestamp: new Date(
+      startMs + index * 60 * 60 * 1000,
+    ).toISOString(),
     measurementValue: {
       unit: "C",
       value: ambientC + Math.min(index * 0.2, 1.5),
@@ -47,7 +49,10 @@ function resolveUldSpec(productCode: string): UldPhysicsSpec {
   };
 }
 
-function curatedActionCards(uldId: string, freeCoolDollies: number): DemoActionCard[] {
+function curatedActionCards(
+  uldId: string,
+  freeCoolDollies: number,
+): DemoActionCard[] {
   return [
     {
       authorityLabel: "no approval",
@@ -107,7 +112,9 @@ export async function handlePhysicsRecompute(
     threshold,
   );
   const computedBudgetHours = Number((integration.budgetSec / 3600).toFixed(1));
-  const predictedBreachMinutes = Number((integration.budgetSec / 60).toFixed(0));
+  const predictedBreachMinutes = Number(
+    (integration.budgetSec / 60).toFixed(0),
+  );
   const freeCoolDollies = ctx.stores.resources.getState().freeCoolDollies;
   const actionCards = curatedActionCards(uld.id, freeCoolDollies);
 
@@ -115,9 +122,13 @@ export async function handlePhysicsRecompute(
     ...current,
     actionCards,
     budgetHours:
-      current.state === "in-tarmac" ? Math.min(computedBudgetHours, 4) : computedBudgetHours,
+      current.state === "in-tarmac"
+        ? Math.min(computedBudgetHours, 4)
+        : computedBudgetHours,
     predictedBreachMinutes:
-      current.state === "in-tarmac" ? Math.min(predictedBreachMinutes, 38) : predictedBreachMinutes,
+      current.state === "in-tarmac"
+        ? Math.min(predictedBreachMinutes, 38)
+        : predictedBreachMinutes,
   }));
 
   if (!next) {
@@ -126,7 +137,7 @@ export async function handlePhysicsRecompute(
 
   const excursionEvent = buildExcursionEventForUld(next, ctx.nowIso());
   if (excursionEvent) {
-    await ctx.auditDb.events.put(excursionEvent);
+    await ctx.auditDb.events.put(excursionEvent, excursionEvent["@id"]);
     ctx.updateUld(event.uldId, (current) => ({
       ...current,
       auditEventIds: [...current.auditEventIds, excursionEvent["@id"]],

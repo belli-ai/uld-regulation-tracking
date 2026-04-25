@@ -1044,8 +1044,8 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
         "warehouse-cool-room",
       );
 
-      await auditDb.loadings.put(result.loading);
-      await auditDb.events.put(result.event);
+      await auditDb.loadings.put(result.loading, result.loading["@id"]);
+      await auditDb.events.put(result.event, result.event["@id"]);
 
       addBuiltUld(
         {

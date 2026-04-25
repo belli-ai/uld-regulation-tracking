@@ -18,7 +18,8 @@ export async function handleBuildUpSignoff(
     ...uld,
     built: true,
     budgetHours: 11.2,
-    flightNo: uld.flightNo ?? ctx.currentScenario.initial_state?.flights?.[0] ?? null,
+    flightNo:
+      uld.flightNo ?? ctx.currentScenario.initial_state?.flights?.[0] ?? null,
     lastKnownLocation: "urn:cargo:zone:DXB-build-up-area",
     sealNumber: uld.sealNumber ?? "EK-S-991023",
     state: "in-warehouse",
@@ -43,8 +44,8 @@ export async function handleBuildUpSignoff(
     eventTimeType: "actual",
   };
 
-  await ctx.auditDb.loadings.put(loading);
-  await ctx.auditDb.events.put(buildCompleteEvent);
+  await ctx.auditDb.loadings.put(loading, loading["@id"]);
+  await ctx.auditDb.events.put(buildCompleteEvent, buildCompleteEvent["@id"]);
 
   ctx.updateUld(event.uldId, (uld) => ({
     ...uld,

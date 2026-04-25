@@ -1,14 +1,14 @@
-import { addSeconds } from 'date-fns';
+import { addSeconds } from "date-fns";
 
-import type { IRI, LogisticsAction } from '@/lib/ontology/one-record';
-import { toIRI } from '@/lib/ontology/one-record';
-import { auditDb, type AuditDB } from '@/lib/persistence/audit-db';
+import type { IRI, LogisticsAction } from "@/lib/ontology/one-record";
+import { toIRI } from "@/lib/ontology/one-record";
+import { auditDb, type AuditDB } from "@/lib/persistence/audit-db";
 
 export type ResolutionOutcome =
-  | 'averted'
-  | 'breached-anyway'
-  | 'monitoring'
-  | 'cancelled';
+  | "averted"
+  | "breached-anyway"
+  | "monitoring"
+  | "cancelled";
 
 export type RankedAction = {
   actionId: string;
@@ -42,12 +42,14 @@ function buildOtherIdentifiers(
     `executionTimeSec:${executionTimeSec}`,
   ];
 
-  if (typeof rankedAction.claimedBenefitHours === 'number') {
+  if (typeof rankedAction.claimedBenefitHours === "number") {
     identifiers.push(`claimedBenefitHours:${rankedAction.claimedBenefitHours}`);
   }
 
-  if (typeof rankedAction.measuredBenefitHours === 'number') {
-    identifiers.push(`measuredBenefitHours:${rankedAction.measuredBenefitHours}`);
+  if (typeof rankedAction.measuredBenefitHours === "number") {
+    identifiers.push(
+      `measuredBenefitHours:${rankedAction.measuredBenefitHours}`,
+    );
   }
 
   if (rankedAction.outcome) {
@@ -68,8 +70,8 @@ export async function record(
   database: AuditDB = auditDb,
 ): Promise<LogisticsAction> {
   const action: LogisticsAction = {
-    '@id': createActionId(rankedAction.actionId, rankedAction.startedAt),
-    '@type': 'LogisticsAction',
+    "@id": createActionId(rankedAction.actionId, rankedAction.startedAt),
+    "@type": "LogisticsAction",
     actionStartTime: rankedAction.startedAt,
     actionEndTime: addSeconds(
       new Date(rankedAction.startedAt),
@@ -84,7 +86,7 @@ export async function record(
     ),
   };
 
-  await database.actions.put(action);
+  await database.actions.put(action, action["@id"]);
 
   return action;
 }

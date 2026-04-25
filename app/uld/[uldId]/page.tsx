@@ -76,6 +76,7 @@ import {
   type ScenarioParams,
 } from "@/lib/simulator/tracker-feed";
 import { useFlightsStore } from "@/lib/stores/flights-store";
+import { useUldStore } from "@/lib/stores/uld-store";
 import { cn } from "@/lib/utils";
 
 const AirportMap = dynamic(
@@ -192,6 +193,13 @@ type ChartRow = {
   ambientC: number;
   budgetH: number;
 };
+
+type MonitorStage =
+  | "in-warehouse"
+  | "in-tarmac"
+  | "in-flight"
+  | "arrived-tarmac"
+  | "arrived-destination";
 
 const SHC_RANGES: Record<string, { minC: number; maxC: number }> = {
   AVI: { minC: 18, maxC: 26 },
@@ -349,6 +357,180 @@ function formatTimestamp(value: string | Date | null): string {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+function formatCurrency(
+  value: { currency: string; value: number } | undefined,
+) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    currency: value.currency,
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value.value);
+}
+
+function getWaybillLabel(waybill: Waybill): string {
+  return `${waybill.waybillPrefix}-${waybill.waybillNumber}`;
+}
+
+function getWaybillPieces(waybill: Waybill): number {
+  return waybill.pieces.length;
+}
+
+function getWaybillWeightKg(waybill: Waybill): number {
+  return waybill.pieces.reduce((sum, piece) => {
+    const weight =
+      piece.grossWeight.unit === "lb"
+        ? piece.grossWeight.value * 0.453592
+        : piece.grossWeight.value;
+
+    return sum + weight;
+  }, 0);
+}
+
+function getShipmentSummary(waybills: Waybill[]) {
+  const shcCodes = Array.from(
+    new Set(waybills.map((waybill) => waybill.shc).filter(Boolean)),
+  ).sort();
+  const pieces = waybills.reduce(
+    (sum, waybill) => sum + getWaybillPieces(waybill),
+    0,
+  );
+  const weightKg = waybills.reduce(
+    (sum, waybill) => sum + getWaybillWeightKg(waybill),
+    0,
+  );
+
+  return {
+    pieces,
+    shcLabel: shcCodes.length > 0 ? shcCodes.join(" / ") : "No SHC",
+    weightKg,
+  };
+}
+
+function getStageBadgeClassName(stage: string): string {
+  switch (stage) {
+    case "in-warehouse":
+    case "arrived-destination":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+    case "in-tarmac":
+    case "arrived-tarmac":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400";
+    case "in-flight":
+      return "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400";
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
+
+const MONITOR_STAGE_BY_EVENT: Partial<Record<string, MonitorStage>> = {
+  BUILD_UP_COMPLETE: "in-warehouse",
+  STATE_DEST_WAREHOUSE_IN: "arrived-destination",
+  STATE_FLIGHT_IN: "in-flight",
+  STATE_TARMAC_DEST_IN: "arrived-tarmac",
+  STATE_TARMAC_IN: "in-tarmac",
+  STATE_WAREHOUSE_IN: "in-warehouse",
+};
+
+const MONITOR_STAGES = [
+  "in-warehouse",
+  "in-tarmac",
+  "in-flight",
+  "arrived-tarmac",
+  "arrived-destination",
+] as const;
+
+function isMonitorStage(value: unknown): value is MonitorStage {
+  return (
+    typeof value === "string" && MONITOR_STAGES.includes(value as MonitorStage)
+  );
+}
+
+function getMonitorStorageKey(flightNo: string): string {
+  return `cool-chain:flight-monitor:${flightNo}`;
+}
+
+function readMonitorStageFromSession(
+  flightNo: string | null,
+  uldSerialNumber: string,
+): MonitorStage | null {
+  if (!flightNo || typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = sessionStorage.getItem(getMonitorStorageKey(flightNo));
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed == null || typeof parsed !== "object") {
+      return null;
+    }
+
+    const stage = (parsed as Record<string, unknown>)[uldSerialNumber];
+    return isMonitorStage(stage) ? stage : null;
+  } catch (error) {
+    console.error("Failed to read monitor stage", error);
+    return null;
+  }
+}
+
+function getLatestMonitorStageFromEvents(
+  uldId: string,
+  events: LogisticsEvent[],
+): MonitorStage | null {
+  const latestEvent = events
+    .filter((event) => String(event.eventFor) === uldId)
+    .sort(
+      (left, right) => Date.parse(right.eventDate) - Date.parse(left.eventDate),
+    )
+    .find((event) => MONITOR_STAGE_BY_EVENT[event.eventCode]);
+
+  return latestEvent
+    ? (MONITOR_STAGE_BY_EVENT[latestEvent.eventCode] ?? null)
+    : null;
+}
+
+function getMonitorZoneName(
+  stage: MonitorStage | null,
+  fallbackLocation: string | undefined,
+): string | null {
+  switch (stage) {
+    case "in-tarmac":
+      return "apron-staging-1";
+    case "in-flight":
+      return "runway-25R";
+    case "arrived-tarmac":
+      return "apron-staging-2";
+    case "arrived-destination":
+      return "cool-room";
+    case "in-warehouse":
+      return getZoneNameFromLocation(fallbackLocation) ?? "cool-room";
+    case null:
+      return getZoneNameFromLocation(fallbackLocation);
+  }
+}
+
+function getMonitorSubState(
+  stage: MonitorStage | null,
+): "cool-room" | "loading" | "staging" | null {
+  switch (stage) {
+    case "in-warehouse":
+    case "arrived-destination":
+      return "cool-room";
+    case "in-tarmac":
+    case "arrived-tarmac":
+      return "staging";
+    case "in-flight":
+    case null:
+      return null;
+  }
 }
 
 function createMeasurement(
@@ -729,6 +911,7 @@ export default function UldDetailPage() {
   const flights = useFlightsStore((state) => state.flights);
   const weatherSource = useFlightsStore((state) => state.weatherSource);
   const loadFlights = useFlightsStore((state) => state.loadFlights);
+  const builtContents = useUldStore((state) => state.contents);
   const fallbackFlightNumber = getFlightNumberForUld(uldId, scenario);
   const flight = useMemo(() => {
     return (
@@ -746,6 +929,11 @@ export default function UldDetailPage() {
         : [],
     [fallbackFlightNumber],
   );
+  const loadedWaybills = inventoryUld
+    ? (builtContents[inventoryUld["@id"]] ?? [])
+    : [];
+  const loadedShipmentSummary = getShipmentSummary(loadedWaybills);
+  const isBuiltUp = loadedWaybills.length > 0;
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [logicalClockMs, setLogicalClockMs] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -758,6 +946,7 @@ export default function UldDetailPage() {
   );
   const [airportPolygons, setAirportPolygons] =
     useState<AirportPolygons | null>(null);
+  const [monitorStage, setMonitorStage] = useState<MonitorStage | null>(null);
   const logicalClockRef = useRef(0);
 
   useEffect(() => {
@@ -848,21 +1037,75 @@ export default function UldDetailPage() {
     };
   }, [inventoryUld?.iotDeviceId, scenario, uldId]);
 
-  const fallbackZoneCenter = useMemo(
-    () =>
-      getZoneCenter(
-        getZoneNameFromLocation(inventoryUld?.lastKnownLocation),
-        airportPolygons,
-      ),
-    [airportPolygons, inventoryUld?.lastKnownLocation],
+  useEffect(() => {
+    if (!inventoryUld) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshMonitorStage = async () => {
+      const sessionStage = readMonitorStageFromSession(
+        fallbackFlightNumber,
+        inventoryUld.uldSerialNumber,
+      );
+      const events = await auditDb.events.toArray().catch(() => []);
+      const auditStage = getLatestMonitorStageFromEvents(
+        inventoryUld["@id"],
+        events,
+      );
+
+      if (!cancelled) {
+        setMonitorStage(sessionStage ?? auditStage);
+      }
+    };
+
+    void refreshMonitorStage();
+
+    const handleFocus = () => {
+      void refreshMonitorStage();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [fallbackFlightNumber, inventoryUld, pendingLabel]);
+
+  const effectiveZoneName = useMemo(
+    () => getMonitorZoneName(monitorStage, inventoryUld?.lastKnownLocation),
+    [inventoryUld?.lastKnownLocation, monitorStage],
   );
-  const classification = useMemo(() => {
+  const fallbackZoneCenter = useMemo(
+    () => getZoneCenter(effectiveZoneName, airportPolygons),
+    [airportPolygons, effectiveZoneName],
+  );
+  const rawClassification = useMemo(() => {
     if (!inventoryUld || !airportPolygons) {
       return null;
     }
 
     return classifyState(uldId, measurements, airportPolygons);
   }, [airportPolygons, inventoryUld, measurements, uldId]);
+  const classification = useMemo(() => {
+    if (!rawClassification) {
+      return null;
+    }
+
+    if (!monitorStage) {
+      return rawClassification;
+    }
+
+    return {
+      ...rawClassification,
+      confidence: Math.max(rawClassification.confidence, 0.9),
+      internalSubState: getMonitorSubState(monitorStage),
+      source: "inferred" as const,
+      stage: monitorStage,
+    };
+  }, [monitorStage, rawClassification]);
   const internalTemperature = useMemo(() => {
     return getLatestTemperature(
       measurements,
@@ -948,7 +1191,9 @@ export default function UldDetailPage() {
 
     return recommendActions(context, station, buildResources(scenario));
   }, [budgetForecast, classification, inventoryUld, scenario, topShc]);
-  const latestPosition = getLatestGeolocation(measurements, fallbackZoneCenter);
+  const latestPosition = monitorStage
+    ? fallbackZoneCenter
+    : getLatestGeolocation(measurements, fallbackZoneCenter);
   const currentFlightProgress = getFlightProgress(
     flight,
     latestTimestamp,
@@ -966,9 +1211,7 @@ export default function UldDetailPage() {
     const locationId =
       classification.stage === "in-flight"
         ? toIRI("urn:cargo:zone:airspace")
-        : toIRI(
-            `urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`,
-          );
+        : toIRI(`urn:cargo:zone:DXB-${effectiveZoneName ?? "unknown"}`);
     const percent = Math.max(
       0,
       Math.min(
@@ -1008,11 +1251,12 @@ export default function UldDetailPage() {
     }
 
     setCurrentExcursionId(event["@id"]);
-    void auditDb.events.put(event);
+    void auditDb.events.put(event, event["@id"]);
   }, [
     ambientBase,
     budgetForecast,
     classification,
+    effectiveZoneName,
     internalTemperature,
     inventoryUld,
     latestTimestamp,
@@ -1061,9 +1305,7 @@ export default function UldDetailPage() {
     const locationId =
       classification?.stage === "in-flight"
         ? toIRI("urn:cargo:zone:airspace")
-        : toIRI(
-            `urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`,
-          );
+        : toIRI(`urn:cargo:zone:DXB-${effectiveZoneName ?? "unknown"}`);
     const excursionEventId = toIRI(
       currentExcursionId ??
         `urn:cool-chain:event:manual:${encodeURIComponent(inventoryUld["@id"])}:${Date.now()}`,
@@ -1189,7 +1431,7 @@ export default function UldDetailPage() {
           </div>
         </MissionHero>
 
-        <section className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+        <section className="grid gap-5 lg:grid-cols-3">
           <Card className={cn(missionCardClassName)}>
             <CardHeader>
               <CardTitle className="text-lg">Thermal budget</CardTitle>
@@ -1223,6 +1465,152 @@ export default function UldDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className={cn(missionCardClassName)}>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-lg">Location status</CardTitle>
+                  <CardDescription>
+                    Current phase, zone, and position source.
+                  </CardDescription>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "font-mono text-xs font-semibold",
+                    getStageBadgeClassName(classification.stage),
+                  )}
+                >
+                  {toTitleCase(classification.stage)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="border border-border bg-muted/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Zone
+                </p>
+                <p className="pt-1 text-base font-semibold">
+                  {toTitleCase(effectiveZoneName)}
+                </p>
+                <p className="pt-1 text-sm text-muted-foreground">
+                  {monitorStage
+                    ? "Release control"
+                    : classification.source === "measured"
+                      ? "Tracker GPS"
+                      : "Inventory fallback"}{" "}
+                  · {Math.round(classification.confidence * 100)}% confidence
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <div className="border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Route
+                  </p>
+                  <p className="pt-1 text-base">
+                    {originAirport.iata} → {arrivalAirport.iata}
+                  </p>
+                </div>
+                <div className="border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Progress
+                  </p>
+                  <p className="pt-1 text-base">
+                    {Math.round(currentFlightProgress * 100)}%
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn(missionCardClassName, "overflow-hidden")}>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-lg">Loaded shipments</CardTitle>
+                  <CardDescription>
+                    AWBs assigned during ULD build-up.
+                  </CardDescription>
+                </div>
+                <Badge variant={isBuiltUp ? "secondary" : "outline"}>
+                  {isBuiltUp ? "Built up" : "Not built"}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    AWBs
+                  </p>
+                  <p className="pt-1 text-base font-semibold">
+                    {loadedWaybills.length}
+                  </p>
+                </div>
+                <div className="border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Pieces
+                  </p>
+                  <p className="pt-1 text-base font-semibold">
+                    {loadedShipmentSummary.pieces}
+                  </p>
+                </div>
+                <div className="border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Weight
+                  </p>
+                  <p className="pt-1 text-base font-semibold">
+                    {loadedShipmentSummary.weightKg.toFixed(0)} kg
+                  </p>
+                </div>
+              </div>
+
+              {loadedWaybills.length > 0 ? (
+                <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+                  {loadedWaybills.map((waybill) => (
+                    <div
+                      key={waybill["@id"]}
+                      className="border border-border bg-background/45 p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="font-mono text-sm font-semibold">
+                            {getWaybillLabel(waybill)}
+                          </span>
+                          <ShcBadge shc={waybill.shc} />
+                        </div>
+                        <Badge variant="outline">
+                          {getWaybillPieces(waybill)} pcs
+                        </Badge>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {getCodeFromIri(String(waybill.departureLocation))} →{" "}
+                        {getCodeFromIri(String(waybill.arrivalLocation))} ·{" "}
+                        {getWaybillWeightKg(waybill).toFixed(0)} kg
+                        {formatCurrency(waybill.declaredValueForCarriage)
+                          ? ` · ${formatCurrency(waybill.declaredValueForCarriage)}`
+                          : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+                  No signed-off shipments are assigned to this ULD yet.
+                </div>
+              )}
+
+              <div className="border border-border bg-muted/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  SHC mix
+                </p>
+                <p className="pt-1 text-base">
+                  {loadedShipmentSummary.shcLabel}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
@@ -1251,7 +1639,9 @@ export default function UldDetailPage() {
                     geojson={mapGeojson}
                     position={latestPosition}
                     label={inventoryUld.uldSerialNumber}
-                    inferred={!inventoryUld.iotDeviceId}
+                    inferred={
+                      !inventoryUld.iotDeviceId || monitorStage !== null
+                    }
                   />
                 )}
               </div>
@@ -1317,9 +1707,7 @@ export default function UldDetailPage() {
                   Zone / fallback
                 </p>
                 <p className="pt-2 text-base">
-                  {toTitleCase(
-                    getZoneNameFromLocation(inventoryUld.lastKnownLocation),
-                  )}
+                  {toTitleCase(effectiveZoneName)}
                 </p>
                 <p className="pt-1 text-sm text-muted-foreground">
                   {latestPosition.latitude.toFixed(4)},{" "}
