@@ -1,5 +1,8 @@
 "use client";
 
+import { CheckCircle2, Loader2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { missionCardClassName } from "@/components/mission-control";
 import {
@@ -18,6 +21,9 @@ type Props = {
   onExecute: (action: RankedAction) => void;
   onRequest: (action: RankedAction) => void;
   onEscalate: (action: RankedAction) => void;
+  executing?: boolean;
+  executed?: boolean;
+  executedLabel?: string | null;
 };
 
 function formatBenefit(action: RankedAction): string {
@@ -33,9 +39,16 @@ export function ActionCard({
   onExecute,
   onRequest,
   onEscalate,
+  executing = false,
+  executed = false,
+  executedLabel = null,
 }: Props) {
+  const disabled = executing || executed;
+
   return (
-    <Card className={cn(missionCardClassName)}>
+    <Card
+      className={cn(missionCardClassName, executed && "border-emerald-500/40")}
+    >
       <CardHeader className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-lg font-semibold leading-none">
@@ -78,23 +91,53 @@ export function ActionCard({
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button className="w-full sm:flex-1" onClick={() => onExecute(action)}>
-          Execute
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full sm:flex-1"
-          onClick={() => onRequest(action)}
-        >
-          Request
-        </Button>
-        <Button
-          variant="secondary"
-          className="w-full sm:flex-1"
-          onClick={() => onEscalate(action)}
-        >
-          Escalate
-        </Button>
+        {executed ? (
+          <div className="flex w-full flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <Badge
+              variant="outline"
+              className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+            >
+              <CheckCircle2 className="size-3.5" /> Executed
+            </Badge>
+            {executedLabel ? (
+              <span className="font-mono text-xs text-muted-foreground">
+                Logged at {executedLabel}
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <Button
+              className="w-full sm:flex-1"
+              disabled={disabled}
+              onClick={() => onExecute(action)}
+            >
+              {executing ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> Executing…
+                </>
+              ) : (
+                "Execute"
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:flex-1"
+              disabled={disabled}
+              onClick={() => onRequest(action)}
+            >
+              Request
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full sm:flex-1"
+              disabled={disabled}
+              onClick={() => onEscalate(action)}
+            >
+              Escalate
+            </Button>
+          </>
+        )}
       </CardFooter>
     </Card>
   );

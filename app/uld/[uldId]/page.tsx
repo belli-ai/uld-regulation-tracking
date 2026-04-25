@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { AlertTriangle } from "lucide-react";
 import {
   CartesianGrid,
   Legend,
@@ -958,6 +959,25 @@ export default function UldDetailPage() {
     return excursions[0] ?? null;
   }, [inventoryUld]);
   const currentExcursionId = latestExcursionEvent?.["@id"] ?? null;
+
+  // Per-action execution state — sourced from auditDb.actions filtered by
+  // servedActivity (ties back to the open excursion). Persists across
+  // reloads. Includes a parsed timestamp so cards can show "Logged at HH:MM".
+  const executedActionsForExcursion = useLiveQuery(async () => {
+    if (!currentExcursionId) return new Map<string, string>();
+    const all = await auditDb.actions.toArray();
+    const out = new Map<string, string>();
+    for (const action of all) {
+      if (action.servedActivity !== currentExcursionId) continue;
+      const ref = action.otherIdentifiers?.find((id) =>
+        id.startsWith("actionRef:"),
+      );
+      if (!ref) continue;
+      const actionRef = ref.slice("actionRef:".length);
+      out.set(actionRef, action.actionStartTime);
+    }
+    return out;
+  }, [currentExcursionId]) as Map<string, string> | undefined;
   const [mapGeojson, setMapGeojson] = useState<Record<string, unknown> | null>(
     null,
   );
@@ -1202,8 +1222,24 @@ export default function UldDetailPage() {
   // from supervisor + monitor.
   const budgetForecast = useMemo(() => {
     if (!localBudgetForecast || !liveSnapshot) return null;
+    // Anchor the leftmost chart point at the snapshot's actual current
+    // internalC + ambientC so the chart's "now" matches every other
+    // surface. Forecast curve to the right stays as locally integrated.
+    const anchoredRows =
+      localBudgetForecast.chartRows.length > 0
+        ? [
+            {
+              ...localBudgetForecast.chartRows[0],
+              internalC: Number(liveSnapshot.internalC.toFixed(2)),
+              ambientC: Number(liveSnapshot.effectiveAmbientC.toFixed(2)),
+              budgetH: Number(liveSnapshot.budgetH.toFixed(2)),
+            },
+            ...localBudgetForecast.chartRows.slice(1),
+          ]
+        : localBudgetForecast.chartRows;
     return {
       ...localBudgetForecast,
+      chartRows: anchoredRows,
       budgetH: liveSnapshot.budgetH,
       breachAt: liveSnapshot.breachAtMs
         ? new Date(liveSnapshot.breachAtMs).toISOString()
@@ -1229,9 +1265,18 @@ export default function UldDetailPage() {
 
     return recommendActions(context, station, buildResources(scenario));
   }, [budgetForecast, classification, inventoryUld, scenario, topShc]);
-  const latestPosition = monitorStage
-    ? fallbackZoneCenter
-    : getLatestGeolocation(measurements, fallbackZoneCenter);
+  // Map pin: prefer the persisted snapshot's lat/lon (single source of
+  // truth — same coords the recalculator wrote). Fall back to in-memory
+  // measurements only when the snapshot has none yet.
+  const latestPosition =
+    liveSnapshot?.latestLat != null && liveSnapshot?.latestLon != null
+      ? {
+          latitude: liveSnapshot.latestLat,
+          longitude: liveSnapshot.latestLon,
+        }
+      : monitorStage
+        ? fallbackZoneCenter
+        : getLatestGeolocation(measurements, fallbackZoneCenter);
   const currentFlightProgress = getFlightProgress(
     flight,
     latestTimestamp,
@@ -1276,6 +1321,23 @@ export default function UldDetailPage() {
     void loadHistory();
   }, [inventoryUld, measurements, pendingLabel, uldId]);
 
+  const [pendingActionIds, setPendingActionIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // Auto-scroll to the actions section the first time status flips into
+  // Excursion during this page lifecycle. Use a ref so re-entry into
+  // Excursion (after a recovery) doesn't yank the operator's scroll.
+  const autoScrolledRef = useRef(false);
+  useEffect(() => {
+    if (liveSnapshot?.status !== "Excursion") return;
+    if (autoScrolledRef.current) return;
+    autoScrolledRef.current = true;
+    if (typeof window === "undefined") return;
+    const target = document.getElementById("actions");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [liveSnapshot?.status]);
+
   const handleActionLog = async (
     action: RankedAction,
     executor: "handler" | "supervisor" | "ops-control",
@@ -1293,25 +1355,38 @@ export default function UldDetailPage() {
         `urn:cool-chain:event:manual:${encodeURIComponent(inventoryUld["@id"])}:${Date.now()}`,
     );
 
-    await resolutionLogger.record(
-      {
-        actionId: action.id,
-        actionLabel: action.label,
-        claimedBenefitHours:
-          (action.benefitHours[0] + action.benefitHours[1]) / 2,
-        excursionEventId,
-        locationId,
-        startedAt: new Date().toISOString(),
-        stationCapability: action.requiresStationCapability[0],
-      },
-      executor,
-      action.executionMinutes * 60,
-    );
+    setPendingActionIds((prev) => {
+      const next = new Set(prev);
+      next.add(action.id);
+      return next;
+    });
+    try {
+      await resolutionLogger.record(
+        {
+          actionId: action.id,
+          actionLabel: action.label,
+          claimedBenefitHours:
+            (action.benefitHours[0] + action.benefitHours[1]) / 2,
+          excursionEventId,
+          locationId,
+          startedAt: new Date().toISOString(),
+          stationCapability: action.requiresStationCapability[0],
+        },
+        executor,
+        action.executionMinutes * 60,
+      );
 
-    setPendingLabel(`${executor}: ${action.label}`);
-    void demoScenarioRunner.acknowledgeUserAction(
-      `execute_action_${action.rank}`,
-    );
+      setPendingLabel(`${executor}: ${action.label}`);
+      void demoScenarioRunner.acknowledgeUserAction(
+        `execute_action_${action.rank}`,
+      );
+    } finally {
+      setPendingActionIds((prev) => {
+        const next = new Set(prev);
+        next.delete(action.id);
+        return next;
+      });
+    }
   };
 
   if (
@@ -1385,6 +1460,60 @@ export default function UldDetailPage() {
       />
 
       <main className="grid w-full gap-5 px-4 py-5 sm:px-6">
+        {liveSnapshot?.status === "Excursion" ||
+        liveSnapshot?.status === "Alert" ? (
+          <Card
+            className={cn(
+              "mission-panel border-2",
+              liveSnapshot.status === "Excursion"
+                ? "border-destructive/60 bg-destructive/5"
+                : "border-yellow-500/60 bg-yellow-500/5",
+            )}
+          >
+            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle
+                  className={cn(
+                    "mt-0.5 size-6 shrink-0",
+                    liveSnapshot.status === "Excursion"
+                      ? "text-destructive"
+                      : "text-yellow-500",
+                  )}
+                />
+                <div className="flex flex-col gap-1">
+                  <p
+                    className={cn(
+                      "text-base font-semibold",
+                      liveSnapshot.status === "Excursion"
+                        ? "text-destructive"
+                        : "text-yellow-500",
+                    )}
+                  >
+                    {liveSnapshot.status === "Excursion"
+                      ? `Excursion in progress — internal ${liveSnapshot.internalC.toFixed(1)}°C is outside ${threshold ? `${threshold.minTemperature.value}–${threshold.maxTemperature.value}°C` : "SHC band"}`
+                      : `Approaching threshold — internal ${liveSnapshot.internalC.toFixed(1)}°C, budget ${liveSnapshot.budgetPercent.toFixed(0)}%${liveSnapshot.breachAtMs ? `, predicted breach at ${new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, minute: "2-digit", timeZone: "Asia/Dubai" }).format(new Date(liveSnapshot.breachAtMs))}` : ""}`}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {latestExcursionEvent
+                      ? `First detected at ${new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, minute: "2-digit", timeZone: "Asia/Dubai" }).format(new Date(latestExcursionEvent.eventDate))}. Take a corrective action below.`
+                      : "Take a corrective action below."}
+                  </p>
+                </div>
+              </div>
+              <Button
+                asChild
+                size="sm"
+                variant={
+                  liveSnapshot.status === "Excursion"
+                    ? "destructive"
+                    : "outline"
+                }
+              >
+                <a href="#actions">Jump to actions</a>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
         <MissionHero
           eyebrow="Thermal risk detail"
           title={inventoryUld.uldSerialNumber}
@@ -1797,7 +1926,10 @@ export default function UldDetailPage() {
           </Card>
 
           <div className="flex flex-col gap-4">
-            <Card className="mission-panel border-border/80">
+            <Card
+              id="actions"
+              className="mission-panel scroll-mt-20 border-border/80"
+            >
               <CardHeader>
                 <CardTitle className="text-lg">Recommended actions</CardTitle>
                 <CardDescription>
@@ -1806,21 +1938,37 @@ export default function UldDetailPage() {
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {rankedActions.length > 0 ? (
-                  rankedActions.map((action) => (
-                    <ActionCard
-                      key={action.id}
-                      action={action}
-                      onExecute={(selected) =>
-                        void handleActionLog(selected, "handler")
-                      }
-                      onRequest={(selected) =>
-                        void handleActionLog(selected, "supervisor")
-                      }
-                      onEscalate={(selected) =>
-                        void handleActionLog(selected, "ops-control")
-                      }
-                    />
-                  ))
+                  rankedActions.map((action) => {
+                    const executedAt = executedActionsForExcursion?.get(
+                      action.id,
+                    );
+                    const executedLabel = executedAt
+                      ? new Intl.DateTimeFormat("en-GB", {
+                          hour: "2-digit",
+                          hour12: false,
+                          minute: "2-digit",
+                          timeZone: "Asia/Dubai",
+                        }).format(new Date(executedAt))
+                      : null;
+                    return (
+                      <ActionCard
+                        key={action.id}
+                        action={action}
+                        executed={Boolean(executedAt)}
+                        executedLabel={executedLabel}
+                        executing={pendingActionIds.has(action.id)}
+                        onExecute={(selected) =>
+                          void handleActionLog(selected, "handler")
+                        }
+                        onRequest={(selected) =>
+                          void handleActionLog(selected, "supervisor")
+                        }
+                        onEscalate={(selected) =>
+                          void handleActionLog(selected, "ops-control")
+                        }
+                      />
+                    );
+                  })
                 ) : (
                   <div className="border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
                     No viable action at the current state.
