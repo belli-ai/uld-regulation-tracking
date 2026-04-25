@@ -8,6 +8,7 @@ import rawUldSpecsData from "@/public/config/uld-specs.json";
 import rawShcConfigData from "@/public/config/shc.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
+import { OneConnectBadge } from "@/components/one-connect-badge";
 import {
   PushTimeCard,
   type PushTimeCardData,
@@ -842,6 +843,7 @@ export default function SupervisorPage() {
         actions={
           <>
             <WeatherSourceBadge source={weatherSource} />
+            <OneConnectBadge />
             <Badge
               variant="outline"
               className="font-mono text-xs font-semibold"
