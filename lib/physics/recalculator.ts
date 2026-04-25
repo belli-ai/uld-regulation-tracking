@@ -18,6 +18,7 @@ import {
 } from "@/lib/inference/airport-polygons-loader";
 import {
   toIRI,
+  type LogisticsEvent,
   type Measurement,
   type TemperatureInstructions,
   type ULD,
@@ -136,16 +137,47 @@ function getShcCodeForUld(inventory: InventoryRecord): string {
   }
 }
 
+const STAGE_BY_EVENT_CODE: Record<string, Stage> = {
+  BUILD_UP_COMPLETE: "in-warehouse",
+  STATE_WAREHOUSE_IN: "in-warehouse",
+  STATE_TARMAC_IN: "in-tarmac",
+  STATE_FLIGHT_IN: "in-flight",
+  STATE_TARMAC_DEST_IN: "arrived-tarmac",
+  STATE_DEST_WAREHOUSE_IN: "arrived-destination",
+};
+
+function stageFromEvents(
+  uldId: string,
+  events: LogisticsEvent[],
+): Stage | null {
+  const candidates = events
+    .filter((event) => {
+      const target = String(event.eventFor ?? "");
+      const tail = target.split(":").at(-1) ?? target;
+      return tail === uldId;
+    })
+    .sort(
+      (left, right) => Date.parse(right.eventDate) - Date.parse(left.eventDate),
+    );
+
+  for (const event of candidates) {
+    const stage = STAGE_BY_EVENT_CODE[event.eventCode];
+    if (stage) return stage;
+  }
+  return null;
+}
+
 function deriveStage(
   uldId: string,
   measurements: Measurement[],
   polygons: AirportPolygons | null,
+  events: LogisticsEvent[],
 ): Stage {
-  if (!polygons || measurements.length === 0) {
-    return "in-warehouse";
+  if (polygons && measurements.length > 0) {
+    const result = classifyState(uldId, measurements, polygons);
+    return result.stage as Stage;
   }
-  const result = classifyState(uldId, measurements, polygons);
-  return result.stage as Stage;
+  return stageFromEvents(uldId, events) ?? "in-warehouse";
 }
 
 function asUldId(value: string | undefined): string | null {
@@ -195,6 +227,7 @@ export async function recalculateAll(
       return;
     }
 
+    const events = await auditDb.events.toArray().catch(() => []);
     const snapshots: UldThermalSnapshot[] = [];
 
     for (const { uldId, flightNumber } of built) {
@@ -204,7 +237,7 @@ export async function recalculateAll(
       const shcCode = getShcCodeForUld(inventory);
       const threshold = getThresholdInstructions(shcCode);
       const measurements: Measurement[] = readWindowMeasurements(uldId);
-      const stage = deriveStage(uldId, measurements, polygons);
+      const stage = deriveStage(uldId, measurements, polygons, events);
 
       const thermal = computeThermalStatus({
         flightId: flightNumber
