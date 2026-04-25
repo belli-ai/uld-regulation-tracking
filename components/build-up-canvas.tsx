@@ -941,10 +941,10 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     budgetForecast,
     validatedPieces.length > 0,
   );
-  const hasRedValidation =
-    dgStatusTone === "red" ||
-    shcStatusTone === "red" ||
-    budgetStatusTone === "red";
+  // Budget pre-flight is informational at build-up time — the ULD is still
+  // in the cool room, the budget forecast is for projected exposure once it
+  // leaves. Don't block sign-off on it; let DG and SHC be the only blockers.
+  const hasRedValidation = dgStatusTone === "red" || shcStatusTone === "red";
   const signOffDisabled =
     validatedPieces.length === 0 ||
     sealNumber.trim().length === 0 ||
@@ -1521,9 +1521,6 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
             {dgStatusTone === "red" ? <li>DG validation rejected.</li> : null}
             {shcStatusTone === "red" ? (
               <li>SHC compatibility conflicts present.</li>
-            ) : null}
-            {budgetStatusTone === "red" ? (
-              <li>Thermal budget below safe threshold.</li>
             ) : null}
           </ul>
           <DialogFooter>
