@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { setScenarioAnchorMs } from "@/lib/clock/scenario-anchor";
 import { auditDb } from "@/lib/persistence/audit-db";
+import { useDemoClockStore } from "@/lib/stores/demo-clock-store";
 
 const SESSION_PREFIX = "cool-chain:";
 
@@ -67,6 +68,7 @@ export function ResetButton() {
       clearSessionStorage();
       clearLocalStoragePrefs();
       setScenarioAnchorMs(Date.now());
+      useDemoClockStore.getState().reset();
       window.location.reload();
     } catch (error) {
       console.error("[reset] failed", error);
