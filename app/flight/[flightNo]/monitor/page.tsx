@@ -96,6 +96,9 @@ type MonitorRow = {
   stageLabel: string;
   trackerLabel: string;
   excursion: ThermalStatus["excursionEventCode"];
+  pushTimeMs: number | null;
+  holdDecision: "PUSH" | "HOLD" | "RELEASED" | null;
+  maxWaitMinutes: number | null;
   uld: InventoryUld;
 };
 
@@ -489,6 +492,9 @@ function createMonitorRows(
       stageLabel: meta.label,
       trackerLabel: uld.iotDeviceId ? `${uld.iotDeviceId} online` : "Inferred",
       excursion: thermal.excursionEventCode,
+      pushTimeMs: null,
+      holdDecision: null,
+      maxWaitMinutes: null,
       uld,
     };
   });
@@ -680,6 +686,9 @@ export default function FlightMonitorPage() {
           STAGE_META[snap.stage as MonitorStage]?.label ?? row.stageLabel,
         locationLabel:
           STAGE_META[snap.stage as MonitorStage]?.location ?? row.locationLabel,
+        pushTimeMs: snap.pushTimeMs,
+        holdDecision: snap.holdDecision,
+        maxWaitMinutes: snap.maxWaitMinutes,
       };
     });
   const assignedAwbIds = new Set<IRI>();
@@ -896,6 +905,33 @@ export default function FlightMonitorPage() {
                       <Badge variant="outline">Budget low</Badge>
                     ) : null}
                   </div>
+                  {row.pushTimeMs !== null && row.holdDecision !== null ? (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      {row.holdDecision === "HOLD" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-yellow-500/40 bg-yellow-500/10 text-yellow-500"
+                        >
+                          Hold until {formatDubaiTime(row.pushTimeMs)}
+                        </Badge>
+                      ) : row.holdDecision === "PUSH" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                        >
+                          Push by {formatDubaiTime(row.pushTimeMs)}
+                        </Badge>
+                      ) : row.holdDecision === "RELEASED" ? (
+                        <Badge variant="outline">In transit</Badge>
+                      ) : null}
+                      {row.maxWaitMinutes !== null ? (
+                        <span className="font-mono text-muted-foreground">
+                          max wait {row.maxWaitMinutes.toFixed(0)} min @{" "}
+                          {row.effectiveAmbientC.toFixed(1)}C
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {row.stage === "in-warehouse" ? (
                       <Button

@@ -26,7 +26,9 @@ import {
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import { computeThermalStatus } from "@/lib/physics/thermal-status";
 import { getSimulationNowMs } from "@/lib/clock/simulation-clock";
-import { shiftTimestamps } from "@/lib/data/flights-shifted";
+import { getShiftedFlights, shiftTimestamps } from "@/lib/data/flights-shifted";
+import { parseShcConfig, type ShcConfig } from "@/lib/scheduler/shc-loader";
+import { pushTime } from "@/lib/scheduler/push-time";
 import rawShcConfig from "@/public/config/shc.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
@@ -203,9 +205,13 @@ type FlightSummary = {
   flightNumber: string | null;
 };
 
-async function listBuiltUlds(): Promise<FlightSummary[]> {
+type FlightSummaryFull = FlightSummary & {
+  loadedAtMs: number | null;
+};
+
+async function listBuiltUlds(): Promise<FlightSummaryFull[]> {
   const loadings = await auditDb.loadings.toArray().catch(() => []);
-  const seen = new Map<string, FlightSummary>();
+  const seen = new Map<string, FlightSummaryFull>();
   for (const loading of loadings) {
     const uldId = asUldId(loading.loadedUnits?.[0]);
     if (!uldId) continue;
@@ -215,9 +221,36 @@ async function listBuiltUlds(): Promise<FlightSummary[]> {
       );
       return typeof tag === "string" ? tag.replace("flight:", "") : null;
     })();
-    seen.set(uldId, { uldId, flightNumber });
+    const loadedAtMs = (() => {
+      const ts = Date.parse(loading.actionStartTime);
+      return Number.isFinite(ts) ? ts : null;
+    })();
+    seen.set(uldId, { uldId, flightNumber, loadedAtMs });
   }
   return Array.from(seen.values());
+}
+
+const cachedShcConfig: ShcConfig = parseShcConfig(rawShcConfig);
+
+const TOW_ESTIMATE_MINUTES_BY_SHC: Record<string, number> = {
+  AVI: 5,
+  PER: 12,
+  COL: 18,
+  CRT: 25,
+  FRO: 20,
+  HEG: 6,
+};
+
+function getStdMsForFlight(flightNumber: string | null): number | null {
+  if (!flightNumber) return null;
+  const flight = getShiftedFlights().find(
+    (f) => f.flightNumber === flightNumber,
+  );
+  if (!flight) return null;
+  const std = flight.movementTimes.find((m) => m.type === "STD")?.timestamp;
+  if (!std) return null;
+  const ms = Date.parse(std);
+  return Number.isFinite(ms) ? ms : null;
 }
 
 let inFlight = false;
@@ -243,7 +276,7 @@ export async function recalculateAll(
     const events = await auditDb.events.toArray().catch(() => []);
     const snapshots: UldThermalSnapshot[] = [];
 
-    for (const { uldId, flightNumber } of built) {
+    for (const { uldId, flightNumber, loadedAtMs } of built) {
       const inventory = inventoryById[uldId];
       if (!inventory) continue;
 
@@ -270,6 +303,43 @@ export async function recalculateAll(
 
       const position = derivePosition(measurements, inventory, polygons);
 
+      // Push-time scheduler: when should this ULD leave the cool room
+      // for the tarmac? Combines current ambient, SHC max-wait curve,
+      // loadedAt (from auditDb.loadings), and flight STD.
+      const stdMs = getStdMsForFlight(flightNumber);
+      let pushTimeMs: number | null = null;
+      let holdDecision: "PUSH" | "HOLD" | "RELEASED" | null = null;
+      let holdReason: string | null = null;
+      let maxWaitMinutes: number | null = null;
+
+      if (loadedAtMs !== null && stdMs !== null) {
+        const towMin =
+          TOW_ESTIMATE_MINUTES_BY_SHC[shcCode] ??
+          TOW_ESTIMATE_MINUTES_BY_SHC.CRT;
+        const released =
+          stage === "in-tarmac" ||
+          stage === "in-flight" ||
+          stage === "arrived-tarmac" ||
+          stage === "arrived-destination";
+        const result = pushTime(
+          { uldId, shcCode, loadedAt: new Date(loadedAtMs) },
+          {
+            std: new Date(stdMs),
+            etd: new Date(stdMs),
+            towEstimateMinutes: towMin,
+          },
+          { ambientC: thermal.effectiveAmbientC },
+          cachedShcConfig,
+          nowMs,
+        );
+        pushTimeMs = result.pushTime.getTime();
+        holdDecision = released ? "RELEASED" : result.holdDecision;
+        holdReason = result.reason;
+        maxWaitMinutes = Number.isFinite(result.maxWaitAir)
+          ? result.maxWaitAir
+          : null;
+      }
+
       snapshots.push({
         ambientC: thermal.ambientC,
         breachAtMs: thermal.breachAt ? thermal.breachAt.getTime() : null,
@@ -290,6 +360,10 @@ export async function recalculateAll(
         zoneName: position.zoneName,
         trackerSource: position.source,
         lastMeasurementMs: position.lastMeasurementMs,
+        pushTimeMs,
+        holdDecision,
+        holdReason,
+        maxWaitMinutes,
         updatedMs: nowMs,
       });
     }

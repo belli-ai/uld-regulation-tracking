@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import type { TemperatureInstructions } from "@/lib/ontology/one-record";
 
 type TemperatureRange = Pick<
@@ -28,14 +26,11 @@ export type ShcConfig = {
   default: ShcEntry;
 };
 
-const DEFAULT_CONFIG_PATH = "public/config/shc.json";
 const AMBIENT_KEY_PATTERN = /^ambient(-?\d+(?:\.\d+)?)c$/i;
 
-export async function loadShcConfig(path = DEFAULT_CONFIG_PATH): Promise<ShcConfig> {
-  const filePath = resolve(process.cwd(), path);
-  const raw = await readFile(filePath, "utf8");
-  return parseShcConfig(JSON.parse(raw) as unknown);
-}
+// Node-only loader removed — call sites now ESM-import shc.json and call
+// parseShcConfig directly so the module is browser-safe for the
+// recalculator and any other client consumer.
 
 export function parseShcConfig(raw: unknown): ShcConfig {
   const root = asRecord(raw, "SHC config root");
@@ -43,7 +38,10 @@ export function parseShcConfig(raw: unknown): ShcConfig {
 
   return {
     shc: Object.fromEntries(
-      Object.entries(shc).map(([code, entry]) => [code, parseShcEntry(entry, `shc.${code}`)]),
+      Object.entries(shc).map(([code, entry]) => [
+        code,
+        parseShcEntry(entry, `shc.${code}`),
+      ]),
     ),
     default: parseShcEntry(root.default, "default"),
   };
@@ -72,7 +70,9 @@ export function linearInterpolate(
         minutes: value,
       };
     })
-    .filter((point): point is { ambientC: number; minutes: number } => point !== null)
+    .filter(
+      (point): point is { ambientC: number; minutes: number } => point !== null,
+    )
     .sort((left, right) => left.ambientC - right.ambientC);
 
   if (points.length === 0) {
@@ -118,8 +118,14 @@ function parseShcEntry(raw: unknown, label: string): ShcEntry {
       entry.temperatureInstructions,
       `${label}.temperatureInstructions`,
     ),
-    maxWaitMinutes: parseAmbientCurve(entry.maxWaitMinutes, `${label}.maxWaitMinutes`),
-    urgencyPriority: asNumber(entry.urgencyPriority, `${label}.urgencyPriority`),
+    maxWaitMinutes: parseAmbientCurve(
+      entry.maxWaitMinutes,
+      `${label}.maxWaitMinutes`,
+    ),
+    urgencyPriority: asNumber(
+      entry.urgencyPriority,
+      `${label}.urgencyPriority`,
+    ),
     color: asString(entry.color, `${label}.color`),
     icon: asString(entry.icon, `${label}.icon`),
     autoHoldThresholdMinutes: asNumber(
@@ -129,7 +135,10 @@ function parseShcEntry(raw: unknown, label: string): ShcEntry {
     requiresVetClearance:
       entry.requiresVetClearance === undefined
         ? undefined
-        : asBoolean(entry.requiresVetClearance, `${label}.requiresVetClearance`),
+        : asBoolean(
+            entry.requiresVetClearance,
+            `${label}.requiresVetClearance`,
+          ),
   };
 }
 
@@ -140,8 +149,14 @@ function parseTemperatureInstructions(
   const range = asRecord(raw, label);
 
   return {
-    minTemperature: parseTemperatureValue(range.minTemperature, `${label}.minTemperature`),
-    maxTemperature: parseTemperatureValue(range.maxTemperature, `${label}.maxTemperature`),
+    minTemperature: parseTemperatureValue(
+      range.minTemperature,
+      `${label}.minTemperature`,
+    ),
+    maxTemperature: parseTemperatureValue(
+      range.maxTemperature,
+      `${label}.maxTemperature`,
+    ),
   };
 }
 
@@ -169,7 +184,10 @@ function parseAmbientCurve(raw: unknown, label: string): AmbientCurve {
       throw new Error(`${label}.${key} must match ambientNc`);
     }
 
-    return [key as AmbientCurveKey, asNumber(value, `${label}.${key}`)] as const;
+    return [
+      key as AmbientCurveKey,
+      asNumber(value, `${label}.${key}`),
+    ] as const;
   });
 
   if (parsedEntries.length === 0) {
