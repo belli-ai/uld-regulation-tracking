@@ -13,7 +13,7 @@
     "operatingParties": ["urn:cargo:carrier:EK"],
     "loadingActions": [],
     "aircraftBody": "wide-body",
-    "aircraftCategory": "passenger"
+    "aircraftCategory": "cargo"
   },
   {
     "@id": "urn:cargo:flight:EK0237",
