@@ -56,15 +56,15 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M8  | Tracker simulator                            | 2     | 🟢     | master | Yes           | Phase 1    |
 | M9  | Build-up flow logic                          | 2     | 🟢     | master | Yes           | Phase 1    |
 | M10 | Audit DB (Dexie)                             | 2     | 🟢     | master | Yes           | Phase 1    |
-| M11 | Flight list page (`/`)                       | 3     | 🟡     | master | Yes           | Phase 2    |
-| M12 | Flight workspace (`/flight/[no]`)            | 3     | 🟡     | master | Yes           | Phase 2    |
-| M13 | Build-up canvas (`/flight/[no]/build/[uld]`) | 3     | 🟡     | master | Yes           | Phase 2    |
-| M14 | ULD detail (`/uld/[id]`)                     | 3     | 🟡     | master | Yes           | Phase 2    |
-| M15 | Supervisor dashboard (`/supervisor`)         | 3     | 🟡     | master | Yes           | Phase 2    |
-| M16 | Excursion + Resolution logs                  | 3     | 🟡     | master | Yes           | Phase 2    |
-| M17 | Audit timeline + deviation report            | 3     | 🟡     | master | Yes           | Phase 2    |
-| M18 | Admin config (`/admin/config`)               | 3     | 🟡     | master | Yes           | Phase 2    |
-| M19 | Scenario runner + Demo control panel         | 3     | 🟡     | master | Yes           | Phase 2    |
+| M11 | Flight list page (`/`)                       | 3     | 🟢     | master | Yes           | Phase 2    |
+| M12 | Flight workspace (`/flight/[no]`)            | 3     | 🟢     | master | Yes           | Phase 2    |
+| M13 | Build-up canvas (`/flight/[no]/build/[uld]`) | 3     | 🟢     | master | Yes           | Phase 2    |
+| M14 | ULD detail (`/uld/[id]`)                     | 3     | 🟢     | master | Yes           | Phase 2    |
+| M15 | Supervisor dashboard (`/supervisor`)         | 3     | 🟢     | master | Yes           | Phase 2    |
+| M16 | Excursion + Resolution logs                  | 3     | 🟢     | master | Yes           | Phase 2    |
+| M17 | Audit timeline + deviation report            | 3     | 🟢     | master | Yes           | Phase 2    |
+| M18 | Admin config (`/admin/config`)               | 3     | 🟢     | master | Yes           | Phase 2    |
+| M19 | Scenario runner + Demo control panel         | 3     | 🟢     | master | Yes           | Phase 2    |
 | M20 | Polish — notifications, theming, charts      | 4     | 🔘     | —      | No            | Phase 3    |
 | M21 | Pitch deck                                   | 4     | 🔘     | —      | No            | M20        |
 | M22 | End-to-end rehearsal & bug fixes             | 4     | 🔘     | —      | No            | M21        |
@@ -585,15 +585,15 @@ Components ownership map (first writer = owner):
 
 ### M11 — Flight list page (`/`)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 3              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 2        |
-| Blocks          | M22            |
-| Estimated hours | 1              |
+| Field           | Value   |
+| --------------- | ------- |
+| Status          | 🟢 Done |
+| Owner           | master  |
+| Phase           | 3       |
+| Parallel-safe   | Yes     |
+| Blocked by      | Phase 2 |
+| Blocks          | M22     |
+| Estimated hours | 1       |
 
 **Files**
 
@@ -622,15 +622,15 @@ Components ownership map (first writer = owner):
 
 ### M12 — Flight workspace (`/flight/[flightNo]`)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 3              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 2        |
-| Blocks          | M22            |
-| Estimated hours | 2.5            |
+| Field           | Value   |
+| --------------- | ------- |
+| Status          | 🟢 Done |
+| Owner           | master  |
+| Phase           | 3       |
+| Parallel-safe   | Yes     |
+| Blocked by      | Phase 2 |
+| Blocks          | M22     |
+| Estimated hours | 2.5     |
 
 **Files**
 
@@ -666,7 +666,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value             |
 | --------------- | ----------------- |
-| Status          | 🟡 In progress    |
+| Status          | 🟢 Done           |
 | Owner           | master            |
 | Phase           | 3                 |
 | Parallel-safe   | Yes               |
@@ -708,7 +708,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value                         |
 | --------------- | ----------------------------- |
-| Status          | 🟡 In progress                |
+| Status          | 🟢 Done                       |
 | Owner           | master                        |
 | Phase           | 3                             |
 | Parallel-safe   | Yes                           |
@@ -758,15 +758,15 @@ Components ownership map (first writer = owner):
 
 ### M15 — Supervisor dashboard (`/supervisor`)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 3              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 2        |
-| Blocks          | M22            |
-| Estimated hours | 2              |
+| Field           | Value   |
+| --------------- | ------- |
+| Status          | 🟢 Done |
+| Owner           | master  |
+| Phase           | 3       |
+| Parallel-safe   | Yes     |
+| Blocked by      | Phase 2 |
+| Blocks          | M22     |
+| Estimated hours | 2       |
 
 **Files**
 
@@ -799,7 +799,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value              |
 | --------------- | ------------------ |
-| Status          | 🟡 In progress     |
+| Status          | 🟢 Done            |
 | Owner           | master             |
 | Phase           | 3                  |
 | Parallel-safe   | Yes                |
@@ -839,7 +839,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value              |
 | --------------- | ------------------ |
-| Status          | 🟡 In progress     |
+| Status          | 🟢 Done            |
 | Owner           | master             |
 | Phase           | 3                  |
 | Parallel-safe   | Yes                |
@@ -874,15 +874,15 @@ Components ownership map (first writer = owner):
 
 ### M18 — Admin config (`/admin/config`)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 3              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 2        |
-| Blocks          | M22            |
-| Estimated hours | 1              |
+| Field           | Value   |
+| --------------- | ------- |
+| Status          | 🟢 Done |
+| Owner           | master  |
+| Phase           | 3       |
+| Parallel-safe   | Yes     |
+| Blocked by      | Phase 2 |
+| Blocks          | M22     |
+| Estimated hours | 1       |
 
 **Files**
 
@@ -910,7 +910,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value                              |
 | --------------- | ---------------------------------- |
-| Status          | 🟡 In progress                     |
+| Status          | 🟢 Done                            |
 | Owner           | master                             |
 | Phase           | 3                                  |
 | Parallel-safe   | Yes                                |
