@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import flightsData from "@/public/data/flights.json";
 import rawScenariosData from "@/public/data/scenarios.json";
 import rawUldSpecsData from "@/public/config/uld-specs.json";
@@ -58,7 +59,7 @@ import {
   type TransportMovement,
   type ULD,
 } from "@/lib/ontology/one-record";
-import { auditDb } from "@/lib/persistence/audit-db";
+import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import {
   computeThermalStatus,
   type ThermalStage,
@@ -795,7 +796,17 @@ export default function SupervisorPage() {
     };
   }, [builtUldIds, clockAnchor]);
 
-  const { heldCards, rows } = buildRows(
+  const liveSnapshots =
+    useLiveQuery(
+      () => auditDb.uldStatus.toArray(),
+      [],
+      [] as UldThermalSnapshot[],
+    ) ?? [];
+  const snapshotByUld = new Map(
+    liveSnapshots.map((snap) => [snap.uldId, snap] as const),
+  );
+
+  const { heldCards, rows: localRows } = buildRows(
     builtUldIds,
     trackerMeasurements,
     weather,
@@ -803,6 +814,21 @@ export default function SupervisorPage() {
     logicalNowMs,
     auditSnapshot,
   );
+
+  const rows: UldTrackerRow[] = localRows.map((row) => {
+    const snap = snapshotByUld.get(row.uldId);
+    if (!snap) return row;
+    return {
+      ...row,
+      ambientC: snap.ambientC,
+      budgetRemainingHours: snap.budgetH,
+      budgetRemainingPercent: snap.budgetPercent,
+      budgetState: snap.budgetTone,
+      internalC: snap.internalC,
+      stage: snap.stage as TrackerStage,
+      stageLabel: toStageLabel(snap.stage as TrackerStage),
+    };
+  });
 
   return (
     <MissionShell>

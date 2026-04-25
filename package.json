@@ -28,6 +28,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4",
     "dexie": "^4",
+    "dexie-react-hooks": "^4.4.0",
     "leaflet": "^1",
     "lucide-react": "^0",
     "next": "15.5.15",

@@ -1,22 +1,23 @@
-import type { Metadata } from 'next';
-import { Geist_Mono } from 'next/font/google';
-import type { ReactNode } from 'react';
+import type { Metadata } from "next";
+import { Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 
-import { ThemeProvider } from '@/components/theme-provider';
-import { isDemoMode } from '@/lib/env';
+import { RecalculatorRoot } from "@/components/recalculator-root";
+import { ThemeProvider } from "@/components/theme-provider";
+import { isDemoMode } from "@/lib/env";
 
-import './globals.css';
+import "./globals.css";
 
 const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 const demoMode = isDemoMode;
 
 export const metadata: Metadata = {
-  title: 'Cool-Chain Copilot',
-  description: 'Hackathon scaffold — design tokens verification',
+  title: "Cool-Chain Copilot",
+  description: "Hackathon scaffold — design tokens verification",
 };
 
 type Props = Readonly<{
@@ -28,13 +29,14 @@ export default function RootLayout({ children }: Props) {
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistMono.variable} font-mono antialiased`}
-        data-demo-mode={demoMode ? 'true' : 'false'}
+        data-demo-mode={demoMode ? "true" : "false"}
       >
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="dark"
           enableSystem={false}
         >
+          <RecalculatorRoot />
           {children}
         </ThemeProvider>
       </body>
