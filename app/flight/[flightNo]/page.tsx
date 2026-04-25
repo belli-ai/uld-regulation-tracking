@@ -24,7 +24,9 @@ import {
   autoBuildFlight,
   type AutoBuildUldSpec,
 } from "@/lib/build-up/auto-build";
+import { signOff } from "@/lib/build-up/sign-off";
 import type {
+  LogisticsEvent,
   ULD,
   TransportMovement,
   Waybill,
@@ -44,6 +46,37 @@ declare module "react" {
 }
 
 const uldSpecs = uldSpecsData as Record<string, AutoBuildUldSpec>;
+
+type FlightUldState =
+  | "warehouse"
+  | "tarmac"
+  | "in-flight"
+  | "arrived-tarmac"
+  | "arrived-destination";
+
+type MonitorStage =
+  | "in-warehouse"
+  | "in-tarmac"
+  | "in-flight"
+  | "arrived-tarmac"
+  | "arrived-destination";
+
+const LOGICAL_MULTIPLIER = 1200;
+const STAGE_BY_EVENT: Partial<Record<string, MonitorStage>> = {
+  BUILD_UP_COMPLETE: "in-warehouse",
+  STATE_DEST_WAREHOUSE_IN: "arrived-destination",
+  STATE_FLIGHT_IN: "in-flight",
+  STATE_TARMAC_DEST_IN: "arrived-tarmac",
+  STATE_TARMAC_IN: "in-tarmac",
+  STATE_WAREHOUSE_IN: "in-warehouse",
+};
+const BASE_BUDGET_HOURS: Record<FlightUldState, number> = {
+  "arrived-destination": 8,
+  "arrived-tarmac": 3,
+  "in-flight": 9,
+  tarmac: 4,
+  warehouse: 11.2,
+};
 
 type ApiDataResponse<T> = {
   data: T;
@@ -70,26 +103,189 @@ function formatLocation(iri: string | undefined) {
 function buildWorkspaceEntries(
   ulds: ULD[],
   contents: Record<string, Waybill[]>,
+  stageByUld: Record<string, MonitorStage>,
+  events: LogisticsEvent[],
+  logicalNowMs: number,
 ): BuiltUldStripEntry[] {
-  return ulds.map((uld) => {
+  return ulds.flatMap((uld) => {
     const waybills = contents[uld["@id"]] ?? [];
+    if (waybills.length === 0) {
+      return [];
+    }
+
     const shcCodes = Array.from(
       new Set(waybills.map((waybill) => waybill.shc).filter(Boolean)),
     );
+    const currentState = getCurrentState(uld, stageByUld, events);
+    const liveBudget = getLiveBudget(uld, currentState, events, logicalNowMs);
 
-    return {
-      uld,
-      awbCount: waybills.length,
-      currentState: "warehouse",
-      shc:
-        shcCodes.length === 1
-          ? shcCodes[0]
-          : shcCodes.length > 1
-            ? "MIX"
-            : "TBD",
-      thermalBudgetLabel: "Budget pending",
-    };
+    return [
+      {
+        uld,
+        awbCount: waybills.length,
+        budgetH: liveBudget.hours,
+        budgetTone: liveBudget.tone,
+        currentState,
+        shc:
+          shcCodes.length === 1
+            ? shcCodes[0]
+            : shcCodes.length > 1
+              ? "MIX"
+              : "TBD",
+        thermalBudgetLabel: `${liveBudget.hours.toFixed(1)}h`,
+      },
+    ];
   });
+}
+
+function getMonitorStorageKey(flightNo: string): string {
+  return `cool-chain:flight-monitor:${flightNo}`;
+}
+
+function isMonitorStage(value: unknown): value is MonitorStage {
+  return typeof value === "string" && value in BASE_BUDGET_HOURS_BY_MONITOR;
+}
+
+const BASE_BUDGET_HOURS_BY_MONITOR: Record<MonitorStage, number> = {
+  "arrived-destination": BASE_BUDGET_HOURS["arrived-destination"],
+  "arrived-tarmac": BASE_BUDGET_HOURS["arrived-tarmac"],
+  "in-flight": BASE_BUDGET_HOURS["in-flight"],
+  "in-tarmac": BASE_BUDGET_HOURS.tarmac,
+  "in-warehouse": BASE_BUDGET_HOURS.warehouse,
+};
+
+function readMonitorStages(flightNo: string): Record<string, MonitorStage> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = sessionStorage.getItem(getMonitorStorageKey(flightNo));
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed == null || typeof parsed !== "object") {
+      return {};
+    }
+
+    const stages: Record<string, MonitorStage> = {};
+    for (const [uldSerialNumber, stage] of Object.entries(parsed)) {
+      if (isMonitorStage(stage)) {
+        stages[uldSerialNumber] = stage;
+      }
+    }
+    return stages;
+  } catch (storageError) {
+    console.error("Failed to read flight monitor stages", storageError);
+    return {};
+  }
+}
+
+function asUldSerial(value: string): string {
+  return value.split(":").at(-1) ?? value;
+}
+
+function getLatestStageEvent(
+  uld: ULD,
+  events: LogisticsEvent[],
+): LogisticsEvent | null {
+  return (
+    events
+      .filter(
+        (event) =>
+          asUldSerial(String(event.eventFor)) === uld.uldSerialNumber &&
+          STAGE_BY_EVENT[event.eventCode],
+      )
+      .sort(
+        (left, right) =>
+          Date.parse(right.eventDate) - Date.parse(left.eventDate),
+      )[0] ?? null
+  );
+}
+
+function toCurrentState(stage: MonitorStage): FlightUldState {
+  if (stage === "in-warehouse") {
+    return "warehouse";
+  }
+
+  if (stage === "in-tarmac") {
+    return "tarmac";
+  }
+
+  return stage;
+}
+
+function getCurrentState(
+  uld: ULD,
+  stageByUld: Record<string, MonitorStage>,
+  events: LogisticsEvent[],
+): FlightUldState {
+  const storedStage = stageByUld[uld.uldSerialNumber];
+  if (storedStage) {
+    return toCurrentState(storedStage);
+  }
+
+  const latestEvent = getLatestStageEvent(uld, events);
+  return latestEvent
+    ? toCurrentState(STAGE_BY_EVENT[latestEvent.eventCode] ?? "in-warehouse")
+    : "warehouse";
+}
+
+function getTarmacStartedMs(uld: ULD, events: LogisticsEvent[]): number | null {
+  const event = events
+    .filter(
+      (candidate) =>
+        asUldSerial(String(candidate.eventFor)) === uld.uldSerialNumber &&
+        candidate.eventCode === "STATE_TARMAC_IN",
+    )
+    .sort(
+      (left, right) => Date.parse(right.eventDate) - Date.parse(left.eventDate),
+    )[0];
+  if (!event) {
+    return null;
+  }
+
+  const parsed = Date.parse(event.eventDate);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getBudgetTone(hours: number): "green" | "yellow" | "red" {
+  if (hours > 6) {
+    return "green";
+  }
+
+  if (hours >= 2) {
+    return "yellow";
+  }
+
+  return "red";
+}
+
+function getLiveBudget(
+  uld: ULD,
+  state: FlightUldState,
+  events: LogisticsEvent[],
+  logicalNowMs: number,
+): { hours: number; tone: "green" | "yellow" | "red" } {
+  let hours = BASE_BUDGET_HOURS[state];
+
+  if (state === "tarmac") {
+    const tarmacStartedMs = getTarmacStartedMs(uld, events);
+    if (tarmacStartedMs !== null) {
+      const elapsedHours = Math.max(
+        0,
+        (logicalNowMs - tarmacStartedMs) / 3_600_000,
+      );
+      hours = Math.max(0, hours - elapsedHours);
+    }
+  }
+
+  return {
+    hours,
+    tone: getBudgetTone(hours),
+  };
 }
 
 function buildAssignedUldMap(
@@ -149,6 +345,9 @@ export default function FlightWorkspacePage() {
   const inventory = useInventoryStore((state) => state.inventory);
   const hydrateInventory = useInventoryStore((state) => state.hydrateInventory);
   const markInBuildUp = useInventoryStore((state) => state.markInBuildUp);
+  const releaseFromBuildUp = useInventoryStore(
+    (state) => state.releaseFromBuildUp,
+  );
   const builtUlds = useUldStore((state) => state.ulds);
   const builtContents = useUldStore((state) => state.contents);
   const addBuiltUld = useUldStore((state) => state.addBuiltUld);
@@ -159,6 +358,15 @@ export default function FlightWorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [autoBuildMessage, setAutoBuildMessage] = useState<string | null>(null);
+  const [auditEvents, setAuditEvents] = useState<LogisticsEvent[]>([]);
+  const [monitorStages, setMonitorStages] = useState<
+    Record<string, MonitorStage>
+  >({});
+  const [clockAnchor] = useState(() => ({
+    baseMs: Date.now(),
+    startedAtMs: Date.now(),
+  }));
+  const [logicalNowMs, setLogicalNowMs] = useState(clockAnchor.baseMs);
 
   useEffect(() => {
     let isCancelled = false;
@@ -180,7 +388,10 @@ export default function FlightWorkspacePage() {
           return;
         }
 
-        const loadings = await auditDb.loadings.toArray().catch(() => []);
+        const [events, loadings] = await Promise.all([
+          auditDb.events.toArray().catch(() => []),
+          auditDb.loadings.toArray().catch(() => []),
+        ]);
         if (isCancelled) {
           return;
         }
@@ -193,6 +404,8 @@ export default function FlightWorkspacePage() {
           );
           setShipments(shipmentsData);
           hydrateInventory(inventoryData);
+          setAuditEvents(events);
+          setMonitorStages(readMonitorStages(flightNo));
 
           const inventoryById = new Map(
             inventoryData.map((u) => [u["@id"], u]),
@@ -246,7 +459,27 @@ export default function FlightWorkspacePage() {
     };
   }, [flightNo, hydrateInventory, addBuiltUld]);
 
-  const builtEntries = buildWorkspaceEntries(builtUlds, builtContents);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setLogicalNowMs(
+        clockAnchor.baseMs +
+          (Date.now() - clockAnchor.startedAtMs) * LOGICAL_MULTIPLIER,
+      );
+      setMonitorStages(readMonitorStages(flightNo));
+    }, 500);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [clockAnchor, flightNo]);
+
+  const builtEntries = buildWorkspaceEntries(
+    builtUlds,
+    builtContents,
+    monitorStages,
+    auditEvents,
+    logicalNowMs,
+  );
   const assignedUldByWaybill = buildAssignedUldMap(builtUlds, builtContents);
   const assignedWaybillIds = useMemo(
     () => new Set(Object.keys(assignedUldByWaybill)),
@@ -287,7 +520,7 @@ export default function FlightWorkspacePage() {
     setPickerOpen(true);
   }
 
-  function handleAutoBuild() {
+  async function handleAutoBuild() {
     const result = autoBuildFlight({
       assignedWaybillIds,
       inventory,
@@ -300,9 +533,33 @@ export default function FlightWorkspacePage() {
       return;
     }
 
+    let signedCount = 0;
     for (const plan of result.plans) {
-      addBuiltUld(plan.uld, plan.shipments);
-      markInBuildUp(plan.uld["@id"]);
+      const sealNumber = `AUTO-${plan.uld.uldSerialNumber}-${Date.now()}`;
+      const sealedUld: ULD = { ...plan.uld, sealNumber };
+      const pieces = plan.shipments.flatMap((wb) => wb.pieces);
+
+      try {
+        const { loading, event } = signOff(
+          sealedUld,
+          pieces,
+          sealNumber,
+          "warehouse-cool-room",
+        );
+        await auditDb.loadings.put(loading, loading["@id"]);
+        await auditDb.events.put(event, event["@id"]);
+
+        addBuiltUld(sealedUld, plan.shipments);
+        releaseFromBuildUp(plan.uld["@id"]);
+        signedCount += 1;
+      } catch (error) {
+        console.error(
+          "Auto-build sign-off failed for",
+          plan.uld.uldSerialNumber,
+          error,
+        );
+        markInBuildUp(plan.uld["@id"]);
+      }
     }
 
     const awbCount = result.plans.reduce(
@@ -310,7 +567,7 @@ export default function FlightWorkspacePage() {
       0,
     );
     setAutoBuildMessage(
-      `${result.plans.length} ULDs built for ${awbCount} AWBs. ${result.unassigned.length} AWBs remain unassigned.`,
+      `${signedCount} ULDs signed off for ${awbCount} AWBs. ${result.unassigned.length} AWBs remain unassigned.`,
     );
   }
 
@@ -413,6 +670,8 @@ export default function FlightWorkspacePage() {
             <div className="min-h-0">
               <BuiltUldStrip
                 entries={builtEntries}
+                monitorHref={`/flight/${encodeURIComponent(flightNo)}/monitor`}
+                openAwbCount={unassignedShipments.length}
                 onOpenUld={(uldSerialNumber) =>
                   router.push(`/uld/${encodeURIComponent(uldSerialNumber)}`)
                 }
