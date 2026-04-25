@@ -4,7 +4,9 @@ import { getShiftedFirstStdMs } from "@/lib/data/flights-shifted";
 import { useDemoClockStore } from "@/lib/stores/demo-clock-store";
 
 const ANCHOR_OFFSET_HOURS = 2;
-export const MS_PER_DEMO_TICK = 60_000;
+// 1 tick = 10 sim minutes. Combined with SimulateToggle's 1 Hz interval,
+// 1× speed advances the sim 10 minutes per real second; 10× → 100 min/s.
+export const MS_PER_DEMO_TICK = 10 * 60_000;
 
 const simulationBaseMs =
   getShiftedFirstStdMs() - ANCHOR_OFFSET_HOURS * 60 * 60 * 1000;
