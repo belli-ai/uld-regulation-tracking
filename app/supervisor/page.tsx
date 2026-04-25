@@ -25,6 +25,7 @@ import {
   type UldTrackerRow,
 } from "@/components/uld-tracker-table";
 import { WeatherSourceBadge } from "@/components/weather-source-badge";
+import { WeatherPanel } from "@/components/weather-panel";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -58,7 +59,10 @@ import {
   type ULD,
 } from "@/lib/ontology/one-record";
 import { auditDb } from "@/lib/persistence/audit-db";
-import { integrateBudget } from "@/lib/physics/pcm-model";
+import {
+  computeThermalStatus,
+  type ThermalStage,
+} from "@/lib/physics/thermal-status";
 import { startTrackerFeed } from "@/lib/simulator/tracker-feed";
 import { cn } from "@/lib/utils";
 
@@ -146,75 +150,6 @@ const ULD_SHC_OVERRIDES: Record<string, string> = {
   "RKN-99001EK": "PER",
   "RKN-99002EK": "FRO",
 };
-const ULD_PHYSICS_SPECS = {
-  AKH_HORSE_STALL: {
-    autonomyHours: 12,
-    id: "AKH_HORSE_STALL",
-    pcmHeatOfFusionKJ_kg: 0,
-    pcmMassKg: 0,
-    pcmMeltEnd: 999,
-    pcmMeltStart: 999,
-    surfaceAreaM2: 12,
-    thermalMassKJ_K: 20,
-    uValueW_m2K: 1,
-  },
-  ENVIROTAINER_RAP_COL: {
-    autonomyHours: 96,
-    id: "ENVIROTAINER_RAP_COL",
-    pcmHeatOfFusionKJ_kg: 334,
-    pcmMassKg: 150,
-    pcmMeltEnd: 8,
-    pcmMeltStart: 2,
-    surfaceAreaM2: 9,
-    thermalMassKJ_K: 45,
-    uValueW_m2K: 0.4,
-  },
-  ENVIROTAINER_RKN_FRO: {
-    autonomyHours: 120,
-    id: "ENVIROTAINER_RKN_FRO",
-    pcmHeatOfFusionKJ_kg: 334,
-    pcmMassKg: 100,
-    pcmMeltEnd: -18,
-    pcmMeltStart: -25,
-    surfaceAreaM2: 10,
-    thermalMassKJ_K: 50,
-    uValueW_m2K: 0.3,
-  },
-  GENERIC_PASSIVE: {
-    autonomyHours: 6,
-    id: "GENERIC_PASSIVE",
-    pcmHeatOfFusionKJ_kg: 0,
-    pcmMassKg: 0,
-    pcmMeltEnd: 999,
-    pcmMeltStart: 999,
-    surfaceAreaM2: 6,
-    thermalMassKJ_K: 15,
-    uValueW_m2K: 1.5,
-  },
-  SONOCO_PEGASUS_CRT: {
-    autonomyHours: 48,
-    id: "SONOCO_PEGASUS_CRT",
-    pcmHeatOfFusionKJ_kg: 334,
-    pcmMassKg: 50,
-    pcmMeltEnd: 8,
-    pcmMeltStart: 2,
-    surfaceAreaM2: 7,
-    thermalMassKJ_K: 25,
-    uValueW_m2K: 0.5,
-  },
-  VA_Q_TAINER_XL: {
-    autonomyHours: 72,
-    id: "VA_Q_TAINER_XL",
-    pcmHeatOfFusionKJ_kg: 334,
-    pcmMassKg: 60,
-    pcmMeltEnd: 8,
-    pcmMeltStart: 2,
-    surfaceAreaM2: 8,
-    thermalMassKJ_K: 30,
-    uValueW_m2K: 0.35,
-  },
-} as const;
-
 const defaultWeather = adaptMockWeather(rawWeatherData as unknown, DXB_STATION);
 const fallbackFlights = adaptMockFlights(flightsData as unknown);
 const fallbackInventory = adaptMockUldInventory(rawInventoryData as unknown);
@@ -318,99 +253,6 @@ function asUldId(value: string): string {
   return value.split(":").at(-1) ?? value;
 }
 
-function getWeatherForTime(weather: CanonicalWeather, timeMs: number): number {
-  if (weather.hourly.length === 0) {
-    return 30;
-  }
-
-  const readings = weather.hourly
-    .map((entry) => ({
-      ambientC: entry.ambientC,
-      timestampMs: Date.parse(entry.timestamp),
-    }))
-    .filter((entry) => Number.isFinite(entry.timestampMs))
-    .sort((left, right) => left.timestampMs - right.timestampMs);
-
-  if (readings.length === 0) {
-    return 30;
-  }
-
-  if (timeMs <= readings[0].timestampMs) {
-    return readings[0].ambientC;
-  }
-
-  if (timeMs >= readings[readings.length - 1].timestampMs) {
-    return readings[readings.length - 1].ambientC;
-  }
-
-  for (let index = 0; index < readings.length - 1; index += 1) {
-    const current = readings[index];
-    const next = readings[index + 1];
-
-    if (timeMs >= current.timestampMs && timeMs <= next.timestampMs) {
-      const ratio =
-        (timeMs - current.timestampMs) /
-        (next.timestampMs - current.timestampMs);
-      return current.ambientC + (next.ambientC - current.ambientC) * ratio;
-    }
-  }
-
-  return readings[readings.length - 1].ambientC;
-}
-
-function buildAmbientForecast(
-  weather: CanonicalWeather,
-  nowMs: number,
-): Measurement[] {
-  const future = weather.hourly
-    .map((entry, index) => {
-      const timestampMs = Date.parse(entry.timestamp);
-
-      if (!Number.isFinite(timestampMs) || timestampMs < nowMs) {
-        return null;
-      }
-
-      return {
-        "@id": toIRI(`urn:cargo:measurement:ambient:${index}`),
-        "@type": "Measurement" as const,
-        bySensor: toIRI("urn:cargo:sensor:ambient"),
-        measurementTimestamp: new Date(timestampMs).toISOString(),
-        measurementValue: {
-          unit: "C",
-          value: entry.ambientC,
-        },
-      };
-    })
-    .filter((entry): entry is Measurement => entry !== null);
-
-  if (future.length > 0) {
-    return future;
-  }
-
-  return [
-    {
-      "@id": toIRI("urn:cargo:measurement:ambient:fallback:0"),
-      "@type": "Measurement",
-      bySensor: toIRI("urn:cargo:sensor:ambient"),
-      measurementTimestamp: new Date(nowMs).toISOString(),
-      measurementValue: {
-        unit: "C",
-        value: getWeatherForTime(weather, nowMs),
-      },
-    },
-    {
-      "@id": toIRI("urn:cargo:measurement:ambient:fallback:1"),
-      "@type": "Measurement",
-      bySensor: toIRI("urn:cargo:sensor:ambient"),
-      measurementTimestamp: new Date(nowMs + 6 * 60 * 60 * 1000).toISOString(),
-      measurementValue: {
-        unit: "C",
-        value: getWeatherForTime(weather, nowMs + 6 * 60 * 60 * 1000),
-      },
-    },
-  ];
-}
-
 function getUldSpecRecord(uld: InventoryRecord): {
   autonomyHours: number;
   label: string;
@@ -424,20 +266,11 @@ function getUldSpecRecord(uld: InventoryRecord): {
     autonomyHours:
       typeof rawRecord?.ratedAutonomyHoursAt25C === "number"
         ? rawRecord.ratedAutonomyHoursAt25C
-        : ULD_PHYSICS_SPECS.GENERIC_PASSIVE.autonomyHours,
+        : 6,
     label:
       typeof rawRecord?.label === "string" ? rawRecord.label : uld.uldTypeCode,
     supportedShc: readStringArray(rawRecord?.supportedShc),
   };
-}
-
-function getUldPhysicsSpec(uld: InventoryRecord) {
-  return (
-    ULD_PHYSICS_SPECS[
-      (uld.uldProductCode ??
-        "GENERIC_PASSIVE") as keyof typeof ULD_PHYSICS_SPECS
-    ] ?? ULD_PHYSICS_SPECS.GENERIC_PASSIVE
-  );
 }
 
 function getShcCode(uld: InventoryRecord): string {
@@ -578,18 +411,6 @@ function parseRelevantAudit(snapshot: AuditSnapshot) {
     latestActionByUld,
     latestEventByUld,
   };
-}
-
-function getBudgetState(percent: number): "green" | "yellow" | "red" {
-  if (percent > 50) {
-    return "green";
-  }
-
-  if (percent >= 30) {
-    return "yellow";
-  }
-
-  return "red";
 }
 
 function getLinearInterpolatedMinutes(
@@ -758,44 +579,34 @@ function buildRows(
       polygons !== null
         ? classifyState(uldId, recentMeasurements, polygons)
         : { stage: "in-warehouse" as TrackerStage };
-    const currentInternalC =
-      [...recentMeasurements]
-        .reverse()
-        .find((measurement) => measurement.measurementValue.unit === "C")
-        ?.measurementValue.value ??
-      inventoryEntry.lastKnownInternalC ??
-      threshold.minTemperature.value;
-    const currentAmbientC = getWeatherForTime(weather, logicalNowMs);
     const flightNumber = getFlightNumberForUld(uldId, builtUldIds);
     const flight = getFlightByNumber(flightNumber);
+    const thermal = computeThermalStatus({
+      uld: inventoryEntry,
+      measurements: recentMeasurements,
+      shcCode,
+      threshold,
+      weather,
+      stage: stageResult.stage as ThermalStage,
+      logicalNowMs,
+      flightId: flight?.["@id"],
+      locationId: toIRI(`urn:cargo:zone:DXB-${stageResult.stage}`),
+      latestEvent: latestEventByUld.get(uldId),
+      latestAction: latestActionByUld.get(uldId),
+    });
     const scheduler = buildSchedulerSnapshot(
       inventoryEntry,
       shcCode,
-      currentAmbientC,
+      thermal.effectiveAmbientC,
       logicalNowMs,
       flight,
       loadingByUld.get(uldId),
     );
-    const budget = integrateBudget(
-      getUldPhysicsSpec(inventoryEntry),
-      currentInternalC,
-      buildAmbientForecast(weather, logicalNowMs),
-      60,
-      threshold,
-    );
-    const { autonomyHours, label } = getUldSpecRecord(inventoryEntry);
-    const budgetRemainingHours = Math.max(0, budget.budgetSec / 3600);
-    const budgetRemainingPercent =
-      autonomyHours > 0
-        ? Math.max(
-            0,
-            Math.min(100, (budgetRemainingHours / autonomyHours) * 100),
-          )
-        : 0;
+    const { label } = getUldSpecRecord(inventoryEntry);
     const status = getStatus(
-      currentInternalC,
+      thermal.internalC,
       threshold,
-      budgetRemainingPercent,
+      thermal.budgetPercent,
       scheduler,
       latestEventByUld.get(uldId),
       latestActionByUld.get(uldId),
@@ -803,15 +614,15 @@ function buildRows(
     const flightStdMs = flight ? getFlightStdMs(flight) : null;
 
     rows.push({
-      ambientC: currentAmbientC,
-      budgetRemainingHours,
-      budgetRemainingPercent,
-      budgetState: getBudgetState(budgetRemainingPercent),
+      ambientC: thermal.ambientC,
+      budgetRemainingHours: thermal.budgetH,
+      budgetRemainingPercent: thermal.budgetPercent,
+      budgetState: thermal.budgetTone,
       flightNumber,
       flightTimeLabel: flightStdMs
         ? formatClock(new Date(flightStdMs))
         : "--:--",
-      internalC: currentInternalC,
+      internalC: thermal.internalC,
       shcCode,
       stage: stageResult.stage,
       stageLabel: toStageLabel(stageResult.stage),
@@ -1067,6 +878,12 @@ export default function SupervisorPage() {
         </section>
 
         <section className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
+          <WeatherPanel
+            weather={weather}
+            nowMs={logicalNowMs}
+            isRefreshing={loading}
+            description="DXB ramp now and forecast."
+          />
           <MetricTile
             label="Free dollies"
             value={RESOURCE_FALLBACK.freeCoolDollies}
