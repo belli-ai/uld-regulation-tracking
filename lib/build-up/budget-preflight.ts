@@ -6,6 +6,7 @@ import {
   type TemperatureInstructions,
   type ULD,
 } from "../ontology/one-record";
+import { effectiveAmbientForStage } from "../physics/thermal-status";
 import { getUldSpec, type UldPhysicsSpec } from "../physics/uld-specs-loader";
 
 export type AmbientCurve = Measurement[];
@@ -25,6 +26,14 @@ type IntegrateBudgetResult = {
   breachAt: Date | null;
 };
 
+/**
+ * Build-up happens in the cool-room — ULD never sees raw tarmac ambient
+ * during preflight, so we mirror the same stage-aware blend that the
+ * recalculator uses in thermal-status. Keeps preflight honest with what
+ * /supervisor and /flight/[no]/monitor will display after sign-off.
+ */
+const PREFLIGHT_STAGE = "in-warehouse" as const;
+
 type TemperatureRange = {
   minC: number;
   maxC: number;
@@ -40,7 +49,9 @@ const SHC_RANGES: Record<string, TemperatureRange> = {
 };
 
 function asNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function toCelsius(value: number, unit: "C" | "F"): number {
@@ -116,38 +127,65 @@ function deriveUldSpec(uld: ULD): UldPhysicsSpec {
   return getUldSpec(specId);
 }
 
-function deriveThreshold(pieces: Piece[]): TemperatureInstructions {
+type DerivedThreshold = {
+  threshold: TemperatureInstructions;
+  satisfiable: boolean;
+};
+
+function deriveThreshold(pieces: Piece[]): DerivedThreshold {
   const ranges = pieces
     .map((piece) => getTemperatureRange(piece))
     .filter((range): range is TemperatureRange => range != null);
 
   if (ranges.length === 0) {
     return {
-      "@id": toIRI("urn:cargo:tempinstr:default"),
-      "@type": "TemperatureInstructions",
-      minTemperature: { value: 15, unit: "C" },
-      maxTemperature: { value: 25, unit: "C" },
+      satisfiable: true,
+      threshold: {
+        "@id": toIRI("urn:cargo:tempinstr:default"),
+        "@type": "TemperatureInstructions",
+        minTemperature: { value: 15, unit: "C" },
+        maxTemperature: { value: 25, unit: "C" },
+      },
     };
   }
 
   const minC = Math.max(...ranges.map((range) => range.minC));
   const maxC = Math.min(...ranges.map((range) => range.maxC));
+  const satisfiable = maxC >= minC;
 
   return {
-    "@id": toIRI("urn:cargo:tempinstr:build-up-threshold"),
-    "@type": "TemperatureInstructions",
-    minTemperature: { value: minC, unit: "C" },
-    maxTemperature: { value: maxC >= minC ? maxC : minC, unit: "C" },
+    satisfiable,
+    threshold: {
+      "@id": toIRI("urn:cargo:tempinstr:build-up-threshold"),
+      "@type": "TemperatureInstructions",
+      minTemperature: { value: minC, unit: "C" },
+      maxTemperature: { value: satisfiable ? maxC : minC, unit: "C" },
+    },
   };
 }
 
-function toWarning(budgetH: number): "green" | "yellow" | "red" {
-  if (budgetH >= 4) {
-    return "green";
-  }
-  if (budgetH >= 2) {
-    return "yellow";
-  }
+function applyStageBlend(curve: Measurement[]): Measurement[] {
+  return curve.map((measurement) => {
+    const raw = measurement.measurementValue.value;
+    const blended = effectiveAmbientForStage(PREFLIGHT_STAGE, raw);
+    return {
+      ...measurement,
+      measurementValue: {
+        ...measurement.measurementValue,
+        value: blended,
+      },
+    };
+  });
+}
+
+function toWarning(
+  budgetH: number,
+  autonomyH: number,
+): "green" | "yellow" | "red" {
+  if (autonomyH <= 0) return "red";
+  const percent = (budgetH / autonomyH) * 100;
+  if (percent >= 50) return "green";
+  if (percent >= 25) return "yellow";
   return "red";
 }
 
@@ -156,21 +194,39 @@ export const budgetPreflight = {
     uld: ULD,
     pieces: Piece[],
     projectedAmbient: AmbientCurve,
-  ): { budgetH: number; breachAt: string | null; warning: "green" | "yellow" | "red" } {
+  ): {
+    budgetH: number;
+    breachAt: string | null;
+    warning: "green" | "yellow" | "red";
+  } {
+    const spec = deriveUldSpec(uld);
+    const { threshold, satisfiable } = deriveThreshold(pieces);
+
+    if (!satisfiable) {
+      return { budgetH: 0, breachAt: null, warning: "red" };
+    }
+
+    const stageAmbient = applyStageBlend(projectedAmbient);
+
     const result = integrateBudget(
-      deriveUldSpec(uld),
+      spec,
       deriveInternalTemperature(uld, pieces),
-      projectedAmbient,
+      stageAmbient,
       60,
-      deriveThreshold(pieces),
+      threshold,
     ) as IntegrateBudgetResult;
 
-    const budgetH = result.budgetSec / 3600;
+    const autonomyH = spec.autonomyHours > 0 ? spec.autonomyHours : 1;
+    const noBreachInHorizon = result.breachAt === null;
+
+    const budgetH = noBreachInHorizon
+      ? autonomyH
+      : Math.max(0, result.budgetSec / 3600);
 
     return {
       budgetH,
       breachAt: result.breachAt?.toISOString() ?? null,
-      warning: toWarning(budgetH),
+      warning: noBreachInHorizon ? "green" : toWarning(budgetH, autonomyH),
     };
   },
 };
