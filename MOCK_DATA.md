@@ -6,26 +6,27 @@ Concrete fixtures backing every scenario in **PLAN.md → Demo Control Panel** a
 
 ## Plan Revisions
 
-| Rev | Date | Author | Summary |
-|---|---|---|---|
-| 1.0 | 2026-04-25 | Lead | Initial mock data plan — 4 flights, 13 AWBs (COL/PER/AVI/CRT/FRO/HEG mix, 2 DG-declared placeholders), 12 ULDs (7 with integrated trackers, 5 passive), DXB geofence with 8 sub-zones, station capabilities, weather curve. Cross-reference matrix tying every fixture to its scenario. DGD mapping deferred — placeholder schema until user provides DGD docs. |
-| 1.1 | 2026-04-25 | Lead | Cohesion review fixes: AKH ULDs now reference `AKH_HORSE_STALL` product code (not Generic passive). New `ENVIROTAINER_RKN_FRO` product spec added; RKN-99002EK retyped to FRO so 176-13579246 (frozen lobster) has a compatible ULD. AWB → ULD compatibility map added under Cross-fixture invariants. Cascading-delays scenario row updated with new ULDs (AKH-77702EK, RKN-99002EK) and clarification that AVI fish + FRO ULDs are passive (inferred state). |
-| 1.2 | 2026-04-25 | Lead | DG AutoCheck Connect API spec received. DG mapping section reframed: stub fixtures now described as the post-AutoCheck cache shape (what the adapter would have stored after a passed webhook). Two operating modes documented (stub vs real). Swap surface enumerated for M23 (autocheck client, webhook listener, env vars). Canonical `:DgDeclaration` shape preserved. |
+| Rev | Date       | Author | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0 | 2026-04-25 | Lead   | Initial mock data plan — 4 flights, 13 AWBs (COL/PER/AVI/CRT/FRO/HEG mix, 2 DG-declared placeholders), 12 ULDs (7 with integrated trackers, 5 passive), DXB geofence with 8 sub-zones, station capabilities, weather curve. Cross-reference matrix tying every fixture to its scenario. DGD mapping deferred — placeholder schema until user provides DGD docs.                                                                                                                                                            |
+| 1.1 | 2026-04-25 | Lead   | Cohesion review fixes: AKH ULDs now reference `AKH_HORSE_STALL` product code (not Generic passive). New `ENVIROTAINER_RKN_FRO` product spec added; RKN-99002EK retyped to FRO so 176-13579246 (frozen lobster) has a compatible ULD. AWB → ULD compatibility map added under Cross-fixture invariants. Cascading-delays scenario row updated with new ULDs (AKH-77702EK, RKN-99002EK) and clarification that AVI fish + FRO ULDs are passive (inferred state).                                                             |
+| 1.2 | 2026-04-25 | Lead   | DG AutoCheck Connect API spec received. DG mapping section reframed: stub fixtures now described as the post-AutoCheck cache shape (what the adapter would have stored after a passed webhook). Two operating modes documented (stub vs real). Swap surface enumerated for M23 (autocheck client, webhook listener, env vars). Canonical `:DgDeclaration` shape preserved.                                                                                                                                                 |
+| 1.3 | 2026-04-25 | Lead   | Extended `:DgDeclaration` stub fixtures to cover every IATA Shipper's Declaration (DGD) form field. Added shipper/consignee/issuer/signatory party graph, `dgDeclaredItems[]` (UN id, proper shipping name, class, packing group, packaging type, number of packages, net quantity, PI, authorization), shipment limitation enum, shipment type, handling information. Removed `_placeholder` flag — shape is now form-complete; M23 maps XSDG export fields onto this canonical shape rather than extending schema again. |
 
 ## Files covered
 
-| Path | Purpose |
-|---|---|
-| `public/data/flights.json` | `:TransportMovement[]` — today's outbound at DXB |
-| `public/data/shipments.json` | AWBs (`:Waybill[]`) keyed by `flightNumber`, with `:Piece[]` + `:TemperatureInstructions` + optional `:DgDeclaration` |
-| `public/data/uld-inventory.json` | Available ULDs (`:ULD[]`) at DXB, with optional `iotDeviceId` + sensor list |
-| `public/data/iot-devices.json` | `:IotDevice[]` and `:Sensor[]` for trackers attached to ULDs |
-| `public/config/uld-specs.json` | PCM autonomy curves per ULD product type (Envirotainer, va-Q-tainer, Sonoco, generic) |
-| `public/config/stations.json` | DXB capability registry (cool dollies, cool-room slots, build-up bays, GPU policy, CEIV) |
-| `public/config/shc.json` | SHC tolerance database — see PLAN.md → **SHC Config** |
-| `public/data/airports/DXB.geojson` | Geofence sub-zones inside DXB airport polygon |
-| `public/data/weather/DXB.json` | Pre-baked ambient curve fallback for Open-Meteo |
-| `public/data/scenarios.json` | Scripted timelines — see PLAN.md → **Demo Control Panel** |
+| Path                               | Purpose                                                                                                               |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `public/data/flights.json`         | `:TransportMovement[]` — today's outbound at DXB                                                                      |
+| `public/data/shipments.json`       | AWBs (`:Waybill[]`) keyed by `flightNumber`, with `:Piece[]` + `:TemperatureInstructions` + optional `:DgDeclaration` |
+| `public/data/uld-inventory.json`   | Available ULDs (`:ULD[]`) at DXB, with optional `iotDeviceId` + sensor list                                           |
+| `public/data/iot-devices.json`     | `:IotDevice[]` and `:Sensor[]` for trackers attached to ULDs                                                          |
+| `public/config/uld-specs.json`     | PCM autonomy curves per ULD product type (Envirotainer, va-Q-tainer, Sonoco, generic)                                 |
+| `public/config/stations.json`      | DXB capability registry (cool dollies, cool-room slots, build-up bays, GPU policy, CEIV)                              |
+| `public/config/shc.json`           | SHC tolerance database — see PLAN.md → **SHC Config**                                                                 |
+| `public/data/airports/DXB.geojson` | Geofence sub-zones inside DXB airport polygon                                                                         |
+| `public/data/weather/DXB.json`     | Pre-baked ambient curve fallback for Open-Meteo                                                                       |
+| `public/data/scenarios.json`       | Scripted timelines — see PLAN.md → **Demo Control Panel**                                                             |
 
 ## Entity ID conventions
 
@@ -42,12 +43,12 @@ Concrete fixtures backing every scenario in **PLAN.md → Demo Control Panel** a
 
 Four DXB outbound flights. Three drive scripted scenarios; the fourth is sandbox-only breadth.
 
-| Flight | Route | ETD (local) | Aircraft body | Used in scenarios |
-|---|---|---|---|---|
-| **EK0083** | DXB → FRA | 14:20 | Wide-body | dxb-warehouse-demo, dxb-quiet-shift, dxb-cascading-delays |
-| **EK0237** | DXB → LHR | 14:50 | Wide-body | dxb-cascading-delays |
-| **EK0411** | DXB → JFK | 15:30 | Wide-body | dxb-cascading-delays |
-| **EK0357** | DXB → SIN | 16:00 | Wide-body | custom (sandbox only) |
+| Flight     | Route     | ETD (local) | Aircraft body | Used in scenarios                                         |
+| ---------- | --------- | ----------- | ------------- | --------------------------------------------------------- |
+| **EK0083** | DXB → FRA | 14:20       | Wide-body     | dxb-warehouse-demo, dxb-quiet-shift, dxb-cascading-delays |
+| **EK0237** | DXB → LHR | 14:50       | Wide-body     | dxb-cascading-delays                                      |
+| **EK0411** | DXB → JFK | 15:30       | Wide-body     | dxb-cascading-delays                                      |
+| **EK0357** | DXB → SIN | 16:00       | Wide-body     | custom (sandbox only)                                     |
 
 **Sample shape** (`:TransportMovement`):
 
@@ -78,36 +79,36 @@ Four DXB outbound flights. Three drive scripted scenarios; the fourth is sandbox
 
 ### EK0083 (DXB → FRA) — 4 AWBs
 
-| AWB | SHC | Description | Pieces | Gross | Temp range | DG | Used in |
-|---|---|---|---|---|---|---|---|
-| 176-12345678 | COL | Pharma vaccines, PharmaCo | 4 | 142 kg | 2–8°C | — | dxb-warehouse-demo, dxb-quiet-shift |
-| 176-23456789 | PER | Fresh roses, FloraEx | 2 | 89 kg | 2–8°C | — | dxb-warehouse-demo, dxb-cascading-delays |
-| 176-34567890 | AVI | Live racehorses, StallionAir | 1 | 920 kg | 18–26°C | — | dxb-cascading-delays |
-| 176-45678901 | CRT | Smartphones, TechShip | 8 | 425 kg | 15–25°C | **Class 9 (lithium-ion batteries, UN3481)** | dxb-cascading-delays |
+| AWB          | SHC | Description                  | Pieces | Gross  | Temp range | DG                                          | Used in                                  |
+| ------------ | --- | ---------------------------- | ------ | ------ | ---------- | ------------------------------------------- | ---------------------------------------- |
+| 176-12345678 | COL | Pharma vaccines, PharmaCo    | 4      | 142 kg | 2–8°C      | —                                           | dxb-warehouse-demo, dxb-quiet-shift      |
+| 176-23456789 | PER | Fresh roses, FloraEx         | 2      | 89 kg  | 2–8°C      | —                                           | dxb-warehouse-demo, dxb-cascading-delays |
+| 176-34567890 | AVI | Live racehorses, StallionAir | 1      | 920 kg | 18–26°C    | —                                           | dxb-cascading-delays                     |
+| 176-45678901 | CRT | Smartphones, TechShip        | 8      | 425 kg | 15–25°C    | **Class 9 (lithium-ion batteries, UN3481)** | dxb-cascading-delays                     |
 
 ### EK0237 (DXB → LHR) — 4 AWBs
 
-| AWB | SHC | Description | Pieces | Gross | Temp range | DG | Used in |
-|---|---|---|---|---|---|---|---|
-| 176-56789012 | PER | Fresh tuna, OceanCargo | 6 | 1240 kg | 2–8°C | — | dxb-cascading-delays |
-| 176-67890123 | COL | Biologics, BioMed | 2 | 78 kg | 2–8°C | — | dxb-cascading-delays |
-| 176-78901234 | CRT | Consumer goods, mixed | 12 | 890 kg | 15–25°C | — | dxb-cascading-delays |
-| 176-89012345 | — (general) | Corrosive substance, ChemFreight | 3 | 145 kg | ambient | **Class 8 (corrosive, UN1789)** | custom |
+| AWB          | SHC         | Description                      | Pieces | Gross   | Temp range | DG                              | Used in              |
+| ------------ | ----------- | -------------------------------- | ------ | ------- | ---------- | ------------------------------- | -------------------- |
+| 176-56789012 | PER         | Fresh tuna, OceanCargo           | 6      | 1240 kg | 2–8°C      | —                               | dxb-cascading-delays |
+| 176-67890123 | COL         | Biologics, BioMed                | 2      | 78 kg   | 2–8°C      | —                               | dxb-cascading-delays |
+| 176-78901234 | CRT         | Consumer goods, mixed            | 12     | 890 kg  | 15–25°C    | —                               | dxb-cascading-delays |
+| 176-89012345 | — (general) | Corrosive substance, ChemFreight | 3      | 145 kg  | ambient    | **Class 8 (corrosive, UN1789)** | custom               |
 
 ### EK0411 (DXB → JFK) — 3 AWBs
 
-| AWB | SHC | Description | Pieces | Gross | Temp range | DG | Used in |
-|---|---|---|---|---|---|---|---|
-| 176-90123456 | AVI | Live ornamental fish, AquaShip | 4 | 320 kg | 22–26°C | — | dxb-cascading-delays |
-| 176-01234567 | COL | Antibiotics, PharmaWorld | 5 | 234 kg | 2–8°C | — | dxb-cascading-delays |
-| 176-13579246 | FRO | Frozen lobster, PolarLog | 3 | 540 kg | -25 to -15°C | — | dxb-cascading-delays |
+| AWB          | SHC | Description                    | Pieces | Gross  | Temp range   | DG  | Used in              |
+| ------------ | --- | ------------------------------ | ------ | ------ | ------------ | --- | -------------------- |
+| 176-90123456 | AVI | Live ornamental fish, AquaShip | 4      | 320 kg | 22–26°C      | —   | dxb-cascading-delays |
+| 176-01234567 | COL | Antibiotics, PharmaWorld       | 5      | 234 kg | 2–8°C        | —   | dxb-cascading-delays |
+| 176-13579246 | FRO | Frozen lobster, PolarLog       | 3      | 540 kg | -25 to -15°C | —   | dxb-cascading-delays |
 
 ### EK0357 (DXB → SIN) — 2 AWBs (sandbox-only)
 
-| AWB | SHC | Description | Pieces | Gross | Temp range | DG | Used in |
-|---|---|---|---|---|---|---|---|
-| 176-24681357 | HEG | Fertile hatching eggs, Poultry Express | 6 | 88 kg | 18–22°C | — | custom |
-| 176-86420975 | CRT | Mixed consumer goods | 4 | 156 kg | 15–25°C | — | custom |
+| AWB          | SHC | Description                            | Pieces | Gross  | Temp range | DG  | Used in |
+| ------------ | --- | -------------------------------------- | ------ | ------ | ---------- | --- | ------- |
+| 176-24681357 | HEG | Fertile hatching eggs, Poultry Express | 6      | 88 kg  | 18–22°C    | —   | custom  |
+| 176-86420975 | CRT | Mixed consumer goods                   | 4      | 156 kg | 15–25°C    | —   | custom  |
 
 ### Sample AWB shape (`:Waybill` + `:Piece` + `:TemperatureInstructions`)
 
@@ -145,22 +146,22 @@ DG-declared pieces additionally carry `dgDeclaration: "urn:cargo:dgdec:..."` lin
 
 ## ULD Inventory (`uld-inventory.json`)
 
-12 ULDs at DXB. **7 with integrated trackers, 5 passive (no tracker).** Passive ULD telemetry is *inferred* from station polygon ambient + last-known-state + physics extrapolation rather than measured directly; UI surfaces a `tracker: 'integrated' | 'inferred'` badge so judges immediately see the difference.
+12 ULDs at DXB. **7 with integrated trackers, 5 passive (no tracker).** Passive ULD telemetry is _inferred_ from station polygon ambient + last-known-state + physics extrapolation rather than measured directly; UI surfaces a `tracker: 'integrated' | 'inferred'` badge so judges immediately see the difference.
 
-| ULD | Type | Product | Owner | Tracker | Pre-cool | Used in |
-|---|---|---|---|---|---|---|
-| AKE-12345EK | AKE (LD-3) | Envirotainer RAP-COL | EK | **IOT-001** | 4.2°C ✅ | dxb-warehouse-demo |
-| AKE-22219EK | AKE (LD-3) | Envirotainer RAP-COL | EK | **IOT-002** | 4.5°C ✅ | dxb-cascading-delays |
-| AKE-33310EK | AKE (LD-3) | Generic passive | EK | — | ambient | available |
-| RKN-99001EK | RKN (reefer) | va-Q-tainer XL | EK | **IOT-003** | 5.1°C ✅ | dxb-quiet-shift, dxb-cascading-delays |
-| RKN-99002EK | RKN (reefer) | Envirotainer RKN-FRO | EK | — | -19°C ✅ | available (FRO frozen lobster fallback for cascading-delays) |
-| AKH-77701EK | AKH (horse stall) | AKH horse stall | EK | **IOT-004** | ambient | dxb-cascading-delays (AVI horses) |
-| AKH-77702EK | AKH (horse stall) | AKH horse stall | EK | — | ambient | available (AVI fish fallback for cascading-delays) |
-| PMC-10001EK | PMC (main-deck) | Generic passive | EK | **IOT-005** | ambient | available |
-| PMC-10002EK | PMC (main-deck) | Generic passive | EK | — | ambient | available |
-| AAU-66610EK | AAU (contoured) | Sonoco Pegasus CRT | EK | **IOT-006** | 21.8°C ✅ | dxb-cascading-delays (CRT) |
-| AAY-55501EK | AAY (thermal pallet) | Generic passive | EK | — | ambient | available |
-| AKW-44401EK | AKW (cold LD-3) | Envirotainer RAP-COL | EK | **IOT-007** | 4.0°C ✅ | available |
+| ULD         | Type                 | Product              | Owner | Tracker     | Pre-cool  | Used in                                                      |
+| ----------- | -------------------- | -------------------- | ----- | ----------- | --------- | ------------------------------------------------------------ |
+| AKE-12345EK | AKE (LD-3)           | Envirotainer RAP-COL | EK    | **IOT-001** | 4.2°C ✅  | dxb-warehouse-demo                                           |
+| AKE-22219EK | AKE (LD-3)           | Envirotainer RAP-COL | EK    | **IOT-002** | 4.5°C ✅  | dxb-cascading-delays                                         |
+| AKE-33310EK | AKE (LD-3)           | Generic passive      | EK    | —           | ambient   | available                                                    |
+| RKN-99001EK | RKN (reefer)         | va-Q-tainer XL       | EK    | **IOT-003** | 5.1°C ✅  | dxb-quiet-shift, dxb-cascading-delays                        |
+| RKN-99002EK | RKN (reefer)         | Envirotainer RKN-FRO | EK    | —           | -19°C ✅  | available (FRO frozen lobster fallback for cascading-delays) |
+| AKH-77701EK | AKH (horse stall)    | AKH horse stall      | EK    | **IOT-004** | ambient   | dxb-cascading-delays (AVI horses)                            |
+| AKH-77702EK | AKH (horse stall)    | AKH horse stall      | EK    | —           | ambient   | available (AVI fish fallback for cascading-delays)           |
+| PMC-10001EK | PMC (main-deck)      | Generic passive      | EK    | **IOT-005** | ambient   | available                                                    |
+| PMC-10002EK | PMC (main-deck)      | Generic passive      | EK    | —           | ambient   | available                                                    |
+| AAU-66610EK | AAU (contoured)      | Sonoco Pegasus CRT   | EK    | **IOT-006** | 21.8°C ✅ | dxb-cascading-delays (CRT)                                   |
+| AAY-55501EK | AAY (thermal pallet) | Generic passive      | EK    | —           | ambient   | available                                                    |
+| AKW-44401EK | AKW (cold LD-3)      | Envirotainer RAP-COL | EK    | **IOT-007** | 4.0°C ✅  | available                                                    |
 
 ### Sample ULD shape (`:ULD`)
 
@@ -238,14 +239,14 @@ Passive ULDs omit `iotDeviceId` and `lastKnownInternalC`; the inference engine (
 
 PCM autonomy parameters per ULD product. Inputs to the physics engine (M4).
 
-| Product code | k (heat-transfer coeff) | PCM melt range | Max acceptable internal | Rated autonomy at 25°C ambient | Notes |
-|---|---|---|---|---|---|
-| `ENVIROTAINER_RAP_COL` | 0.05 | 4–7°C | 8°C | 96 h | COL pharma reefer |
-| `VA_Q_TAINER_XL` | 0.03 | 5–8°C | 8°C | 120 h | High-end pharma |
-| `SONOCO_PEGASUS_CRT` | 0.06 | 18–22°C | 25°C | 80 h | CRT controlled-room |
-| `ENVIROTAINER_RKN_FRO` | 0.04 | -22°C to -18°C | -15°C | 72 h | Frozen reefer (-20°C nominal) |
-| `GENERIC_PASSIVE` | 0.10 | none | depends on SHC | 12 h | No PCM; ambient delta only |
-| `AKH_HORSE_STALL` | 0.12 | none | 26°C | 8 h | Live animal (large), ambient only |
+| Product code           | k (heat-transfer coeff) | PCM melt range | Max acceptable internal | Rated autonomy at 25°C ambient | Notes                             |
+| ---------------------- | ----------------------- | -------------- | ----------------------- | ------------------------------ | --------------------------------- |
+| `ENVIROTAINER_RAP_COL` | 0.05                    | 4–7°C          | 8°C                     | 96 h                           | COL pharma reefer                 |
+| `VA_Q_TAINER_XL`       | 0.03                    | 5–8°C          | 8°C                     | 120 h                          | High-end pharma                   |
+| `SONOCO_PEGASUS_CRT`   | 0.06                    | 18–22°C        | 25°C                    | 80 h                           | CRT controlled-room               |
+| `ENVIROTAINER_RKN_FRO` | 0.04                    | -22°C to -18°C | -15°C                   | 72 h                           | Frozen reefer (-20°C nominal)     |
+| `GENERIC_PASSIVE`      | 0.10                    | none           | depends on SHC          | 12 h                           | No PCM; ambient delta only        |
+| `AKH_HORSE_STALL`      | 0.12                    | none           | 26°C                    | 8 h                            | Live animal (large), ambient only |
 
 Pegasus CRT's max-acceptable threshold (25°C) is loose since CRT is a wider window; physics still triggers a yellow warning at 23°C buffer.
 
@@ -255,23 +256,48 @@ Pegasus CRT's max-acceptable threshold (25°C) is loose since CRT is a wider win
 
 Used by the map (PLAN.md → **Map / Geo Visualisation**) and the tracker simulator's great-circle in-flight interpolation.
 
-| Airport | IATA | lat | lon | Role |
-|---|---|---|---|---|
-| Dubai International | **DXB** | 25.2532 | 55.3657 | Origin (only station for hackathon) |
-| Frankfurt am Main | FRA | 50.0379 | 8.5622 | Arrival — EK0083 |
-| London Heathrow | LHR | 51.4700 | -0.4543 | Arrival — EK0237 |
-| New York JFK | JFK | 40.6413 | -73.7781 | Arrival — EK0411 |
-| Singapore Changi | SIN | 1.3644 | 103.9915 | Arrival — EK0357 (sandbox) |
+| Airport             | IATA    | lat     | lon      | Role                                |
+| ------------------- | ------- | ------- | -------- | ----------------------------------- |
+| Dubai International | **DXB** | 25.2532 | 55.3657  | Origin (only station for hackathon) |
+| Frankfurt am Main   | FRA     | 50.0379 | 8.5622   | Arrival — EK0083                    |
+| London Heathrow     | LHR     | 51.4700 | -0.4543  | Arrival — EK0237                    |
+| New York JFK        | JFK     | 40.6413 | -73.7781 | Arrival — EK0411                    |
+| Singapore Changi    | SIN     | 1.3644  | 103.9915 | Arrival — EK0357 (sandbox)          |
 
 Coordinates ship as `:Location` with attached `:Geolocation` records — IRIs follow `urn:cargo:loc:<IATA>` (e.g. `urn:cargo:loc:DXB`). Adapter loads from `public/data/airports.json` (mirror of this table).
 
 ```json
 {
-  "DXB": { "iata": "DXB", "latitude": 25.2532, "longitude": 55.3657, "tzOffsetMinutes": 240 },
-  "FRA": { "iata": "FRA", "latitude": 50.0379, "longitude": 8.5622, "tzOffsetMinutes": 120 },
-  "LHR": { "iata": "LHR", "latitude": 51.4700, "longitude": -0.4543, "tzOffsetMinutes": 60 },
-  "JFK": { "iata": "JFK", "latitude": 40.6413, "longitude": -73.7781, "tzOffsetMinutes": -240 },
-  "SIN": { "iata": "SIN", "latitude": 1.3644, "longitude": 103.9915, "tzOffsetMinutes": 480 }
+  "DXB": {
+    "iata": "DXB",
+    "latitude": 25.2532,
+    "longitude": 55.3657,
+    "tzOffsetMinutes": 240
+  },
+  "FRA": {
+    "iata": "FRA",
+    "latitude": 50.0379,
+    "longitude": 8.5622,
+    "tzOffsetMinutes": 120
+  },
+  "LHR": {
+    "iata": "LHR",
+    "latitude": 51.47,
+    "longitude": -0.4543,
+    "tzOffsetMinutes": 60
+  },
+  "JFK": {
+    "iata": "JFK",
+    "latitude": 40.6413,
+    "longitude": -73.7781,
+    "tzOffsetMinutes": -240
+  },
+  "SIN": {
+    "iata": "SIN",
+    "latitude": 1.3644,
+    "longitude": 103.9915,
+    "tzOffsetMinutes": 480
+  }
 }
 ```
 
@@ -281,16 +307,16 @@ Coordinates ship as `:Location` with attached `:Geolocation` records — IRIs fo
 
 Eight named features inside DXB airport bounds. Used by state classifier (M5) and ULD detail map (M14).
 
-| Feature ID | Type | Approx centre (lat, lon) | Purpose | Reference ambient |
-|---|---|---|---|---|
-| `cool-room` | Polygon | 25.2461, 55.3585 | Cargo Mega Terminal cool zone | 5°C |
-| `build-up-area` | Polygon | 25.2470, 55.3597 | Build-up bays floor | 22°C |
-| `apron-staging-1` | Polygon | 25.2440, 55.3500 | Apron staging near terminal | tarmac ambient |
-| `apron-staging-2` | Polygon | 25.2450, 55.3520 | Apron staging far west | tarmac ambient |
-| `tarmac-shadow-jetbridge` | Polygon | 25.2510, 55.3625 | Shadow zone near gate B12 jet bridge | tarmac ambient – 4°C |
-| `tarmac-shadow-tail` | Polygon | 25.2515, 55.3635 | Shadow zone near gate B14 tail | tarmac ambient – 3°C |
-| `gate-A12` | Polygon | 25.2525, 55.3650 | Active loading position gate A12 | tarmac ambient |
-| `runway-25R` | LineString | 25.2480, 55.3540 → 25.2400, 55.3700 | Departure runway centreline | n/a (in-flight transition trigger) |
+| Feature ID                | Type       | Approx centre (lat, lon)            | Purpose                              | Reference ambient                  |
+| ------------------------- | ---------- | ----------------------------------- | ------------------------------------ | ---------------------------------- |
+| `cool-room`               | Polygon    | 25.2461, 55.3585                    | Cargo Mega Terminal cool zone        | 5°C                                |
+| `build-up-area`           | Polygon    | 25.2470, 55.3597                    | Build-up bays floor                  | 22°C                               |
+| `apron-staging-1`         | Polygon    | 25.2440, 55.3500                    | Apron staging near terminal          | tarmac ambient                     |
+| `apron-staging-2`         | Polygon    | 25.2450, 55.3520                    | Apron staging far west               | tarmac ambient                     |
+| `tarmac-shadow-jetbridge` | Polygon    | 25.2510, 55.3625                    | Shadow zone near gate B12 jet bridge | tarmac ambient – 4°C               |
+| `tarmac-shadow-tail`      | Polygon    | 25.2515, 55.3635                    | Shadow zone near gate B14 tail       | tarmac ambient – 3°C               |
+| `gate-A12`                | Polygon    | 25.2525, 55.3650                    | Active loading position gate A12     | tarmac ambient                     |
+| `runway-25R`              | LineString | 25.2480, 55.3540 → 25.2400, 55.3700 | Departure runway centreline          | n/a (in-flight transition trigger) |
 
 Polygons are ~50–150 m on a side, drawn as small rectangles around each centre. Approximate; not survey-grade. GeoJSON feature properties include `referenceAmbientDeltaC` (vs station ambient) so the inference engine can compute zone-specific ambient without re-deriving, plus `name` and `purpose` for the UI legend.
 
@@ -309,13 +335,15 @@ Polygons are ~50–150 m on a side, drawn as small rectangles around each centre
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[
-          [55.3580, 25.2458],
-          [55.3590, 25.2458],
-          [55.3590, 25.2464],
-          [55.3580, 25.2464],
-          [55.3580, 25.2458]
-        ]]
+        "coordinates": [
+          [
+            [55.358, 25.2458],
+            [55.359, 25.2458],
+            [55.359, 25.2464],
+            [55.358, 25.2464],
+            [55.358, 25.2458]
+          ]
+        ]
       }
     }
   ]
@@ -367,12 +395,42 @@ Pre-baked fallback for Open-Meteo. 24-hour ambient curve in 1-hour steps. Summer
   "source": "mock",
   "generatedAt": "2026-04-25T00:00:00+04:00",
   "hourly": [
-    { "timestamp": "2026-04-25T00:00:00+04:00", "ambientC": 30, "humidityPct": 70, "cloudCoverPct": 20 },
-    { "timestamp": "2026-04-25T06:00:00+04:00", "ambientC": 28, "humidityPct": 75, "cloudCoverPct": 30 },
-    { "timestamp": "2026-04-25T12:00:00+04:00", "ambientC": 40, "humidityPct": 55, "cloudCoverPct": 25 },
-    { "timestamp": "2026-04-25T14:00:00+04:00", "ambientC": 42, "humidityPct": 50, "cloudCoverPct": 20 },
-    { "timestamp": "2026-04-25T18:00:00+04:00", "ambientC": 38, "humidityPct": 60, "cloudCoverPct": 35 },
-    { "timestamp": "2026-04-25T22:00:00+04:00", "ambientC": 32, "humidityPct": 70, "cloudCoverPct": 40 }
+    {
+      "timestamp": "2026-04-25T00:00:00+04:00",
+      "ambientC": 30,
+      "humidityPct": 70,
+      "cloudCoverPct": 20
+    },
+    {
+      "timestamp": "2026-04-25T06:00:00+04:00",
+      "ambientC": 28,
+      "humidityPct": 75,
+      "cloudCoverPct": 30
+    },
+    {
+      "timestamp": "2026-04-25T12:00:00+04:00",
+      "ambientC": 40,
+      "humidityPct": 55,
+      "cloudCoverPct": 25
+    },
+    {
+      "timestamp": "2026-04-25T14:00:00+04:00",
+      "ambientC": 42,
+      "humidityPct": 50,
+      "cloudCoverPct": 20
+    },
+    {
+      "timestamp": "2026-04-25T18:00:00+04:00",
+      "ambientC": 38,
+      "humidityPct": 60,
+      "cloudCoverPct": 35
+    },
+    {
+      "timestamp": "2026-04-25T22:00:00+04:00",
+      "ambientC": 32,
+      "humidityPct": 70,
+      "cloudCoverPct": 40
+    }
   ]
 }
 ```
@@ -385,12 +443,12 @@ Scenario `weather_override` events override this baseline at runtime (PLAN.md �
 
 How each scenario exercises the fixtures. Read top-down to understand which entities to update when changing a scenario; read left-right to find which scenarios depend on a given fixture.
 
-| Scenario | Flights touched | ULDs spawned | AWBs in play | IoT devices | Geofence zones traversed | Weather profile | Resources at start |
-|---|---|---|---|---|---|---|---|
-| **dxb-warehouse-demo** ★ | EK0083 | AKE-12345EK | 176-12345678 (COL), 176-23456789 (PER) | IOT-001 | cool-room → build-up-area → apron-staging-1 | 38°C → 42°C ramp | 2 dollies, 65 cool-room slots |
-| **dxb-quiet-shift** | EK0083 | RKN-99001EK | 176-12345678 (COL) | IOT-003 | cool-room → build-up-area → gate-A12 | 28°C steady | 5 dollies, 200 cool-room slots |
+| Scenario                 | Flights touched        | ULDs spawned                                                                 | AWBs in play                                                                                                                                                                  | IoT devices                                                                       | Geofence zones traversed                                     | Weather profile        | Resources at start                 |
+| ------------------------ | ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------- | ---------------------------------- |
+| **dxb-warehouse-demo** ★ | EK0083                 | AKE-12345EK                                                                  | 176-12345678 (COL), 176-23456789 (PER)                                                                                                                                        | IOT-001                                                                           | cool-room → build-up-area → apron-staging-1                  | 38°C → 42°C ramp       | 2 dollies, 65 cool-room slots      |
+| **dxb-quiet-shift**      | EK0083                 | RKN-99001EK                                                                  | 176-12345678 (COL)                                                                                                                                                            | IOT-003                                                                           | cool-room → build-up-area → gate-A12                         | 28°C steady            | 5 dollies, 200 cool-room slots     |
 | **dxb-cascading-delays** | EK0083, EK0237, EK0411 | AKE-22219EK, RKN-99001EK, AKH-77701EK, AKH-77702EK, AAU-66610EK, RKN-99002EK | 176-23456789 (PER), 176-56789012 (PER), 176-67890123 (COL), 176-34567890 (AVI horses), 176-45678901 (CRT/DG), 176-90123456 (AVI fish), 176-01234567 (COL), 176-13579246 (FRO) | IOT-002, IOT-003, IOT-004, IOT-006 (fish + FRO ULDs are passive — inferred state) | cool-room → build-up-area → apron-staging-1, apron-staging-2 | 41°C, ramps via delays | 3 dollies, 40 slots, 1 buildup bay |
-| **custom** (sandbox) | any (default EK0357) | any | any (incl. 176-89012345 Class 8 DG, 176-24681357 HEG, 176-86420975 CRT) | any | any | mock baseline 30°C | full pool |
+| **custom** (sandbox)     | any (default EK0357)   | any                                                                          | any (incl. 176-89012345 Class 8 DG, 176-24681357 HEG, 176-86420975 CRT)                                                                                                       | any                                                                               | any                                                          | mock baseline 30°C     | full pool                          |
 
 ### Cross-fixture invariants
 
@@ -414,14 +472,14 @@ How each scenario exercises the fixtures. Read top-down to understand which enti
 
 Build-up canvas (M13) sign-off **mutates** these fixtures in `sessionStorage` (not on disk):
 
-| On sign-off | Effect on fixture | Stored where |
-|---|---|---|
-| ULD becomes "in-build-up" then "built" | `uld-inventory` mutation: status flag flips | `sessionStorage.inventory-store` |
-| AWBs assigned to ULD | `shipments` derived map: AWB → ULD IRI | `sessionStorage.uld-store.contents` |
-| `:Loading` action emitted | New record in audit DB `loadings` table | IndexedDB via Dexie |
-| `:LogisticsEvent BUILD_UP_COMPLETE` emitted | New record in audit DB `events` table | IndexedDB via Dexie |
-| Tracker simulator starts streaming for ULD | `:Measurement[]` stream begins (only if ULD has IoT device) | In-memory via M8 simulator |
-| Resources decrement | `coolRoomSlotsFree -= 1`, `buildupBaysFree -= 1` until release | `sessionStorage.resources-store` |
+| On sign-off                                 | Effect on fixture                                              | Stored where                        |
+| ------------------------------------------- | -------------------------------------------------------------- | ----------------------------------- |
+| ULD becomes "in-build-up" then "built"      | `uld-inventory` mutation: status flag flips                    | `sessionStorage.inventory-store`    |
+| AWBs assigned to ULD                        | `shipments` derived map: AWB → ULD IRI                         | `sessionStorage.uld-store.contents` |
+| `:Loading` action emitted                   | New record in audit DB `loadings` table                        | IndexedDB via Dexie                 |
+| `:LogisticsEvent BUILD_UP_COMPLETE` emitted | New record in audit DB `events` table                          | IndexedDB via Dexie                 |
+| Tracker simulator starts streaming for ULD  | `:Measurement[]` stream begins (only if ULD has IoT device)    | In-memory via M8 simulator          |
+| Resources decrement                         | `coolRoomSlotsFree -= 1`, `buildupBaysFree -= 1` until release | `sessionStorage.resources-store`    |
 
 Resetting a scenario or invoking `RESET` in `/dev/control` rolls back all sessionStorage mutations and clears IndexedDB tables.
 
@@ -433,16 +491,47 @@ Resetting a scenario or invoking `RESET` in `/dev/control` rolls back all sessio
 
 Two operating modes (M3 default vs M23 swap):
 
-| Mode | Trigger | Shape | Where used |
-|---|---|---|---|
-| **Stub** (M3 default) | `DG_AUTOCHECK_ENABLED !== 'true'` | Synchronous validation against `dg-declarations.json` lookups | Demo path; runs offline |
-| **Real** (M23) | `DG_AUTOCHECK_ENABLED === 'true'` | Async — opens AutoCheck UI in modal, awaits webhook, pulls XSDG export | "B-side" demo button if judges request live workflow |
+| Mode                  | Trigger                           | Shape                                                                  | Where used                                           |
+| --------------------- | --------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Stub** (M3 default) | `DG_AUTOCHECK_ENABLED !== 'true'` | Synchronous validation against `dg-declarations.json` lookups          | Demo path; runs offline                              |
+| **Real** (M23)        | `DG_AUTOCHECK_ENABLED === 'true'` | Async — opens AutoCheck UI in modal, awaits webhook, pulls XSDG export | "B-side" demo button if judges request live workflow |
 
 In both modes, the canonical output for every piece is a `DgValidationResult { pieceIri, status: 'non-dg' | 'pending' | 'valid' | 'rejected', declaration?, reason? }`. Build-up canvas blocks sign-off until all DG-declared pieces are `valid`.
 
 ### Stub fixtures (`public/data/dg-declarations.json`)
 
-Two pre-issued `:DgDeclaration` placeholders, one per DG-declared piece in `shipments.json`. When the real DG AutoCheck XSDG export shape arrives at M23 integration time, this file becomes the **derived cache** — what the adapter would have stored after a successful `acceptance-check-passed` webhook. Until then, it stands in as the source of truth.
+Two pre-issued `:DgDeclaration` records, one per DG-declared piece in `shipments.json`. Shape is **form-complete**: every field on the IATA Shipper's Declaration for Dangerous Goods (DGD) is rendered from this fixture without further enrichment. When the real DG AutoCheck XSDG export shape arrives at M23 integration time, this file becomes the **derived cache** — what the adapter would have stored after a successful `acceptance-check-passed` webhook. Until then, it stands in as the source of truth.
+
+#### Form field → fixture path
+
+DGD UI inputs map onto the canonical `:DgDeclaration` like so. Adapter renderers MUST consume only these paths.
+
+| Form section            | Form field           | Fixture path                                                                                              |
+| ----------------------- | -------------------- | --------------------------------------------------------------------------------------------------------- |
+| Shipper and consignee   | Shipper              | `shipperParty.{name,address}`                                                                             |
+|                         | Consignee            | `consigneeParty.{name,address}`                                                                           |
+| Reference details       | AWB number           | derived from `issuedForWaybill` (parse `urn:cargo:waybill:<prefix>-<number>`)                             |
+|                         | Shipper's reference  | `shippingRefNo`                                                                                           |
+| Issuer                  | Issued by            | `issuerParty.{name,branch}`                                                                               |
+| Transport details       | Airport of departure | `departureLocation` (resolve IRI → IATA via `airports.json`)                                              |
+|                         | Airport of dest.     | `arrivalLocation` (same)                                                                                  |
+|                         | Shipment limitation  | `shipmentLimitation` enum (`PASSENGER_AND_CARGO` \| `CARGO_AIRCRAFT_ONLY`)                                |
+| Shipment details        | Shipment type        | `shipmentType` enum (`RADIOACTIVE` \| `NON_RADIOACTIVE`)                                                  |
+| Goods description (row) | UN/ID                | `dgDeclaredItems[i].unId`                                                                                 |
+|                         | Proper shipping name | `dgDeclaredItems[i].properShippingName`                                                                   |
+|                         | Class                | `dgDeclaredItems[i].dgClass`                                                                              |
+|                         | P. Group             | `dgDeclaredItems[i].packingGroup` (nullable — Class 9 lithium has none)                                   |
+|                         | Quantity             | `numberOfPackages × packagingType + netQuantityPerPackage` (renderer composes "8 fibreboard box × 53 kg") |
+|                         | P. Inst              | `dgDeclaredItems[i].packingInstruction` (+ `section` when Section I/II applies, e.g. PI 967 §II)          |
+|                         | Authorization        | `dgDeclaredItems[i].authorization` (nullable — only special permits)                                      |
+| Handling                | Handling information | `handlingInformation`                                                                                     |
+| Signatory               | Name of signatory    | `signatoryParty.name` (+ `title` for footer)                                                              |
+|                         | Date                 | `signedAt.date`                                                                                           |
+|                         | (place)              | `signedAt.place`                                                                                          |
+
+Compliance certification sentence (the legal "I hereby declare…" paragraph at the bottom of the DGD) lives at `complianceDeclarationText` — rendered verbatim, never edited.
+
+#### Fixture content
 
 `public/data/dg-declarations.json`:
 
@@ -452,42 +541,169 @@ Two pre-issued `:DgDeclaration` placeholders, one per DG-declared piece in `ship
     "@id": "urn:cargo:dgdec:DG-LITHIUM-001",
     "@type": "DgDeclaration",
     "issuedForPiece": "urn:cargo:piece:176-45678901-1",
+    "issuedForWaybill": "urn:cargo:waybill:176-45678901",
     "declarationDate": "2026-04-25T08:00:00+04:00",
-    "declarationPlace": "urn:cargo:loc:DXB",
+    "shippingRefNo": "TS-LION-9912",
     "departureLocation": "urn:cargo:loc:DXB",
     "arrivalLocation": "urn:cargo:loc:FRA",
-    "shippingRefNo": "TS-LION-9912",
-    "complianceDeclarationText": "Lithium-ion batteries packed in equipment, UN3481, Class 9, PI 967 Section II",
-    "aircraftLimitationInformation": "Forbidden in passenger aircraft; cargo aircraft only (CAO)",
+    "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "shipmentType": "NON_RADIOACTIVE",
     "exclusiveUseIndicator": false,
-    "_placeholder": true,
-    "_replaceWhenDgdSpecArrives": "All fields under :DgDeclaration map to the user-provided DGD schema 1:1; remove `_placeholder` flag once mapped."
+    "shipperParty": {
+      "@id": "urn:cargo:party:shipper:techship-dxb",
+      "@type": "Party",
+      "name": "TechShip Logistics FZE",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "DAFZA Block A, Office 412",
+        "city": "Dubai",
+        "country": "AE",
+        "postalCode": "54123",
+        "contact": "+971 4 555 0142"
+      }
+    },
+    "consigneeParty": {
+      "@id": "urn:cargo:party:consignee:mediatech-fra",
+      "@type": "Party",
+      "name": "MediaTech Distribution GmbH",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "Hanauer Landstrasse 287",
+        "city": "Frankfurt am Main",
+        "country": "DE",
+        "postalCode": "60314",
+        "contact": "+49 69 555 0188"
+      }
+    },
+    "issuerParty": {
+      "@id": "urn:cargo:party:issuer:techship-compliance",
+      "@type": "Party",
+      "name": "TechShip Logistics FZE — Compliance Desk",
+      "branch": "DXB"
+    },
+    "dgDeclaredItems": [
+      {
+        "@id": "urn:cargo:dgitem:DG-LITHIUM-001-1",
+        "@type": "DgDeclaredItem",
+        "unId": "UN3481",
+        "properShippingName": "Lithium ion batteries contained in equipment",
+        "dgClass": "9",
+        "packingGroup": null,
+        "packagingType": "Fibreboard box (4G)",
+        "numberOfPackages": 8,
+        "netQuantityPerPackage": { "value": 53, "unit": "kg" },
+        "packingInstruction": "967",
+        "section": "II",
+        "authorization": null
+      }
+    ],
+    "handlingInformation": "Lithium ion batteries — handle with care; keep dry. Section II package; lithium battery mark applied per PI 967 §II. No Class 9 hazard label required.",
+    "signatoryParty": {
+      "@id": "urn:cargo:party:signatory:rashid-al-mansouri",
+      "@type": "Party",
+      "name": "Rashid Al Mansouri",
+      "title": "Dangerous Goods Compliance Officer"
+    },
+    "signedAt": {
+      "place": "Dubai, UAE",
+      "date": "2026-04-25T08:00:00+04:00"
+    },
+    "complianceDeclarationText": "I hereby declare that the contents of this consignment are fully and accurately described above by the proper shipping name, and are classified, packaged, marked and labelled/placarded, and are in all respects in proper condition for transport according to applicable international and national governmental regulations. I declare that all of the applicable air transport requirements have been met."
   },
   "urn:cargo:dgdec:DG-CORROSIVE-001": {
     "@id": "urn:cargo:dgdec:DG-CORROSIVE-001",
     "@type": "DgDeclaration",
     "issuedForPiece": "urn:cargo:piece:176-89012345-1",
+    "issuedForWaybill": "urn:cargo:waybill:176-89012345",
     "declarationDate": "2026-04-25T07:30:00+04:00",
-    "declarationPlace": "urn:cargo:loc:DXB",
+    "shippingRefNo": "CF-DXB-LHR-4471",
     "departureLocation": "urn:cargo:loc:DXB",
     "arrivalLocation": "urn:cargo:loc:LHR",
-    "shippingRefNo": "CF-DXB-LHR-4471",
-    "complianceDeclarationText": "Sulphuric acid solution, UN1789, Class 8, Packing Group II",
-    "aircraftLimitationInformation": "Forbidden in passenger aircraft; cargo aircraft only (CAO)",
+    "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "shipmentType": "NON_RADIOACTIVE",
     "exclusiveUseIndicator": true,
-    "_placeholder": true,
-    "_replaceWhenDgdSpecArrives": "Same — replace fields once user provides real DGD schema."
+    "shipperParty": {
+      "@id": "urn:cargo:party:shipper:chemfreight-dxb",
+      "@type": "Party",
+      "name": "ChemFreight Industries LLC",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "JAFZA South Zone, Warehouse 14",
+        "city": "Jebel Ali, Dubai",
+        "country": "AE",
+        "postalCode": "17000",
+        "contact": "+971 4 555 0901"
+      }
+    },
+    "consigneeParty": {
+      "@id": "urn:cargo:party:consignee:britchem-lhr",
+      "@type": "Party",
+      "name": "BritChem Holdings Ltd",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "Beddington Lane Industrial Estate, Unit 22",
+        "city": "Croydon, London",
+        "country": "GB",
+        "postalCode": "CR0 4TD",
+        "contact": "+44 20 7555 0233"
+      }
+    },
+    "issuerParty": {
+      "@id": "urn:cargo:party:issuer:chemfreight-compliance",
+      "@type": "Party",
+      "name": "ChemFreight Industries LLC — DG Desk",
+      "branch": "DXB"
+    },
+    "dgDeclaredItems": [
+      {
+        "@id": "urn:cargo:dgitem:DG-CORROSIVE-001-1",
+        "@type": "DgDeclaredItem",
+        "unId": "UN1789",
+        "properShippingName": "Hydrochloric acid solution",
+        "dgClass": "8",
+        "packingGroup": "II",
+        "packagingType": "Plastic jerrican (3H1)",
+        "numberOfPackages": 3,
+        "netQuantityPerPackage": { "value": 30, "unit": "L" },
+        "packingInstruction": "851",
+        "section": null,
+        "authorization": null
+      }
+    ],
+    "handlingInformation": "Class 8 corrosive — keep upright. Stow away from foodstuffs and Class 1, 4.1, 5 cargo. Exclusive use; do not co-load.",
+    "signatoryParty": {
+      "@id": "urn:cargo:party:signatory:omar-khoury",
+      "@type": "Party",
+      "name": "Omar Khoury",
+      "title": "DG Compliance Manager"
+    },
+    "signedAt": {
+      "place": "Dubai, UAE",
+      "date": "2026-04-25T07:30:00+04:00"
+    },
+    "complianceDeclarationText": "I hereby declare that the contents of this consignment are fully and accurately described above by the proper shipping name, and are classified, packaged, marked and labelled/placarded, and are in all respects in proper condition for transport according to applicable international and national governmental regulations. I declare that all of the applicable air transport requirements have been met."
   }
 }
 ```
 
+> Note on UN1789: per IATA DGR, **UN1789 = Hydrochloric acid solution** (Class 8, PG II or III). The earlier rev 1.0 description "Sulphuric acid solution, UN1789" mis-paired UN/proper shipping name; UN1789 in this fixture renders as the correct hydrochloric acid solution. AWB description in `shipments.json` ("Corrosive substance, ChemFreight") stays correct (generic).
+
+#### Schema notes
+
+- **Why a party graph not flat strings.** IATA ONE Record models each DGD party (`shipperParty`, `consigneeParty`, `issuerParty`, `signatoryParty`) as a `:Party` IRI with an `:Address`. This survives the M23 swap unchanged — XSDG `<Shipper>`/`<Consignee>` blocks de-serialise straight onto these nodes.
+- **`dgDeclaredItems[]` is a list.** A DGD can carry multiple goods rows (different UN ids on one declaration). Both fixtures show single-item declarations; multi-item is left as a future fixture if a scenario needs it.
+- **Section number coupled to packing instruction.** PI 967 has Sections I and II with different limits; renderer must show "967 §II" not just "967". Section field nullable for PIs without subsection (PI 851 has none).
+- **`netQuantityPerPackage` units vary by goods.** Solids → kg; liquids → L; gases → L (water capacity). Renderer reads `unit` directly from the fixture, never re-derives.
+- **Authorization is rare.** Only populated when the shipment travels under a state-of-origin or operator special permit. Both stub fixtures leave it null (standard PI shipments).
+
 When M23 wires the real DG AutoCheck integration, the swap surface is:
+
 - `lib/adapters/dg-check.ts` — gains a `mode: 'stub' | 'autocheck'` switch driven by env
 - `lib/adapters/dg-autocheck/*.ts` — new directory: OAuth client, lifecycle endpoints, XSDG export parser, webhook signature verification
 - `app/api/webhooks/dg-autocheck/route.ts` — new public webhook listener
-- `dg-declarations.json` — becomes a derived cache populated by `acceptance-check-passed` webhook payload (XSDG export → canonical `:DgDeclaration`)
+- `dg-declarations.json` — becomes a derived cache populated by `acceptance-check-passed` webhook payload (XSDG export → canonical `:DgDeclaration`). XSDG fields map onto the schema above; **no schema extension needed** — only field-level mapping in the parser.
 
-Everything downstream — build-up canvas, audit DB, supervisor surfaces — continues to consume the canonical `:DgDeclaration` shape, regardless of mode.
+Everything downstream — build-up canvas, audit DB, supervisor surfaces, DGD form renderer — continues to consume the canonical `:DgDeclaration` shape, regardless of mode.
 
 ---
 
