@@ -1,0 +1,508 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Flight Load Planning Application - Style Guide",
+  "version": "1.0.0",
+  "description": "Comprehensive style guideline for replicating the visual design of the Flight Load Planning application",
+  "metadata": {
+    "framework": "Next.js 15",
+    "styling": "Tailwind CSS v4",
+    "colorSpace": "OKLCH",
+    "defaultTheme": "dark",
+    "primaryFont": "Geist Mono (Monospace)",
+    "iconLibrary": "lucide-react",
+    "dependencies": {
+      "tailwindcss": "^4.0.0",
+      "tw-animate-css": "^1.4.0",
+      "next-themes": "^0.4.6",
+      "class-variance-authority": "^0.7.1",
+      "clsx": "^2.1.1",
+      "tailwind-merge": "^3.4.0"
+    }
+  },
+  "colors": {
+    "description": "Color palette using OKLCH color space for perceptually uniform colors across light and dark modes",
+    "brandColors": {
+      "orange": {
+        "50": "oklch(0.98 0.016 73.684)",
+        "100": "oklch(0.954 0.038 75.164)",
+        "200": "oklch(0.901 0.076 70.697)",
+        "300": "oklch(0.837 0.128 66.29)",
+        "400": "oklch(0.75 0.183 55.934)",
+        "500": "oklch(0.705 0.213 47.604)",
+        "600": "oklch(0.646 0.222 41.116)",
+        "700": "oklch(0.553 0.195 38.402)",
+        "800": "oklch(0.47 0.157 37.304)",
+        "900": "oklch(0.408 0.123 38.172)",
+        "950": "oklch(0.266 0.079 36.259)",
+        "usage": {
+          "primary": "600",
+          "accent": "500",
+          "hover": "500 or 600 with 90% opacity"
+        }
+      }
+    },
+    "themes": {
+      "light": {
+        "background": "oklch(0.985 0 0)",
+        "foreground": "oklch(0.145 0 0)",
+        "card": "oklch(0.97 0 0)",
+        "cardForeground": "oklch(0.145 0 0)",
+        "popover": "oklch(0.97 0 0)",
+        "popoverForeground": "oklch(0.145 0 0)",
+        "primary": "oklch(0.646 0.222 41.116)",
+        "primaryForeground": "oklch(0.98 0.016 73.684)",
+        "secondary": "oklch(0.922 0 0)",
+        "secondaryForeground": "oklch(0.205 0 0)",
+        "muted": "oklch(0.922 0 0)",
+        "mutedForeground": "oklch(0.45 0 0)",
+        "accent": "oklch(0.705 0.213 47.604)",
+        "accentForeground": "oklch(0.98 0.016 73.684)",
+        "destructive": "oklch(0.577 0.245 27.325)",
+        "border": "oklch(0.87 0 0)",
+        "input": "oklch(0.87 0 0)",
+        "ring": "oklch(0.646 0.222 41.116)"
+      },
+      "dark": {
+        "background": "oklch(0.12 0 0)",
+        "foreground": "oklch(0.93 0 0)",
+        "card": "oklch(0.16 0 0)",
+        "cardForeground": "oklch(0.93 0 0)",
+        "popover": "oklch(0.14 0 0)",
+        "popoverForeground": "oklch(0.93 0 0)",
+        "primary": "oklch(0.705 0.213 47.604)",
+        "primaryForeground": "oklch(0.12 0 0)",
+        "secondary": "oklch(0.22 0 0)",
+        "secondaryForeground": "oklch(0.93 0 0)",
+        "muted": "oklch(0.22 0 0)",
+        "mutedForeground": "oklch(0.6 0 0)",
+        "accent": "oklch(0.646 0.222 41.116)",
+        "accentForeground": "oklch(0.12 0 0)",
+        "destructive": "oklch(0.65 0.2 25)",
+        "border": "oklch(0.25 0 0)",
+        "input": "oklch(0.25 0 0)",
+        "ring": "oklch(0.705 0.213 47.604)"
+      }
+    },
+    "semantic": {
+      "chart": {
+        "1": "orange-600 (light) / orange-500 (dark)",
+        "2": "orange-500 (light) / orange-600 (dark)",
+        "3": "orange-400",
+        "4": "orange-300",
+        "5": "orange-700"
+      },
+      "status": {
+        "warning": {
+          "background": "bg-orange-500/10",
+          "text": "text-orange-500"
+        },
+        "info": {
+          "background": "bg-primary/10",
+          "text": "text-primary"
+        },
+        "neutral": {
+          "background": "bg-muted",
+          "text": "text-muted-foreground"
+        }
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "Geist Mono",
+      "type": "monospace",
+      "import": "next/font/google",
+      "cssVariable": "--font-geist-mono",
+      "tailwindClass": "font-mono"
+    },
+    "fontSize": {
+      "xs": {
+        "size": "0.75rem",
+        "lineHeight": "1rem",
+        "pixels": "12px",
+        "usage": "badges, small labels"
+      },
+      "sm": {
+        "size": "0.875rem",
+        "lineHeight": "1.25rem",
+        "pixels": "14px",
+        "usage": "descriptions, helper text, button text"
+      },
+      "base": {
+        "size": "1rem",
+        "lineHeight": "1.5rem",
+        "pixels": "16px",
+        "usage": "body text, inputs"
+      },
+      "lg": {
+        "size": "1.125rem",
+        "lineHeight": "1.75rem",
+        "pixels": "18px",
+        "usage": "card titles, dialog titles"
+      },
+      "xl": {
+        "size": "1.25rem",
+        "lineHeight": "1.75rem",
+        "pixels": "20px",
+        "usage": "section headings"
+      },
+      "2xl": {
+        "size": "1.5rem",
+        "lineHeight": "2rem",
+        "pixels": "24px",
+        "usage": "page titles"
+      },
+      "7xl": {
+        "size": "4.5rem",
+        "lineHeight": "1",
+        "pixels": "72px",
+        "usage": "dashboard hero stats"
+      },
+      "9xl": {
+        "size": "8rem",
+        "lineHeight": "1",
+        "pixels": "128px",
+        "usage": "dashboard hero stats (large screens)"
+      }
+    },
+    "fontWeight": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "patterns": {
+      "cardTitle": "text-lg font-semibold leading-none",
+      "cardDescription": "text-sm text-muted-foreground",
+      "dialogTitle": "text-lg font-semibold leading-none",
+      "tableHeader": "text-foreground font-medium",
+      "badge": "text-xs font-semibold",
+      "button": "text-sm font-medium",
+      "heroStats": "text-7xl md:text-9xl font-bold tracking-tighter"
+    }
+  },
+  "spacing": {
+    "description": "Spacing scale based on 0.25rem (4px) units",
+    "scale": {
+      "0": "0px",
+      "0.5": "0.125rem (2px)",
+      "1": "0.25rem (4px)",
+      "1.5": "0.375rem (6px)",
+      "2": "0.5rem (8px)",
+      "2.5": "0.625rem (10px)",
+      "3": "0.75rem (12px)",
+      "4": "1rem (16px)",
+      "5": "1.25rem (20px)",
+      "6": "1.5rem (24px)",
+      "8": "2rem (32px)",
+      "10": "2.5rem (40px)",
+      "12": "3rem (48px)",
+      "14": "3.5rem (56px)",
+      "16": "4rem (64px)",
+      "20": "5rem (80px)"
+    },
+    "patterns": {
+      "cardPadding": "p-6 (1.5rem)",
+      "cardHeaderPadding": "px-6",
+      "cardContentPadding": "px-6",
+      "buttonPaddingDefault": "px-4 py-2",
+      "buttonPaddingSmall": "px-3",
+      "buttonPaddingLarge": "px-6",
+      "inputPadding": "px-3 py-1 or px-3 py-2",
+      "navbarPadding": "px-6",
+      "dashboardLayout": "px-6 py-8",
+      "componentGap": "gap-2, gap-4, or gap-6",
+      "sectionSpacing": "mb-4, mb-8, mb-12, or mb-16"
+    },
+    "layout": {
+      "maxWidth": "max-w-7xl",
+      "navbarHeight": "h-14 (3.5rem)"
+    }
+  },
+  "borderRadius": {
+    "description": "Border radius system with CSS variable calculations",
+    "baseRadius": "0.25rem (4px)",
+    "scale": {
+      "sm": "calc(var(--radius) - 2px) = 2px",
+      "md": "var(--radius) = 4px",
+      "lg": "calc(var(--radius) + 2px) = 6px",
+      "xl": "calc(var(--radius) + 4px) = 8px",
+      "full": "9999px"
+    },
+    "componentUsage": {
+      "button": "rounded-md (0.375rem)",
+      "card": "rounded-xl (0.75rem)",
+      "input": "rounded-md (0.375rem)",
+      "badge": "rounded-full",
+      "dialog": "rounded-lg (0.5rem)",
+      "dropdown": "rounded-md (0.375rem)",
+      "switch": "rounded-full",
+      "progress": "rounded-full",
+      "checkbox": "rounded-[4px]",
+      "iconContainer": "rounded-sm or rounded-md"
+    }
+  },
+  "shadows": {
+    "description": "Shadow values for elevation and depth",
+    "scale": {
+      "xs": "shadow-xs - Inputs, buttons",
+      "sm": "shadow-sm - Cards",
+      "md": "shadow-md - Dropdowns, popovers",
+      "lg": "shadow-lg - Dialogs, major elevations"
+    },
+    "componentUsage": {
+      "card": "shadow-sm",
+      "input": "shadow-xs",
+      "dialog": "shadow-lg",
+      "dropdown": "shadow-md",
+      "switchThumb": "shadow-lg"
+    },
+    "effects": {
+      "glowOnHover": "hover:shadow-lg hover:shadow-primary/5"
+    }
+  },
+  "borders": {
+    "width": {
+      "default": "1px",
+      "0": "0px",
+      "2": "2px"
+    },
+    "style": "solid",
+    "colors": {
+      "default": "border-border",
+      "input": "border-input",
+      "primary": "border-primary",
+      "destructive": "border-destructive"
+    }
+  },
+  "interactions": {
+    "focus": {
+      "description": "Focus ring system for accessibility",
+      "default": "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "enhanced": "focus-visible:ring-[3px] focus-visible:ring-ring/50",
+      "outline": "outline-none or outline-hidden",
+      "buttonFocus": "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+      "inputFocus": "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+    },
+    "error": {
+      "description": "Error state styling for invalid inputs",
+      "pattern": "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+    },
+    "hover": {
+      "card": "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+      "button": "hover:bg-primary/90",
+      "ghost": "hover:bg-foreground/10",
+      "tableRow": "hover:bg-muted/50"
+    },
+    "transitions": {
+      "colors": "transition-colors",
+      "all": "transition-all",
+      "specific": "transition-[color,box-shadow]",
+      "transform": "transition-transform",
+      "opacity": "transition-opacity"
+    }
+  },
+  "animations": {
+    "keyframes": {
+      "fadeInSlideRight": {
+        "0%": {
+          "opacity": 0,
+          "transform": "translateX(20px)"
+        },
+        "100%": {
+          "opacity": 1,
+          "transform": "translateX(0)"
+        }
+      },
+      "fadeInSlideLeft": {
+        "0%": {
+          "opacity": 0,
+          "transform": "translateX(-20px)"
+        },
+        "100%": {
+          "opacity": 1,
+          "transform": "translateX(0)"
+        }
+      },
+      "heroValuePulse": {
+        "0%, 100%": {
+          "opacity": 1
+        },
+        "50%": {
+          "opacity": 0.85
+        }
+      }
+    },
+    "radixAnimations": {
+      "description": "Using tw-animate-css package for Radix UI components",
+      "patterns": [
+        "animate-in / animate-out",
+        "fade-in-0 / fade-out-0",
+        "zoom-in-95 / zoom-out-95",
+        "slide-in-from-* / slide-out-to-*"
+      ]
+    }
+  },
+  "components": {
+    "button": {
+      "base": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50",
+      "variants": {
+        "default": "bg-primary text-primary-foreground hover:bg-primary/90",
+        "destructive": "bg-destructive text-white hover:bg-destructive/90",
+        "outline": "border bg-background shadow-xs hover:bg-accent dark:bg-input/30",
+        "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        "ghost": "hover:bg-accent dark:hover:bg-accent/50",
+        "link": "text-primary underline-offset-4 hover:underline"
+      },
+      "sizes": {
+        "default": "h-9 px-4 py-2",
+        "sm": "h-8 px-3",
+        "lg": "h-10 px-6",
+        "icon": "size-9",
+        "iconSm": "size-8",
+        "iconLg": "size-10"
+      }
+    },
+    "card": {
+      "card": "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+      "header": "px-6 gap-2",
+      "title": "leading-none font-semibold",
+      "description": "text-muted-foreground text-sm",
+      "content": "px-6",
+      "footer": "flex items-center px-6"
+    },
+    "input": {
+      "base": "dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none",
+      "placeholder": "placeholder:text-muted-foreground",
+      "selection": "selection:bg-primary selection:text-primary-foreground",
+      "focus": "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+    },
+    "badge": {
+      "base": "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
+      "variants": {
+        "default": "border-transparent bg-primary text-primary-foreground",
+        "secondary": "border-transparent bg-secondary text-secondary-foreground",
+        "destructive": "border-transparent bg-destructive text-destructive-foreground",
+        "outline": "text-foreground"
+      }
+    },
+    "table": {
+      "row": "hover:bg-muted/50 border-b transition-colors",
+      "head": "h-10 px-2 text-left font-medium whitespace-nowrap",
+      "cell": "p-2 align-middle whitespace-nowrap"
+    },
+    "navbar": {
+      "container": "sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+      "height": "h-14",
+      "padding": "px-6"
+    },
+    "iconContainer": {
+      "primary": "flex h-8 w-8 items-center justify-center rounded-sm bg-primary",
+      "muted": "flex h-9 w-9 items-center justify-center rounded-sm bg-muted text-muted-foreground"
+    }
+  },
+  "layout": {
+    "responsive": {
+      "breakpoints": {
+        "sm": "640px",
+        "md": "768px",
+        "lg": "1024px",
+        "xl": "1280px",
+        "2xl": "1536px"
+      },
+      "patterns": {
+        "text": "text-sm md:text-base",
+        "grid": "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
+        "spacing": "px-4 md:px-6 lg:px-8",
+        "display": "hidden md:flex",
+        "heroText": "text-7xl md:text-9xl"
+      }
+    },
+    "grid": {
+      "majorFeatures": "grid gap-4 md:grid-cols-3",
+      "secondaryFeatures": "grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+    },
+    "container": {
+      "maxWidth": "max-w-7xl",
+      "centering": "mx-auto",
+      "padding": "px-6 py-8"
+    },
+    "heroCarousel": {
+      "container": "rounded-lg border bg-card",
+      "wrapper": "relative overflow-hidden",
+      "padding": "px-8 py-12 md:px-16 md:py-20"
+    }
+  },
+  "utilities": {
+    "classNameMerge": {
+      "function": "cn(...inputs: ClassValue[])",
+      "description": "Utility function using clsx and tailwind-merge to intelligently merge Tailwind classes",
+      "location": "src/lib/utils.ts",
+      "usage": "import { cn } from '@/lib/utils'; className={cn('base-classes', conditionalClasses)}"
+    }
+  },
+  "bestPractices": {
+    "colorUsage": [
+      "Use OKLCH color space for consistent, perceptually uniform colors",
+      "Always provide both light and dark mode values",
+      "Orange (orange-600/500) is the primary brand color",
+      "Use semantic color variables (primary, muted, destructive) rather than direct colors"
+    ],
+    "typography": [
+      "Geist Mono is the primary font for a technical, aviation-focused aesthetic",
+      "Use text-sm for most UI elements",
+      "Apply font-semibold for headings and titles",
+      "Maintain consistent line-height with leading-none for compact headers"
+    ],
+    "spacing": [
+      "Use consistent gap values: gap-2, gap-4, gap-6",
+      "Cards should have p-6 (1.5rem) padding",
+      "Maintain px-6 horizontal padding for navbar and card sections",
+      "Use max-w-7xl for main content areas"
+    ],
+    "interaction": [
+      "Always include focus-visible states for accessibility",
+      "Use transition-colors or transition-all for smooth interactions",
+      "Apply hover states to interactive elements (cards, buttons, rows)",
+      "Include disabled states with pointer-events-none and opacity-50"
+    ],
+    "components": [
+      "Use cn() utility to merge class names",
+      "Apply consistent border-radius across similar component types",
+      "Include proper shadow elevations (sm for cards, lg for dialogs)",
+      "Maintain consistent component sizing (h-9 for buttons and inputs)"
+    ],
+    "responsive": [
+      "Design mobile-first, then add md: and lg: breakpoint classes",
+      "Use grid layouts with responsive column counts",
+      "Apply responsive text sizing for hero elements",
+      "Hide/show elements conditionally with display utilities"
+    ]
+  },
+  "examples": {
+    "primaryButton": {
+      "description": "Standard primary action button",
+      "className": "inline-flex items-center justify-center gap-2 h-9 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all disabled:pointer-events-none disabled:opacity-50"
+    },
+    "card": {
+      "description": "Standard content card",
+      "className": "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+    },
+    "input": {
+      "description": "Standard text input field",
+      "className": "dark:bg-input/30 border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+    },
+    "badge": {
+      "description": "Status or label badge",
+      "className": "inline-flex items-center rounded-full border border-transparent bg-primary text-primary-foreground px-2.5 py-0.5 text-xs font-semibold"
+    },
+    "iconContainer": {
+      "description": "Container for icons in feature cards",
+      "className": "flex h-8 w-8 items-center justify-center rounded-sm bg-primary"
+    },
+    "heroStat": {
+      "description": "Large numeric display for dashboard hero",
+      "className": "text-7xl md:text-9xl font-bold tracking-tighter"
+    }
+  }
+}
