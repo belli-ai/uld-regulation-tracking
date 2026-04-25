@@ -47,8 +47,8 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | --- | -------------------------------------------- | ----- | ------ | ------ | ------------- | ---------- |
 | M0  | Project scaffold                             | 1     | 🟢     | master | No            | —          |
 | M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
-| M2  | Mock data fixtures                           | 1     | 🔘     | —      | Yes (∥ M3)    | M1         |
-| M3  | API route adapter layer                      | 1     | 🔘     | —      | Yes (∥ M2)    | M1         |
+| M2  | Mock data fixtures                           | 1     | 🟡     | master | Yes (∥ M3)    | M1         |
+| M3  | API route adapter layer                      | 1     | 🟡     | master | Yes (∥ M2)    | M1         |
 | M4  | Physics engine                               | 2     | 🔘     | —      | Yes           | Phase 1    |
 | M5  | State inference (5-stage)                    | 2     | 🔘     | —      | Yes           | Phase 1    |
 | M6  | Action recommender + ranker                  | 2     | 🔘     | —      | Yes           | Phase 1    |
@@ -178,8 +178,8 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 
 | Field           | Value                                                                  |
 | --------------- | ---------------------------------------------------------------------- |
-| Status          | 🔘 Not started                                                         |
-| Owner           | —                                                                      |
+| Status          | 🟡 In progress                                                         |
+| Owner           | master                                                                 |
 | Phase           | 1                                                                      |
 | Parallel-safe   | Yes (∥ M3, no overlapping files)                                       |
 | Blocked by      | M1                                                                     |
@@ -232,8 +232,8 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 
 | Field           | Value                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------- |
-| Status          | 🔘 Not started                                                                              |
-| Owner           | —                                                                                           |
+| Status          | 🟡 In progress                                                                              |
+| Owner           | master                                                                                      |
 | Phase           | 1                                                                                           |
 | Parallel-safe   | Yes (∥ M2; M3 routes that need fixtures depend on M2 landing first or use stubs in interim) |
 | Blocked by      | M1                                                                                          |
