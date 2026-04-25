@@ -46,6 +46,7 @@ export async function handleBuildUpSignoff(
 
   await ctx.auditDb.loadings.put(loading, loading["@id"]);
   await ctx.auditDb.events.put(buildCompleteEvent, buildCompleteEvent["@id"]);
+  ctx.syncBuiltUldToStore(signedUld);
 
   ctx.updateUld(event.uldId, (uld) => ({
     ...uld,

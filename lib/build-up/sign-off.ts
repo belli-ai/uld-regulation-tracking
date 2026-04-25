@@ -28,9 +28,9 @@ function toStationIri(station: string): IRI {
   return toIRI(station);
 }
 
-function findRejectedPiece(
+function findBlockingPiece(
   pieces: Piece[],
-): { piece: Piece; reason: string } | null {
+): { piece: Piece; reason: string; status: "pending" | "rejected" } | null {
   for (const piece of pieces) {
     const candidate = piece as PieceWithValidationFields;
     const validationStatus =
@@ -40,18 +40,20 @@ function findRejectedPiece(
           ? candidate.dgValidation.status
           : null;
 
-    if (validationStatus !== "rejected") {
+    if (validationStatus !== "rejected" && validationStatus !== "pending") {
       continue;
     }
 
     const reason =
-      typeof candidate.dgValidationReason === "string" &&
-      candidate.dgValidationReason.length > 0
-        ? candidate.dgValidationReason
-        : (readValidationReason(candidate.dgValidation) ??
-          `DG validation rejected for piece ${piece["@id"]}`);
+      validationStatus === "pending"
+        ? `DG validation pending for piece ${piece["@id"]}`
+        : typeof candidate.dgValidationReason === "string" &&
+            candidate.dgValidationReason.length > 0
+          ? candidate.dgValidationReason
+          : (readValidationReason(candidate.dgValidation) ??
+            `DG validation rejected for piece ${piece["@id"]}`);
 
-    return { piece, reason };
+    return { piece, reason, status: validationStatus };
   }
 
   return null;
@@ -69,9 +71,9 @@ export function signOff(
   station: string,
   options?: { allowRejected?: boolean },
 ): { loading: Loading; event: LogisticsEvent } {
-  const rejected = findRejectedPiece(contents);
-  if (rejected && !options?.allowRejected) {
-    throw new Error(rejected.reason);
+  const blocking = findBlockingPiece(contents);
+  if (blocking && (blocking.status === "pending" || !options?.allowRejected)) {
+    throw new Error(blocking.reason);
   }
 
   const now = new Date().toISOString();

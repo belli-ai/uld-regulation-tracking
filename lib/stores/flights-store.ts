@@ -19,7 +19,13 @@ type FlightsState = {
   weatherSource: WeatherSource | null;
   loading: boolean;
   error: string | null;
+  scenarioOverride: boolean;
+  clearScenarioFlights: () => void;
   loadFlights: () => Promise<void>;
+  setScenarioFlights: (
+    flights: TransportMovement[],
+    weatherSource?: WeatherSource,
+  ) => void;
 };
 
 function isTransportMovementArray(
@@ -40,12 +46,18 @@ function getErrorMessage(error: unknown): string {
   return "Unable to load outbound flights";
 }
 
-export const useFlightsStore = create<FlightsState>()((set) => ({
+export const useFlightsStore = create<FlightsState>()((set, get) => ({
   flights: [],
   weatherSource: null,
   loading: false,
   error: null,
+  scenarioOverride: false,
+  clearScenarioFlights: () => set({ scenarioOverride: false }),
   async loadFlights() {
+    if (get().scenarioOverride) {
+      return;
+    }
+
     set({ loading: true, error: null });
 
     try {
@@ -96,4 +108,12 @@ export const useFlightsStore = create<FlightsState>()((set) => ({
       });
     }
   },
+  setScenarioFlights: (flights, weatherSource = "mock") =>
+    set({
+      error: null,
+      flights,
+      loading: false,
+      scenarioOverride: true,
+      weatherSource,
+    }),
 }));

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dgChecker } from "../dg-checker";
-import { toIRI, type DgDeclaration, type Piece } from "../../ontology/one-record";
+import {
+  toIRI,
+  type DgDeclaration,
+  type Piece,
+} from "../../ontology/one-record";
 
 type BuildUpPiece = Piece & {
   shc?: string;
@@ -33,7 +37,11 @@ function makePiece(
   };
 }
 
-function makeDeclaration(id: string, pieceId: string, limitation: string): DgDeclaration {
+function makeDeclaration(
+  id: string,
+  pieceId: string,
+  limitation: string,
+): DgDeclaration {
   return {
     "@id": toIRI(id),
     "@type": "DgDeclaration",
@@ -143,5 +151,51 @@ describe("dgChecker.validate", () => {
     const result = await dgChecker.validate([piece], "DXB", "FRA", "EK0083");
 
     expect(result).toEqual([{ piece, status: "valid", declaration }]);
+  });
+
+  it("returns pending when DG AutoCheck starts an acceptance check", async () => {
+    const piece = makePiece("urn:cargo:piece:dg-pending-1", "COL", 2, 8);
+    const declaration = makeDeclaration(
+      "urn:cargo:dgdec:DG-PENDING",
+      piece["@id"],
+      "Passenger and cargo aircraft",
+    );
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              results: [
+                {
+                  acceptanceCheckId: "AC-123",
+                  declaration,
+                  pieceIri: piece["@id"],
+                  requestedUrl: "https://dg.example/check/AC-123",
+                  requestedUrlExpiresAt: "2026-04-25T08:10:00Z",
+                  status: "pending",
+                  vendorStatus: "awaiting-document-check",
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+
+    const result = await dgChecker.validate([piece], "DXB", "FRA", "EK0083");
+
+    expect(result).toEqual([
+      {
+        acceptanceCheckId: "AC-123",
+        declaration,
+        piece,
+        requestedUrl: "https://dg.example/check/AC-123",
+        requestedUrlExpiresAt: "2026-04-25T08:10:00Z",
+        status: "pending",
+        vendorStatus: "awaiting-document-check",
+      },
+    ]);
   });
 });

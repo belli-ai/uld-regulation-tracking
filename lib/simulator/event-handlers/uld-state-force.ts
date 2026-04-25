@@ -18,6 +18,14 @@ const LOCATION_BY_STATE: Record<
   "in-warehouse": "urn:cargo:zone:DXB-cool-room",
 };
 
+const EVENT_CODE_BY_STATE: Record<keyof typeof LOCATION_BY_STATE, string> = {
+  "arrived-destination": "STATE_DEST_WAREHOUSE_IN",
+  "arrived-tarmac": "STATE_TARMAC_DEST_IN",
+  "in-flight": "STATE_FLIGHT_IN",
+  "in-tarmac": "STATE_TARMAC_IN",
+  "in-warehouse": "STATE_WAREHOUSE_IN",
+};
+
 export async function handleUldStateForce(
   event: ScenarioEvent,
   ctx: RunnerContext,
@@ -56,7 +64,7 @@ export async function handleUldStateForce(
       `urn:cool-chain:event:STATE_FORCE:${next.id}:${encodeURIComponent(ctx.nowIso())}`,
     ),
     "@type": "LogisticsEvent",
-    eventCode: `STATE_FORCE_${forcedState.toUpperCase().replaceAll("-", "_")}`,
+    eventCode: EVENT_CODE_BY_STATE[forcedState],
     eventDate: ctx.nowIso(),
     eventFor: next.iri,
     eventLocation: toIRI(LOCATION_BY_STATE[forcedState]),
@@ -69,5 +77,8 @@ export async function handleUldStateForce(
     ...uld,
     auditEventIds: [...uld.auditEventIds, stateEvent["@id"]],
   }));
+  if (next.built) {
+    ctx.syncBuiltUldToStore(next);
+  }
   ctx.addLog(`Forced ${event.uldId} to ${forcedState}`, "info");
 }

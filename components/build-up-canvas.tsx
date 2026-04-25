@@ -18,6 +18,7 @@ import {
   BudgetPreflightRow,
   type BudgetForecast,
 } from "@/components/budget-preflight-row";
+import { DgAutocheckModal } from "@/components/dg-autocheck-modal";
 import { DgCheckRow } from "@/components/dg-check-row";
 import {
   MetricTile,
@@ -55,8 +56,10 @@ import {
   type Scenario,
   scenariosFileSchema,
 } from "@/lib/simulator/scenario-schema";
+import { useScenarioRunnerStore } from "@/lib/simulator/scenario-runner";
 import { startTrackerFeed } from "@/lib/simulator/tracker-feed";
 import { auditDb } from "@/lib/persistence/audit-db";
+import { useDgAutocheckStore } from "@/lib/stores/dg-autocheck-store";
 import { useUldStore } from "@/lib/stores/uld-store";
 import { useInventoryStore } from "@/lib/stores/inventory-store";
 import {
@@ -211,6 +214,13 @@ export type BuildUpDropRejection = {
   reasons: string[];
 };
 
+type AutocheckResult = Extract<
+  DgValidationResult,
+  { status: "pending" | "rejected" | "valid" }
+> & {
+  acceptanceCheckId: string;
+};
+
 type TrackerRegistryEntry = {
   stop: () => void;
   unsubscribe: () => void;
@@ -223,6 +233,7 @@ declare global {
 }
 
 const scenarios = scenariosFileSchema.parse(scenariosData).scenarios;
+const EMPTY_ASSIGNED_AWBS: string[] = [];
 
 function asString(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
@@ -621,6 +632,16 @@ function withValidation(
   });
 }
 
+function hasAutocheckId(result: DgValidationResult): result is AutocheckResult {
+  return (
+    (result.status === "pending" ||
+      result.status === "valid" ||
+      result.status === "rejected") &&
+    typeof result.acceptanceCheckId === "string" &&
+    result.acceptanceCheckId.length > 0
+  );
+}
+
 function findScenario(flightNo: string, uldSerialNumber: string): Scenario {
   return (
     scenarios.find((scenario) =>
@@ -741,16 +762,6 @@ async function loadWeather(airport: string): Promise<CanonicalWeather> {
   return (await response.json()) as CanonicalWeather;
 }
 
-function forecastTone(
-  forecast: BudgetForecast | null,
-  hasPieces: boolean,
-): "green" | "yellow" | "red" {
-  if (!hasPieces || forecast === null) {
-    return "yellow";
-  }
-  return forecast.warning;
-}
-
 function shcTone(ok: boolean, hasPieces: boolean): "green" | "yellow" | "red" {
   if (!hasPieces) {
     return "yellow";
@@ -769,6 +780,13 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const router = useRouter();
   const addBuiltUld = useUldStore((state) => state.addBuiltUld);
   const builtContents = useUldStore((state) => state.contents);
+  const scenarioAssignedAwbs = useScenarioRunnerStore(
+    (state) => state.ulds[uldId]?.assignedAwbs ?? EMPTY_ASSIGNED_AWBS,
+  );
+  const upsertDgAutocheck = useDgAutocheckStore((state) => state.upsert);
+  const clearDgAutocheckByPiece = useDgAutocheckStore(
+    (state) => state.clearByPiece,
+  );
   const releaseFromBuildUp = useInventoryStore(
     (state) => state.releaseFromBuildUp,
   );
@@ -785,6 +803,10 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [signingOff, setSigningOff] = useState(false);
   const [confirmOverrideOpen, setConfirmOverrideOpen] = useState(false);
+  const [activeAutocheckId, setActiveAutocheckId] = useState<string | null>(
+    null,
+  );
+  const [autocheckModalOpen, setAutocheckModalOpen] = useState(false);
   const [budgetForecast, setBudgetForecast] = useState<BudgetForecast | null>(
     null,
   );
@@ -843,6 +865,28 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     };
   }, [flightNo, uldId]);
 
+  function recordAutocheckResults(results: DgValidationResult[]) {
+    for (const result of results) {
+      if (!hasAutocheckId(result)) {
+        continue;
+      }
+
+      upsertDgAutocheck({
+        acceptanceCheckId: result.acceptanceCheckId,
+        pieceIri: result.piece["@id"],
+        reason: result.status === "rejected" ? result.reason : undefined,
+        requestedUrl:
+          result.status === "pending" ? result.requestedUrl : undefined,
+        requestedUrlExpiresAt:
+          result.status === "pending"
+            ? result.requestedUrlExpiresAt
+            : undefined,
+        status: result.status,
+        vendorStatus: result.vendorStatus,
+      });
+    }
+  }
+
   const flight = dataState.status === "ready" ? dataState.value.flight : null;
   const manifest = useMemo(
     () => (dataState.status === "ready" ? dataState.value.manifest : []),
@@ -882,6 +926,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
 
     return assigned;
   }, [builtContents, uld]);
+  const hasPendingDg = dgResults.some((result) => result.status === "pending");
   const availableManifest = useMemo(
     () =>
       manifest.filter(
@@ -891,6 +936,30 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
       ),
     [assignedWaybillIdsOutsideCurrentUld, loadedWaybillIds, manifest],
   );
+
+  useEffect(() => {
+    if (scenarioAssignedAwbs.length === 0 || manifest.length === 0) {
+      return;
+    }
+
+    const assigned = new Set(scenarioAssignedAwbs);
+    const nextContents = manifest.filter((waybill) =>
+      assigned.has(getWaybillLabel(waybill)),
+    );
+    const currentLabels = contents.map((waybill) => getWaybillLabel(waybill));
+    const nextLabels = nextContents.map((waybill) => getWaybillLabel(waybill));
+
+    if (
+      currentLabels.length === nextLabels.length &&
+      currentLabels.every((label, index) => label === nextLabels[index])
+    ) {
+      return;
+    }
+
+    setContents(nextContents);
+    setDgResults([]);
+    setDropRejection(null);
+  }, [contents, manifest, scenarioAssignedAwbs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -929,18 +998,89 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     };
   }, [projectedAmbient, uld, validatedPieces]);
 
+  useEffect(() => {
+    const pending = dgResults.filter(
+      (result): result is Extract<DgValidationResult, { status: "pending" }> =>
+        result.status === "pending",
+    );
+    if (pending.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function poll() {
+      const updates = await Promise.all(
+        pending.map(async (result) => {
+          try {
+            return await dgChecker.readStatus(
+              result.acceptanceCheckId,
+              result.piece,
+            );
+          } catch (error) {
+            console.error("DG AutoCheck status poll failed", error);
+            return result;
+          }
+        }),
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      const updatesById = new Map(
+        updates.flatMap((result) =>
+          hasAutocheckId(result)
+            ? [[result.acceptanceCheckId, result] as const]
+            : [],
+        ),
+      );
+      if (updatesById.size === 0) {
+        return;
+      }
+
+      for (const result of updatesById.values()) {
+        if (hasAutocheckId(result)) {
+          upsertDgAutocheck({
+            acceptanceCheckId: result.acceptanceCheckId,
+            pieceIri: result.piece["@id"],
+            reason: result.status === "rejected" ? result.reason : undefined,
+            requestedUrl:
+              result.status === "pending" ? result.requestedUrl : undefined,
+            requestedUrlExpiresAt:
+              result.status === "pending"
+                ? result.requestedUrlExpiresAt
+                : undefined,
+            status: result.status,
+            vendorStatus: result.vendorStatus,
+          });
+        }
+      }
+
+      setDgResults((current) =>
+        current.map((result) =>
+          hasAutocheckId(result) && updatesById.has(result.acceptanceCheckId)
+            ? (updatesById.get(result.acceptanceCheckId) ?? result)
+            : result,
+        ),
+      );
+    }
+
+    const interval = window.setInterval(() => void poll(), 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [dgResults, upsertDgAutocheck]);
+
   const dgStatusTone =
     dropRejection !== null ||
     dgResults.some((result) => result.status === "rejected")
       ? "red"
-      : checkingDg || validatedPieces.length === 0
+      : checkingDg || hasPendingDg || validatedPieces.length === 0
         ? "yellow"
         : "green";
   const shcStatusTone = shcTone(shcResult.ok, validatedPieces.length > 0);
-  const budgetStatusTone = forecastTone(
-    budgetForecast,
-    validatedPieces.length > 0,
-  );
   // Budget pre-flight is informational at build-up time — the ULD is still
   // in the cool room, the budget forecast is for projected exposure once it
   // leaves. Don't block sign-off on it; let DG and SHC be the only blockers.
@@ -948,6 +1088,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const signOffDisabled =
     validatedPieces.length === 0 ||
     sealNumber.trim().length === 0 ||
+    hasPendingDg ||
     checkingDg ||
     signingOff;
 
@@ -992,9 +1133,25 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
         return;
       }
 
+      recordAutocheckResults(nextResults);
       setContents(nextContents);
       setDgResults(nextResults);
       setDropRejection(null);
+
+      const droppedPieceIds = new Set(
+        waybill.pieces.map((piece) => piece["@id"]),
+      );
+      const pending = nextResults.find(
+        (
+          result,
+        ): result is Extract<DgValidationResult, { status: "pending" }> =>
+          result.status === "pending" &&
+          droppedPieceIds.has(result.piece["@id"]),
+      );
+      if (pending) {
+        setActiveAutocheckId(pending.acceptanceCheckId);
+        setAutocheckModalOpen(true);
+      }
     } catch (error) {
       console.error("DG validation failed", error);
       setDropRejection({
@@ -1022,6 +1179,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   }
 
   function handleRemoveWaybill(waybillId: BuildUpWaybill["@id"]) {
+    const removed = contents.find((waybill) => waybill["@id"] === waybillId);
     const nextContents = contents.filter(
       (waybill) => waybill["@id"] !== waybillId,
     );
@@ -1034,6 +1192,9 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     );
     setDropRejection(null);
     setSubmitError(null);
+    for (const piece of removed?.pieces ?? []) {
+      clearDgAutocheckByPiece(piece["@id"]);
+    }
   }
 
   function handleSignOffClick() {
@@ -1411,7 +1572,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                 <div className="flex flex-col gap-1">
                   <CardTitle className="text-xl">Seal and sign off</CardTitle>
                   <CardDescription className="text-sm md:text-base">
-                    Sign-off stays locked while any validation card is red.
+                    Sign-off stays locked while validation is pending or red.
                   </CardDescription>
                 </div>
               </div>
@@ -1541,6 +1702,11 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <DgAutocheckModal
+        acceptanceCheckId={activeAutocheckId}
+        open={autocheckModalOpen}
+        onOpenChange={setAutocheckModalOpen}
+      />
     </MissionShell>
   );
 }

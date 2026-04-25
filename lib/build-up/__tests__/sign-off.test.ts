@@ -4,7 +4,7 @@ import { toIRI, type Piece, type ULD } from "../../ontology/one-record";
 
 type BuildUpPiece = Piece & {
   dgValidation?: {
-    status: "valid" | "rejected";
+    status: "pending" | "valid" | "rejected";
     reason?: string;
   };
 };
@@ -21,7 +21,10 @@ function makeUld(): ULD {
   };
 }
 
-function makePiece(id: string, status: "valid" | "rejected" = "valid"): BuildUpPiece {
+function makePiece(
+  id: string,
+  status: "pending" | "valid" | "rejected" = "valid",
+): BuildUpPiece {
   return {
     "@id": toIRI(id),
     "@type": "Piece",
@@ -47,15 +50,33 @@ describe("signOff", () => {
     ).toThrow("CAO-only DG on passenger aircraft");
   });
 
+  it("blocks sign-off while DG AutoCheck is pending", () => {
+    expect(() =>
+      signOff(
+        makeUld(),
+        [makePiece("urn:cargo:piece:dg-pending-1", "pending")],
+        "SEAL-001",
+        "warehouse-cool-room",
+      ),
+    ).toThrow("DG validation pending for piece urn:cargo:piece:dg-pending-1");
+  });
+
   it("emits the canonical Loading shape for a successful sign-off", () => {
     const pieces = [
       makePiece("urn:cargo:piece:valid-1"),
       makePiece("urn:cargo:piece:valid-2"),
     ];
 
-    const result = signOff(makeUld(), pieces, "SEAL-002", "warehouse-cool-room");
+    const result = signOff(
+      makeUld(),
+      pieces,
+      "SEAL-002",
+      "warehouse-cool-room",
+    );
 
-    expect(result.loading.loadedPieces).toEqual(pieces.map((piece) => piece["@id"]));
+    expect(result.loading.loadedPieces).toEqual(
+      pieces.map((piece) => piece["@id"]),
+    );
     expect(result.loading.loadedUnits).toEqual([makeUld()["@id"]]);
     expect(new Date(result.loading.actionStartTime).toISOString()).toBe(
       result.loading.actionStartTime,

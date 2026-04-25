@@ -25,7 +25,7 @@ function routeForFocus(
     case "audit_log":
       return uldId ? `/supervisor/audit/${uldId}` : "/supervisor/audit/[uldId]";
     case "pitch_slide":
-      return "/pitch";
+      return uldId ? `/supervisor/audit/${uldId}` : "/supervisor";
   }
 }
 

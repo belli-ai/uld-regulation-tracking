@@ -7,6 +7,7 @@ type UldStore = {
   ulds: ULD[];
   contents: UldContents;
   addBuiltUld: (uld: ULD, contents: Waybill[]) => void;
+  reset: () => void;
   updateUld: (id: string, patch: Partial<ULD>) => void;
 };
 
@@ -32,6 +33,7 @@ export const useUldStore = create<UldStore>()((set) => ({
         },
       };
     }),
+  reset: () => set({ ulds: [], contents: {} }),
   updateUld: (id, patch) =>
     set((state) => ({
       ulds: state.ulds.map((uld) =>

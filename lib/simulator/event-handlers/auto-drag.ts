@@ -24,7 +24,7 @@ export async function handleAutoDrag(
     .filter((waybill): waybill is NonNullable<typeof waybill> => waybill !== null);
   const scenarioFlightNo = ctx.currentScenario.initial_state?.flights?.[0] ?? null;
 
-  ctx.updateUld(targetUldId, (uld) => ({
+  const next = ctx.updateUld(targetUldId, (uld) => ({
     ...uld,
     assignedAwbs: [...new Set([...uld.assignedAwbs, ...awbs])],
     flightNo:
@@ -33,6 +33,10 @@ export async function handleAutoDrag(
         : uld.flightNo ?? scenarioFlightNo,
     shc: [...new Set([...uld.shc, ...resolvedWaybills.map((waybill) => waybill.shc)])],
   }));
+
+  if (next?.built) {
+    ctx.syncBuiltUldToStore(next);
+  }
 
   ctx.setState({
     selectedUldId: targetUldId,

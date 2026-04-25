@@ -47,7 +47,7 @@ export async function handleUldActionComplete(
     ctx.auditDb,
   );
 
-  ctx.updateUld(event.uldId, (current) => ({
+  const next = ctx.updateUld(event.uldId, (current) => ({
     ...current,
     auditActionIds: [...current.auditActionIds, recordedAction["@id"]],
     budgetHours: Number((current.budgetHours + measuredBenefitHours).toFixed(1)),
@@ -59,6 +59,9 @@ export async function handleUldActionComplete(
         ? null
         : current.predictedBreachMinutes + measuredBenefitHours * 60,
   }));
+  if (next?.built) {
+    ctx.syncBuiltUldToStore(next);
+  }
 
   ctx.setState({
     inAppAlert: {

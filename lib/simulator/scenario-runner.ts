@@ -18,6 +18,7 @@ import {
   type LogisticsEvent,
   type TemperatureInstructions,
   type TransportMovement,
+  type ULD,
   type Waybill,
 } from "@/lib/ontology/one-record";
 import { auditDb, type AuditDB } from "@/lib/persistence/audit-db";
@@ -27,6 +28,7 @@ import {
   type DemoSpeedMultiplier,
 } from "@/lib/stores/demo-clock-store";
 import { useResourcesStore } from "@/lib/stores/resources-store";
+import { useUldStore } from "@/lib/stores/uld-store";
 import {
   scenarioSchema,
   scenariosFileSchema,
@@ -66,8 +68,17 @@ type WeatherRampParam = "ambient_c" | "humidity_pct" | "cloud_cover_pct";
 
 type InventoryUldRecord = {
   "@id": string;
+  "@type"?: "ULD";
+  ataDesignator?: string;
+  damageFlag?: boolean;
+  loadingIndicator?: string;
+  numberOfDoors?: number;
+  ownerCode?: string;
+  serviceabilityCode?: "SER" | "DAM" | "CON";
+  sealNumber?: string;
   uldSerialNumber: string;
   uldProductCode?: string;
+  uldTypeCode?: string;
   iotDeviceId?: string;
   lastKnownInternalC?: number;
   lastKnownLocation?: string;
@@ -173,6 +184,7 @@ type RunnerState = {
   lastScenarioSummary: string | null;
   logs: RunnerLogEntry[];
   notificationsEnabled: boolean;
+  routeAutomationEnabled: boolean;
   scenarios: Scenario[];
   selectedFlightNo: string | null;
   selectedUldId: string | null;
@@ -219,8 +231,10 @@ export type RunnerContext = {
     demoClock: typeof useDemoClockStore;
     flights: typeof useFlightsStore;
     resources: typeof useResourcesStore;
-    uldStore?: undefined;
+    uldStore: typeof useUldStore;
   };
+  syncBuiltUldToStore: (uld: DemoUldRuntime) => void;
+  syncFlightsToStore: () => void;
   updateUld: (
     uldId: string,
     updater: (uld: DemoUldRuntime) => DemoUldRuntime,
@@ -291,7 +305,9 @@ function routeForFocus(
         ? `/supervisor/audit/${selectedUldId}`
         : "/supervisor/audit/[uldId]";
     case "pitch_slide":
-      return "/pitch";
+      return selectedUldId
+        ? `/supervisor/audit/${selectedUldId}`
+        : "/supervisor";
   }
 }
 
@@ -352,6 +368,33 @@ function selectedFlightsForScenario(scenario: Scenario): DemoFlightRuntime[] {
     flightNumber: flight.flightNumber,
     movementTimes: flight.movementTimes,
   }));
+}
+
+function transportMovementForRuntime(
+  flight: DemoFlightRuntime,
+): TransportMovement {
+  const source = FLIGHTS.find(
+    (candidate) => candidate.flightNumber === flight.flightNumber,
+  );
+
+  return {
+    "@id": flight.flightId,
+    "@type": "TransportMovement",
+    arrivalLocation: flight.arrivalLocation,
+    departureLocation: flight.departureLocation,
+    flightNumber: flight.flightNumber,
+    loadingActions: source?.loadingActions ?? [],
+    modeCode: "Air",
+    movementTimes: flight.movementTimes,
+    operatingParties: source?.operatingParties ?? [],
+  };
+}
+
+function syncFlightsToStore(): void {
+  const flights = useScenarioRunnerStore
+    .getState()
+    .flights.map((flight) => transportMovementForRuntime(flight));
+  useFlightsStore.getState().setScenarioFlights(flights, "mock");
 }
 
 function selectedWaybillsForScenario(
@@ -425,6 +468,7 @@ function initialRunnerState(scenario: Scenario): RunnerState {
     lastScenarioSummary: null,
     logs: [],
     notificationsEnabled: true,
+    routeAutomationEnabled: false,
     scenarios: SCENARIOS,
     selectedFlightNo: firstFlight,
     selectedUldId: firstUld,
@@ -512,11 +556,13 @@ async function clearAuditDb(): Promise<void> {
   await auditDb.events.clear();
   await auditDb.actions.clear();
   await auditDb.loadings.clear();
+  await auditDb.uldStatus.clear();
 }
 
 async function applyScenarioInitialState(scenario: Scenario): Promise<void> {
   const state = initialRunnerState(scenario);
   useDemoClockStore.getState().reset();
+  useUldStore.getState().reset();
   useResourcesStore.getState().setResources({
     freeBuildupBays: floorNumber(scenario.initial_state?.resources?.buildup_bays_free),
     freeCoolDollies: floorNumber(scenario.initial_state?.resources?.cool_dollies_free),
@@ -526,6 +572,47 @@ async function applyScenarioInitialState(scenario: Scenario): Promise<void> {
   });
   await clearAuditDb();
   setRunnerState(state);
+  syncFlightsToStore();
+}
+
+function inventoryRecordForUld(uldId: string): InventoryUldRecord | null {
+  return INVENTORY.find((record) => record.uldSerialNumber === uldId) ?? null;
+}
+
+function builtUldRecord(uld: DemoUldRuntime): ULD | null {
+  const inventoryRecord = inventoryRecordForUld(uld.id);
+  if (!inventoryRecord) {
+    return null;
+  }
+
+  return {
+    "@id": toIRI(inventoryRecord["@id"]),
+    "@type": "ULD",
+    ataDesignator: inventoryRecord.ataDesignator,
+    damageFlag: inventoryRecord.damageFlag ?? false,
+    loadingIndicator: inventoryRecord.loadingIndicator,
+    numberOfDoors: inventoryRecord.numberOfDoors,
+    ownerCode: inventoryRecord.ownerCode ?? uld.id.slice(-2),
+    sealNumber: uld.sealNumber ?? inventoryRecord.sealNumber,
+    serviceabilityCode: inventoryRecord.serviceabilityCode ?? "SER",
+    uldSerialNumber: inventoryRecord.uldSerialNumber,
+    uldTypeCode: inventoryRecord.uldTypeCode ?? uld.id.slice(0, 3),
+  };
+}
+
+function waybillsForRuntimeUld(uld: DemoUldRuntime): Waybill[] {
+  return uld.assignedAwbs
+    .map((awb) => findWaybill(awb))
+    .filter((waybill): waybill is Waybill => waybill !== null);
+}
+
+function syncBuiltUldToStore(uld: DemoUldRuntime): void {
+  const builtRecord = builtUldRecord(uld);
+  if (!builtRecord) {
+    return;
+  }
+
+  useUldStore.getState().addBuiltUld(builtRecord, waybillsForRuntimeUld(uld));
 }
 
 function updateUld(
@@ -583,6 +670,7 @@ function startWaitTimer(expected: string, fallbackAfterSec: number): void {
   waitFallbackTimer = window.setTimeout(() => {
     addLog(`Fallback timer elapsed for ${expected}; resuming scenario`, "warning");
     setWaitState(null);
+    setRunnerState({ routeAutomationEnabled: true });
     useDemoClockStore.getState().play();
     ensureTickLoop();
   }, fallbackAfterSec * 1000);
@@ -600,6 +688,7 @@ function acknowledgeUserAction(actionId: string): boolean {
 
   addLog(`Expected interaction completed: ${actionId}`, "success");
   clearWaitState();
+  setRunnerState({ routeAutomationEnabled: true });
   useDemoClockStore.getState().play();
   ensureTickLoop();
   return true;
@@ -620,6 +709,7 @@ function runnerContextForScenario(scenario: Scenario): RunnerContext {
     nowIso,
     pauseClock: () => useDemoClockStore.getState().pause(),
     playClock: () => {
+      setRunnerState({ routeAutomationEnabled: true });
       useDemoClockStore.getState().play();
       ensureTickLoop();
     },
@@ -632,8 +722,10 @@ function runnerContextForScenario(scenario: Scenario): RunnerContext {
       demoClock: useDemoClockStore,
       flights: useFlightsStore,
       resources: useResourcesStore,
-      uldStore: undefined,
+      uldStore: useUldStore,
     },
+    syncBuiltUldToStore,
+    syncFlightsToStore,
     updateUld,
   };
 }
@@ -828,17 +920,20 @@ export const demoScenarioRunner = {
     await handler(event, runnerContextForScenario(scenario));
   },
   async pause() {
+    setRunnerState({ routeAutomationEnabled: false });
     useDemoClockStore.getState().pause();
     clearClockInterval();
   },
   async play() {
     await dispatchTickZeroIfNeeded();
+    setRunnerState({ routeAutomationEnabled: true });
     useDemoClockStore.getState().play();
     ensureTickLoop();
   },
   async reset() {
     clearClockInterval();
     clearWaitTimer();
+    setRunnerState({ routeAutomationEnabled: false });
     await applyScenarioInitialState(
       currentScenarioById(useScenarioRunnerStore.getState().activeScenarioId),
     );
@@ -846,6 +941,7 @@ export const demoScenarioRunner = {
   async selectScenario(scenarioId: string) {
     clearClockInterval();
     clearWaitTimer();
+    setRunnerState({ routeAutomationEnabled: false });
     await applyScenarioInitialState(currentScenarioById(scenarioId));
   },
   setForceMockWeather(forceMockWeather: boolean) {
@@ -976,6 +1072,7 @@ export function createLoadingRecord(
     loadedUnits: [uld.iri],
     loadingType: "build-up",
     performedAt: toIRI(uld.lastKnownLocation ?? "urn:cargo:zone:DXB-build-up-area"),
+    otherIdentifiers: uld.flightNo ? [`flight:${uld.flightNo}`] : undefined,
   };
 }
 

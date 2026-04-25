@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Pause, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useScenarioRunnerStore } from "@/lib/simulator/scenario-runner";
 import { useDemoClockStore } from "@/lib/stores/demo-clock-store";
 
 const TICK_INTERVAL_MS = 1_000;
@@ -14,14 +15,17 @@ export function SimulateToggle() {
   const play = useDemoClockStore((s) => s.play);
   const pause = useDemoClockStore((s) => s.pause);
   const skip = useDemoClockStore((s) => s.skip);
+  const routeAutomationEnabled = useScenarioRunnerStore(
+    (s) => s.routeAutomationEnabled,
+  );
 
   useEffect(() => {
-    if (playState !== "playing") return;
+    if (playState !== "playing" || routeAutomationEnabled) return;
     const id = window.setInterval(() => {
       skip(speedMultiplier);
     }, TICK_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [playState, speedMultiplier, skip]);
+  }, [playState, routeAutomationEnabled, speedMultiplier, skip]);
 
   const isPlaying = playState === "playing";
 

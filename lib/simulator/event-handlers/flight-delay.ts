@@ -47,6 +47,7 @@ export async function handleFlightDelay(
     selectedFlightNo: flightNo,
     statusMessage: `${flightNo} delayed by ${deltaMinutes} minutes`,
   }));
+  ctx.syncFlightsToStore();
 
   ctx.addLog(`${flightNo} delayed by ${deltaMinutes} minutes`, "warning");
 }

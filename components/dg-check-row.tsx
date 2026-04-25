@@ -32,7 +32,11 @@ function getTone(
     return "red";
   }
 
-  if (checking || pieceCount === 0) {
+  if (
+    checking ||
+    pieceCount === 0 ||
+    results.some((result) => result.status === "pending")
+  ) {
     return "yellow";
   }
 
@@ -58,9 +62,10 @@ function getWaybillStatus(
   resultsById: Map<string, DgValidationResult>,
 ): {
   reason: string;
-  status: "non-dg" | "valid" | "rejected";
+  status: "non-dg" | "pending" | "valid" | "rejected";
 } {
   let hasValid = false;
+  let hasPending = false;
 
   for (const piece of waybill.pieces) {
     const result = resultsById.get(piece["@id"]);
@@ -75,6 +80,17 @@ function getWaybillStatus(
     if (result?.status === "valid") {
       hasValid = true;
     }
+
+    if (result?.status === "pending") {
+      hasPending = true;
+    }
+  }
+
+  if (hasPending) {
+    return {
+      reason: "DG AutoCheck verification is in progress.",
+      status: "pending",
+    };
   }
 
   if (hasValid) {
@@ -121,9 +137,11 @@ export function DgCheckRow({ checking, rejection, results, waybills }: Props) {
                   ? "Checking loaded shipments against the DG validator."
                   : tone === "red"
                     ? "A DG-declared shipment failed validation."
-                    : waybills.length === 0
-                      ? "Drop an AWB to run DG validation."
-                      : "All loaded shipments are valid or non-DG."}
+                    : results.some((result) => result.status === "pending")
+                      ? "DG AutoCheck verification is still pending."
+                      : waybills.length === 0
+                        ? "Drop an AWB to run DG validation."
+                        : "All loaded shipments are valid or non-DG."}
               </CardDescription>
             </div>
           </div>
@@ -158,9 +176,12 @@ export function DgCheckRow({ checking, rejection, results, waybills }: Props) {
             {waybills.map((waybill) => {
               const result = getWaybillStatus(waybill, resultsById);
               const rejected = result.status === "rejected";
+              const pending = result.status === "pending";
               const toneClass = rejected
                 ? "border-red-500/40 bg-red-500/10 text-red-100"
-                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
+                : pending
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
 
               return (
                 <div
@@ -184,9 +205,11 @@ export function DgCheckRow({ checking, rejection, results, waybills }: Props) {
                   >
                     {result.status === "valid"
                       ? "Valid"
-                      : result.status === "rejected"
-                        ? "Rejected"
-                        : "Non-DG"}
+                      : result.status === "pending"
+                        ? "Pending"
+                        : result.status === "rejected"
+                          ? "Rejected"
+                          : "Non-DG"}
                   </Badge>
                 </div>
               );
