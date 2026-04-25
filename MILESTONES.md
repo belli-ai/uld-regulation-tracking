@@ -46,7 +46,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | ID  | Title                                        | Phase | Status | Owner  | Parallel-safe | Blocked by |
 | --- | -------------------------------------------- | ----- | ------ | ------ | ------------- | ---------- |
 | M0  | Project scaffold                             | 1     | 🟢     | master | No            | —          |
-| M1  | IATA ONE Record TS types                     | 1     | 🟡     | master | No            | M0         |
+| M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
 | M2  | Mock data fixtures                           | 1     | 🔘     | —      | Yes (∥ M3)    | M1         |
 | M3  | API route adapter layer                      | 1     | 🔘     | —      | Yes (∥ M2)    | M1         |
 | M4  | Physics engine                               | 2     | 🔘     | —      | Yes           | Phase 1    |
@@ -140,7 +140,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 
 | Field           | Value                            |
 | --------------- | -------------------------------- |
-| Status          | 🟡 In progress                   |
+| Status          | 🟢 Done                          |
 | Owner           | master                           |
 | Phase           | 1                                |
 | Parallel-safe   | No (single source-of-truth file) |
@@ -172,6 +172,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | Date | Change | By |
 |---|---|---|
 | 2026-04-25 | Initial scope | Lead |
+| 2026-04-25 | Completed by master + m1-dev (team `cool-chain-foundation`). `lib/ontology/one-record.ts` (6.4K) + `lib/ontology/__fixtures__/sample-objects.ts` (8.5K) created. Verification: `pnpm typecheck && pnpm lint && pnpm build` all exit 0. | master |
 
 ### M2 — Mock data fixtures (IATA-shaped)
 
