@@ -54,89 +54,169 @@
 
 ## Implementation Team Structure
 
-Hierarchical multi-agent flow. Three layers, each with a tight role.
+Hierarchical multi-agent flow with **terminal-based parallelism via cmux**. Each sub-orchestrator runs as a fresh `claude` instance in its own cmux workspace — independent context window, independent conversation, independent crash blast radius.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  YOU (master orchestrator) — top of chain                            │
-│  • Reads MILESTONES.md status board to pick the next milestone(s)    │
-│  • Phase-gated: never starts Phase N+1 until all of Phase N is 🟢    │
-│  • For parallel-safe milestones, can spawn multiple sub-orchestrators│
-│    in a single message                                               │
-│  • Claims milestones in MILESTONES.md (Status: 🟡, Owner)            │
-│  • Coordinates across parallel sub-orchestrators (SendMessage)       │
-│  • On sub-orchestrator success: verifies high-level outcome, marks   │
-│    Status: 🟢, appends Revisions row, commits per milestone          │
-│  • Spawns `hackathon-reviewer` after major features for review pass  │
-│  • Does NOT write code · Does NOT plan milestone-internal Codex      │
-│    units — that's the sub-orchestrator's job                         │
-└─────────────────────┬────────────────────────────────────────────────┘
-                      │ Agent tool spawn (subagent_type: "hackathon-dev")
-                      ▼
+│  YOU (master orchestrator) — top-level Claude Code session          │
+│  • Drives MILESTONES.md from all-🔘 to all-🟢                       │
+│  • Picks the next milestone(s) from the status board                │
+│  • Phase-gated: never starts Phase N+1 until all of Phase N is 🟢   │
+│  • Claims milestones in MILESTONES.md (Status: 🟡, Owner: master)   │
+│  • For each milestone (or batch of parallel-safe milestones):       │
+│    spawns a fresh `claude` instance in a NEW cmux workspace and     │
+│    feeds it the hackathon-dev kickoff prompt                        │
+│  • Monitors progress via `cmux read-screen --scrollback`            │
+│  • On DONE marker: independently re-verifies, marks 🟢, appends     │
+│    Revisions row, commits per milestone, closes the workspace       │
+│  • Spawns `hackathon-reviewer` via Agent tool (no cmux) every 3-4   │
+│    milestones for review pass                                       │
+│  • Does NOT write code · Does NOT plan Codex units                  │
+└────────────────────┬────────────────────────────────────────────────┘
+                     │ cmux new-workspace + claude + kickoff prompt
+                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  hackathon-dev (sub-orchestrator) — one per milestone                │
-│  • Receives ONE assigned milestone (e.g. "execute M0")               │
-│  • Reads PLAN.md + MILESTONES.md milestone block + MOCK_DATA.md as   │
-│    needed                                                            │
-│  • Invokes `/shadcn` skill BEFORE writing any FE layout              │
-│  • Plans the work as one or more Codex-sized prompts using           │
-│    `codex:gpt-5-4-prompting` skill                                   │
-│  • Spawns `codex:codex-rescue` per Codex unit                        │
-│  • Verifies Codex output: runs                                       │
-│      pnpm typecheck && pnpm lint && pnpm build                       │
-│    plus manual click-through for UI work                             │
-│  • Iterates Codex prompt if verification fails                       │
-│  • Reports back to master with: success/blocker, files touched,      │
-│    verification command output                                       │
-│  • Does NOT write code directly                                      │
-│  • Does NOT update MILESTONES.md status — master owns that           │
-└─────────────────────┬────────────────────────────────────────────────┘
-                      │ Agent tool spawn (subagent_type: "codex:codex-rescue")
-                      ▼
+│  hackathon-dev teammate — `claude` running in a cmux workspace      │
+│  • Receives ONE milestone assignment via the kickoff prompt         │
+│  • Has its OWN context window (~200k tokens) — independent of       │
+│    master's. Long milestones don't bloat master's history.          │
+│  • Reads PLAN.md / MILESTONES.md / MOCK_DATA.md as the milestone    │
+│    requires                                                         │
+│  • Invokes `/shadcn` skill BEFORE writing any FE layout             │
+│  • Plans Codex-sized prompts using `codex:gpt-5-4-prompting`        │
+│  • Spawns `codex:codex-rescue` via Agent tool (in-session — Codex   │
+│    is one-shot, no need for its own cmux)                           │
+│  • Verifies: `pnpm typecheck && pnpm lint && pnpm build`            │
+│    plus manual click-through for UI work                            │
+│  • Iterates Codex prompt if verification fails                      │
+│  • On success, prints exactly:  ===DONE M<N>===                     │
+│    followed by files touched, last 20 lines of verify output, any   │
+│    deviations from the milestone Files list                         │
+│  • On hard block (2+ Codex failures), prints:  ===BLOCKED M<N>===   │
+│    followed by diagnosis                                            │
+│  • Does NOT touch MILESTONES.md status — master owns that           │
+│  • Does NOT commit — master owns that                               │
+└────────────────────┬────────────────────────────────────────────────┘
+                     │ Agent tool (in-session in this cmux Claude)
+                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  codex:codex-rescue (code writer) — one per Codex prompt             │
-│  • Receives a fully-shaped prompt: absolute path, files to modify,   │
-│    acceptance criteria, verification command                         │
-│  • Reads AGENTS.md from cwd upward (auto)                            │
-│  • Writes file edits per the prompt                                  │
-│  • Returns diff summary                                              │
-│  • Does NOT run verification; sub-orchestrator does that             │
-└──────────────────────────────────────────────────────────────────────┘
+│  codex:codex-rescue — single-shot code writer                       │
+│  • Receives a fully-shaped prompt: absolute path, files to modify,  │
+│    acceptance criteria, verification command                        │
+│  • Reads AGENTS.md from cwd upward (auto)                           │
+│  • Writes file edits, returns diff summary                          │
+│  • Does NOT run verification; hackathon-dev does that               │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Why cmux instead of nested Agent-tool spawns
+
+- **Independent context windows.** Each hackathon-dev gets its own ~200k tokens. Master's context doesn't bloat with milestone-internal noise.
+- **Visible parallelism.** User can switch tabs and watch each teammate work in real time.
+- **Crash isolation.** A stuck/off-rails teammate stays contained in its workspace. Closing the tab removes it cleanly.
+- **Native scale.** Phase 2 can run 7 hackathon-dev workspaces concurrently without context contention.
+- **Reviewer stays Agent-tool.** `hackathon-reviewer` is one-shot and read-only — cmux overhead unjustified.
+
+### Spawn protocol (master-side)
+
+For each milestone (or batch of parallel-safe milestones), run this script. Refs are monotonically incrementing, so always re-resolve via `cmux list-workspaces`.
+
+```bash
+# 1. Create workspace, capture UUID
+UUID=$(cmux new-workspace 2>&1 | awk '{print $2}')
+sleep 3                         # zsh / oh-my-zsh init
+
+# 2. Resolve current ref
+REF=$(cmux list-workspaces 2>&1 | grep "$UUID" | awk '{print $1}')
+
+# 3. Rename tab for visibility
+cmux rename-workspace --workspace "$REF" "M<N>: <short title>"
+
+# 4. cd into project root and launch claude
+cmux send --workspace "$REF" 'cd /Users/abelramadhan/projects/belli-workspace/hackathon && claude'
+cmux send-key --workspace "$REF" enter
+sleep 5                         # claude init
+
+# 5. Send the hackathon-dev kickoff prompt (single line; long prompt OK — typed char-by-char)
+cmux send --workspace "$REF" '<HACKATHON-DEV KICKOFF PROMPT — see below>'
+cmux send-key --workspace "$REF" enter
+```
+
+### hackathon-dev kickoff prompt template
+
+Sent via `cmux send` to each spawned cmux Claude. Substitute `<N>` and the relevant section pointers per milestone.
+
+```
+You are hackathon-dev sub-orchestrator for milestone M<N>.
+
+REQUIRED READS:
+- CLAUDE.md → Implementation Team Structure (your role)
+- MILESTONES.md → M<N> block (Files, Success criteria, Test criteria)
+- PLAN.md → <relevant section names>
+- MOCK_DATA.md → <relevant sections> (only if M<N> touches fixtures)
+- AGENTS.md → Codex code conventions
+- style-guide.json (only if M<N> involves FE layout)
+
+MANDATORY: Before writing any FE layout code, invoke the /shadcn skill.
+
+WORKFLOW:
+1. Read the milestone block. Confirm scope.
+2. Plan Codex-sized prompts using codex:gpt-5-4-prompting skill.
+3. Spawn codex:codex-rescue via Agent tool per Codex unit.
+4. Verify: pnpm typecheck && pnpm lint && pnpm build
+   plus milestone-specific tests (e.g. pnpm tsx scripts/validate-fixtures.ts).
+5. For UI work, open localhost:3000, click through.
+6. If verification fails, iterate the Codex prompt. After 2 failures
+   on the same Codex spawn, stop and emit ===BLOCKED M<N>=== with diagnosis.
+7. On green, emit exactly:
+     ===DONE M<N>===
+     Files touched: <list>
+     Verify output (last 20 lines): <paste>
+     Deviations from milestone Files list: <none | list with reasons>
+
+DO NOT update MILESTONES.md status. Master owns that.
+DO NOT commit. Master owns that.
+DO NOT touch files outside the milestone Files list without flagging
+in your DONE/BLOCKED report.
+```
+
+### Monitoring + completion detection (master-side)
+
+```bash
+# Poll the workspace screen for completion markers
+cmux read-screen --workspace "$REF" --scrollback | tail -80 | grep -E "^===(DONE|BLOCKED) M<N>==="
+```
+
+When the marker appears: read the full DONE/BLOCKED block via `cmux read-screen --workspace "$REF" --scrollback`, then proceed to verify + mark done + commit + close workspace.
 
 ### When to spawn what
 
 | Scenario | What master does |
 |---|---|
-| Single sequential milestone | Spawn ONE `hackathon-dev` with the milestone assignment |
-| Multiple parallel-safe milestones in same phase | Spawn MULTIPLE `hackathon-dev` agents in a single message (independent assignments). Use `TeamCreate` if cross-coordination needed. |
-| Review pass after major feature | Spawn ONE `hackathon-reviewer` on the diff. No team needed. |
-| Code exploration / question | Use `dora-code-explorer` (read-only) or read directly. No `hackathon-dev` needed. |
+| Single sequential milestone | Spawn 1 cmux workspace, send hackathon-dev kickoff |
+| Multiple parallel-safe milestones in same phase | Spawn N cmux workspaces (run the spawn script N times in one Bash batch). Each gets its own kickoff prompt. |
+| Review pass after major feature | Spawn `hackathon-reviewer` via **Agent tool** (no cmux — read-only, one-shot) |
+| Code exploration / question | Use `dora-code-explorer` Agent tool or read directly. No cmux. |
+
+### Coordination across parallel cmux teammates
+
+Parallel hackathon-dev workspaces can NOT share TaskList or SendMessage (separate Claude processes). Master is the only coordination layer:
+
+- **File conflicts**: prevented by per-milestone Files list discipline. Two parallel milestones must never list the same file.
+- **Cross-cutting questions**: master reads workspace A's screen, decides answer, sends to workspace A via `cmux send`.
+- **Cross-milestone info**: if WS-A learns something WS-B needs, master relays via `cmux send`.
 
 ### Master orchestrator workflow
 
-1. **Pick** — read MILESTONES.md status board. Find the next milestone(s) with `Status: 🔘`, `blockedBy` cleared, in the current phase. Within a phase, batch parallel-safe milestones.
-2. **Claim** — for each picked milestone, edit MILESTONES.md: status board row + milestone's own Status field both → `🟡`, Owner → `master`. Commit: `chore(milestones): claim M<N>` (or batch).
-3. **Spawn** — call `Agent` tool with `subagent_type: "hackathon-dev"`, prompt containing:
-   - Milestone ID and name
-   - Absolute path: `/Users/abelramadhan/projects/belli-workspace/hackathon`
-   - Pointer: "Read MILESTONES.md → M<N> for Files / Success criteria / Test criteria"
-   - Pointer: "Read PLAN.md → <relevant section> for design context"
-   - Pointer: "Read MOCK_DATA.md → <relevant section>" if M2 / fixture-touching
-   - Verification command: `pnpm typecheck && pnpm lint && pnpm build`
-   - Hard constraint: must invoke `/shadcn` skill before any FE layout
-4. **Coordinate** — for parallel spawns, watch for cross-cutting questions; respond via `SendMessage`.
-5. **Verify on return** — confirm sub-orchestrator's success claim is real:
-   - Re-run verification command yourself
-   - For UI work, open `localhost:3000` in browser, click through
-   - Check the Files list in MILESTONES.md was actually touched (and only those files)
-6. **Mark done** — edit MILESTONES.md: status board row + milestone Status → `🟢`, append Revisions row noting completion. Commit: `feat(M<N>): <summary>` (or `chore`/`fix` as appropriate).
-7. **Review pass** — every 3-4 milestones or end of phase, spawn `hackathon-reviewer` on the diff before continuing.
-8. **Loop** — back to step 1 for next milestone(s).
-
-### Sub-orchestrator (hackathon-dev) workflow
-
-The `hackathon-dev` agent definition (`.claude/agents/hackathon-dev.md`) already documents its loop. Master should not duplicate that knowledge in spawn prompts — just point at the assigned milestone and let the sub-orchestrator drive.
+1. **Pick** — read MILESTONES.md status board. Identify next milestone(s) with `Status: 🔘`, `blockedBy` cleared. Within a phase, batch parallel-safe milestones.
+2. **Claim** — edit MILESTONES.md: status board row + milestone's own Status → `🟡`, Owner → `master`. Commit `chore(milestones): claim M<N>` (or batch).
+3. **Spawn cmux workspace(s)** — one per claimed milestone. Run the spawn script. Send the hackathon-dev kickoff prompt.
+4. **Monitor** — poll `cmux read-screen --scrollback` for DONE/BLOCKED markers. Use the Monitor tool with an `until` loop if available, otherwise manual poll every 60-120s.
+5. **Re-verify on DONE** — independently in master's terminal, run `pnpm typecheck && pnpm lint && pnpm build`. For UI work, open localhost:3000, click through.
+6. **Mark done** — edit MILESTONES.md (Status → 🟢), append Revisions row. Commit `feat(M<N>): <summary>` (or `chore`/`fix`/`refactor`).
+7. **Close workspace** — `cmux close-workspace --workspace "$REF"` to clean up the tab.
+8. **Review pass** — every 3-4 milestones or at end of phase, spawn `hackathon-reviewer` (Agent tool, not cmux) on the diff since last review.
+9. **Loop** — back to step 1.
 
 ### Hard constraints across all layers
 
