@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import type { TransportMovement } from '@/lib/ontology/one-record';
+import { create } from "zustand";
+import type { TransportMovement } from "@/lib/ontology/one-record";
+import { getShiftedFlights } from "@/lib/data/flights-shifted";
 
-type WeatherSource = 'live' | 'mock';
+type WeatherSource = "live" | "mock";
 
 type FlightsResponse = {
   data: TransportMovement[];
@@ -21,12 +22,14 @@ type FlightsState = {
   loadFlights: () => Promise<void>;
 };
 
-function isTransportMovementArray(value: unknown): value is TransportMovement[] {
+function isTransportMovementArray(
+  value: unknown,
+): value is TransportMovement[] {
   return Array.isArray(value);
 }
 
 function isWeatherSource(value: unknown): value is WeatherSource {
-  return value === 'live' || value === 'mock';
+  return value === "live" || value === "mock";
 }
 
 function getErrorMessage(error: unknown): string {
@@ -34,7 +37,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unable to load outbound flights';
+  return "Unable to load outbound flights";
 }
 
 export const useFlightsStore = create<FlightsState>()((set) => ({
@@ -47,16 +50,20 @@ export const useFlightsStore = create<FlightsState>()((set) => ({
 
     try {
       const [flightsResponse, weatherResponse] = await Promise.all([
-        fetch('/api/flights', { cache: 'no-store' }),
-        fetch('/api/weather?airport=DXB', { cache: 'no-store' }),
+        fetch("/api/flights", { cache: "no-store" }),
+        fetch("/api/weather?airport=DXB", { cache: "no-store" }),
       ]);
 
       if (!flightsResponse.ok) {
-        throw new Error(`Flights request failed with ${flightsResponse.status}`);
+        throw new Error(
+          `Flights request failed with ${flightsResponse.status}`,
+        );
       }
 
       if (!weatherResponse.ok) {
-        throw new Error(`Weather request failed with ${weatherResponse.status}`);
+        throw new Error(
+          `Weather request failed with ${weatherResponse.status}`,
+        );
       }
 
       const flightsJson: unknown = await flightsResponse.json();
@@ -65,8 +72,17 @@ export const useFlightsStore = create<FlightsState>()((set) => ({
       const flightsData = (flightsJson as Partial<FlightsResponse>).data;
       const weatherSource = (weatherJson as Partial<WeatherResponse>).source;
 
+      // Server-rendered /api/flights returns unshifted JSON (server can't see
+      // localStorage). Apply the client-side scenario-anchor shift here so
+      // every consumer of the store sees the same time-shifted flights as
+      // the simulation clock and recalculator do.
+      const baseFlights = isTransportMovementArray(flightsData)
+        ? flightsData
+        : [];
+      const shifted = baseFlights.length > 0 ? getShiftedFlights() : [];
+
       set({
-        flights: isTransportMovementArray(flightsData) ? flightsData : [],
+        flights: shifted.length > 0 ? shifted : baseFlights,
         weatherSource: isWeatherSource(weatherSource) ? weatherSource : null,
         loading: false,
         error: null,

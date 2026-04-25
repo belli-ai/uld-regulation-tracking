@@ -26,6 +26,7 @@ import {
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import { computeThermalStatus } from "@/lib/physics/thermal-status";
 import { getSimulationNowMs } from "@/lib/clock/simulation-clock";
+import { shiftTimestamps } from "@/lib/data/flights-shifted";
 import rawShcConfig from "@/public/config/shc.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
@@ -59,9 +60,15 @@ const inventoryById: Record<string, InventoryRecord> = (() => {
   return out;
 })();
 
-let cachedWeather: CanonicalWeather = adaptMockWeather(
-  rawWeatherData as unknown,
-  "DXB",
+function applyShiftToWeather(weather: CanonicalWeather): CanonicalWeather {
+  return {
+    ...weather,
+    hourly: shiftTimestamps(weather.hourly),
+  };
+}
+
+let cachedWeather: CanonicalWeather = applyShiftToWeather(
+  adaptMockWeather(rawWeatherData as unknown, "DXB"),
 );
 let cachedPolygons: AirportPolygons | null = null;
 let polygonLoadStarted = false;
@@ -93,7 +100,7 @@ async function refreshWeather(nowMs: number): Promise<void> {
     if (!response.ok) return;
     const payload = (await response.json()) as CanonicalWeather;
     if (payload && Array.isArray(payload.hourly)) {
-      cachedWeather = payload;
+      cachedWeather = applyShiftToWeather(payload);
     }
   } catch {
     // Keep prior cachedWeather; mock fallback acceptable.
@@ -174,11 +181,16 @@ function deriveStage(
   polygons: AirportPolygons | null,
   events: LogisticsEvent[],
 ): Stage {
+  const eventStage = stageFromEvents(uldId, events);
+  if (eventStage) {
+    return eventStage;
+  }
+
   if (polygons && measurements.length > 0) {
     const result = classifyState(uldId, measurements, polygons);
     return result.stage as Stage;
   }
-  return stageFromEvents(uldId, events) ?? "in-warehouse";
+  return "in-warehouse";
 }
 
 function asUldId(value: string | undefined): string | null {
