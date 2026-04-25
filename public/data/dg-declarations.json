@@ -1,0 +1,152 @@
+{
+  "urn:cargo:dgdec:DG-LITHIUM-001": {
+    "@id": "urn:cargo:dgdec:DG-LITHIUM-001",
+    "@type": "DgDeclaration",
+    "issuedForPiece": "urn:cargo:piece:176-45678901-1",
+    "issuedForWaybill": "urn:cargo:waybill:176-45678901",
+    "declarationDate": "2026-04-25T08:00:00+04:00",
+    "declarationPlace": "urn:cargo:loc:DXB",
+    "shippingRefNo": "TS-LION-9912",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:FRA",
+    "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "aircraftLimitationInformation": "Cargo aircraft only",
+    "shipmentType": "NON_RADIOACTIVE",
+    "exclusiveUseIndicator": false,
+    "shipperParty": {
+      "@id": "urn:cargo:party:shipper:techship-dxb",
+      "@type": "Party",
+      "name": "TechShip Logistics FZE",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "DAFZA Block A, Office 412",
+        "city": "Dubai",
+        "country": "AE",
+        "postalCode": "54123",
+        "contact": "+971 4 555 0142"
+      }
+    },
+    "consigneeParty": {
+      "@id": "urn:cargo:party:consignee:mediatech-fra",
+      "@type": "Party",
+      "name": "MediaTech Distribution GmbH",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "Hanauer Landstrasse 287",
+        "city": "Frankfurt am Main",
+        "country": "DE",
+        "postalCode": "60314",
+        "contact": "+49 69 555 0188"
+      }
+    },
+    "issuerParty": {
+      "@id": "urn:cargo:party:issuer:techship-compliance",
+      "@type": "Party",
+      "name": "TechShip Logistics FZE — Compliance Desk",
+      "branch": "DXB"
+    },
+    "dgDeclaredItems": [
+      {
+        "@id": "urn:cargo:dgitem:DG-LITHIUM-001-1",
+        "@type": "DgDeclaredItem",
+        "unId": "UN3481",
+        "properShippingName": "Lithium ion batteries contained in equipment",
+        "dgClass": "9",
+        "packingGroup": null,
+        "packagingType": "Fibreboard box (4G)",
+        "numberOfPackages": 8,
+        "netQuantityPerPackage": { "value": 53, "unit": "kg" },
+        "packingInstruction": "967",
+        "section": "II",
+        "authorization": null
+      }
+    ],
+    "handlingInformation": "Lithium ion batteries — handle with care; keep dry. Section II package; lithium battery mark applied per PI 967 §II. No Class 9 hazard label required.",
+    "signatoryParty": {
+      "@id": "urn:cargo:party:signatory:rashid-al-mansouri",
+      "@type": "Party",
+      "name": "Rashid Al Mansouri",
+      "title": "Dangerous Goods Compliance Officer"
+    },
+    "signedAt": {
+      "place": "Dubai, UAE",
+      "date": "2026-04-25T08:00:00+04:00"
+    },
+    "complianceDeclarationText": "I hereby declare that the contents of this consignment are fully and accurately described above by the proper shipping name, and are classified, packaged, marked and labelled/placarded, and are in all respects in proper condition for transport according to applicable international and national governmental regulations. I declare that all of the applicable air transport requirements have been met."
+  },
+  "urn:cargo:dgdec:DG-CORROSIVE-001": {
+    "@id": "urn:cargo:dgdec:DG-CORROSIVE-001",
+    "@type": "DgDeclaration",
+    "issuedForPiece": "urn:cargo:piece:176-89012345-1",
+    "issuedForWaybill": "urn:cargo:waybill:176-89012345",
+    "declarationDate": "2026-04-25T07:30:00+04:00",
+    "declarationPlace": "urn:cargo:loc:DXB",
+    "shippingRefNo": "CF-DXB-LHR-4471",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:LHR",
+    "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "aircraftLimitationInformation": "Cargo aircraft only",
+    "shipmentType": "NON_RADIOACTIVE",
+    "exclusiveUseIndicator": true,
+    "shipperParty": {
+      "@id": "urn:cargo:party:shipper:chemfreight-dxb",
+      "@type": "Party",
+      "name": "ChemFreight Industries LLC",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "JAFZA South Zone, Warehouse 14",
+        "city": "Jebel Ali, Dubai",
+        "country": "AE",
+        "postalCode": "17000",
+        "contact": "+971 4 555 0901"
+      }
+    },
+    "consigneeParty": {
+      "@id": "urn:cargo:party:consignee:britchem-lhr",
+      "@type": "Party",
+      "name": "BritChem Holdings Ltd",
+      "address": {
+        "@type": "Address",
+        "streetAddress": "Beddington Lane Industrial Estate, Unit 22",
+        "city": "Croydon, London",
+        "country": "GB",
+        "postalCode": "CR0 4TD",
+        "contact": "+44 20 7555 0233"
+      }
+    },
+    "issuerParty": {
+      "@id": "urn:cargo:party:issuer:chemfreight-compliance",
+      "@type": "Party",
+      "name": "ChemFreight Industries LLC — DG Desk",
+      "branch": "DXB"
+    },
+    "dgDeclaredItems": [
+      {
+        "@id": "urn:cargo:dgitem:DG-CORROSIVE-001-1",
+        "@type": "DgDeclaredItem",
+        "unId": "UN1789",
+        "properShippingName": "Hydrochloric acid solution",
+        "dgClass": "8",
+        "packingGroup": "II",
+        "packagingType": "Plastic jerrican (3H1)",
+        "numberOfPackages": 3,
+        "netQuantityPerPackage": { "value": 30, "unit": "L" },
+        "packingInstruction": "851",
+        "section": null,
+        "authorization": null
+      }
+    ],
+    "handlingInformation": "Class 8 corrosive — keep upright. Stow away from foodstuffs and Class 1, 4.1, 5 cargo. Exclusive use; do not co-load.",
+    "signatoryParty": {
+      "@id": "urn:cargo:party:signatory:omar-khoury",
+      "@type": "Party",
+      "name": "Omar Khoury",
+      "title": "DG Compliance Manager"
+    },
+    "signedAt": {
+      "place": "Dubai, UAE",
+      "date": "2026-04-25T07:30:00+04:00"
+    },
+    "complianceDeclarationText": "I hereby declare that the contents of this consignment are fully and accurately described above by the proper shipping name, and are classified, packaged, marked and labelled/placarded, and are in all respects in proper condition for transport according to applicable international and national governmental regulations. I declare that all of the applicable air transport requirements have been met."
+  }
+}

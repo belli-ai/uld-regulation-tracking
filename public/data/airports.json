@@ -1,0 +1,37 @@
+{
+  "DXB": {
+    "iata": "DXB",
+    "name": "Dubai International",
+    "latitude": 25.2532,
+    "longitude": 55.3657,
+    "tzOffsetMinutes": 240
+  },
+  "FRA": {
+    "iata": "FRA",
+    "name": "Frankfurt am Main",
+    "latitude": 50.0379,
+    "longitude": 8.5622,
+    "tzOffsetMinutes": 120
+  },
+  "LHR": {
+    "iata": "LHR",
+    "name": "London Heathrow",
+    "latitude": 51.47,
+    "longitude": -0.4543,
+    "tzOffsetMinutes": 60
+  },
+  "JFK": {
+    "iata": "JFK",
+    "name": "New York JFK",
+    "latitude": 40.6413,
+    "longitude": -73.7781,
+    "tzOffsetMinutes": -240
+  },
+  "SIN": {
+    "iata": "SIN",
+    "name": "Singapore Changi",
+    "latitude": 1.3644,
+    "longitude": 103.9915,
+    "tzOffsetMinutes": 480
+  }
+}

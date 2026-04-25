@@ -1,0 +1,1278 @@
+{
+  "EK0083": [
+    {
+      "@id": "urn:cargo:waybill:176-12345678",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "12345678",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:FRA",
+      "shc": "COL",
+      "description": "Pharma vaccines",
+      "consignor": "PharmaCo",
+      "flightNumber": "EK0083",
+      "declaredValueForCarriage": { "value": 850000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-12345678-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 36, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-12345678",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-12345678-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-12345678-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 36, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-12345678",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-12345678-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-12345678-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 35, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-12345678",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-12345678-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-12345678-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 35, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-12345678",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-12345678-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-23456789",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "23456789",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:FRA",
+      "shc": "PER",
+      "description": "Fresh roses",
+      "consignor": "FloraEx",
+      "flightNumber": "EK0083",
+      "declaredValueForCarriage": { "value": 12000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-23456789-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 45, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-23456789",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-23456789-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-23456789-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 44, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-23456789",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-23456789-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-34567890",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "34567890",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:FRA",
+      "shc": "AVI",
+      "description": "Live racehorses",
+      "consignor": "StallionAir",
+      "flightNumber": "EK0083",
+      "declaredValueForCarriage": { "value": 4500000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-34567890-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 920, "unit": "kg" },
+          "dimensions": {
+            "length": 240,
+            "width": 110,
+            "height": 230,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-34567890",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-34567890-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 26, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-45678901",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "45678901",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:FRA",
+      "shc": "CRT",
+      "description": "Smartphones (lithium-ion batteries in equipment)",
+      "consignor": "TechShip Logistics FZE",
+      "flightNumber": "EK0083",
+      "declaredValueForCarriage": { "value": 1250000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-45678901-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-5",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-5",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-6",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-6",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-7",
+          "@type": "Piece",
+          "grossWeight": { "value": 53, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-7",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-45678901-8",
+          "@type": "Piece",
+          "grossWeight": { "value": 54, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-45678901",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-45678901-8",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          },
+          "dgDeclaration": "urn:cargo:dgdec:DG-LITHIUM-001"
+        }
+      ]
+    }
+  ],
+  "EK0237": [
+    {
+      "@id": "urn:cargo:waybill:176-56789012",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "56789012",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:LHR",
+      "shc": "PER",
+      "description": "Fresh tuna",
+      "consignor": "OceanCargo",
+      "flightNumber": "EK0237",
+      "declaredValueForCarriage": { "value": 92000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-56789012-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 207, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-56789012-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 207, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-56789012-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 207, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-56789012-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 207, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-56789012-5",
+          "@type": "Piece",
+          "grossWeight": { "value": 206, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-5",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-56789012-6",
+          "@type": "Piece",
+          "grossWeight": { "value": 206, "unit": "kg" },
+          "dimensions": {
+            "length": 120,
+            "width": 80,
+            "height": 70,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-56789012",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-56789012-6",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-67890123",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "67890123",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:LHR",
+      "shc": "COL",
+      "description": "Biologics",
+      "consignor": "BioMed",
+      "flightNumber": "EK0237",
+      "declaredValueForCarriage": { "value": 540000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-67890123-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-67890123",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-67890123-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-67890123-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-67890123",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-67890123-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-78901234",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "78901234",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:LHR",
+      "shc": "CRT",
+      "description": "Mixed consumer goods",
+      "consignor": "RetailChain",
+      "flightNumber": "EK0237",
+      "declaredValueForCarriage": { "value": 78000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-78901234-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-5",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-5",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-6",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-6",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-7",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-7",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-8",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-8",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-9",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-9",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-10",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-10",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-11",
+          "@type": "Piece",
+          "grossWeight": { "value": 74, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-11",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-78901234-12",
+          "@type": "Piece",
+          "grossWeight": { "value": 76, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-78901234",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-78901234-12",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-89012345",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "89012345",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:LHR",
+      "shc": "",
+      "description": "Hydrochloric acid solution (corrosive)",
+      "consignor": "ChemFreight Industries LLC",
+      "flightNumber": "EK0237",
+      "declaredValueForCarriage": { "value": 8500, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-89012345-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 49, "unit": "kg" },
+          "dimensions": {
+            "length": 50,
+            "width": 40,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-89012345",
+          "dgDeclaration": "urn:cargo:dgdec:DG-CORROSIVE-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-89012345-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 48, "unit": "kg" },
+          "dimensions": {
+            "length": 50,
+            "width": 40,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-89012345",
+          "dgDeclaration": "urn:cargo:dgdec:DG-CORROSIVE-001"
+        },
+        {
+          "@id": "urn:cargo:piece:176-89012345-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 48, "unit": "kg" },
+          "dimensions": {
+            "length": 50,
+            "width": 40,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-89012345",
+          "dgDeclaration": "urn:cargo:dgdec:DG-CORROSIVE-001"
+        }
+      ]
+    }
+  ],
+  "EK0411": [
+    {
+      "@id": "urn:cargo:waybill:176-90123456",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "90123456",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:JFK",
+      "shc": "AVI",
+      "description": "Live ornamental fish",
+      "consignor": "AquaShip",
+      "flightNumber": "EK0411",
+      "declaredValueForCarriage": { "value": 28000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-90123456-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 80, "unit": "kg" },
+          "dimensions": {
+            "length": 90,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-90123456",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-90123456-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 22, "unit": "C" },
+            "maxTemperature": { "value": 26, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-90123456-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 80, "unit": "kg" },
+          "dimensions": {
+            "length": 90,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-90123456",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-90123456-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 22, "unit": "C" },
+            "maxTemperature": { "value": 26, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-90123456-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 80, "unit": "kg" },
+          "dimensions": {
+            "length": 90,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-90123456",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-90123456-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 22, "unit": "C" },
+            "maxTemperature": { "value": 26, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-90123456-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 80, "unit": "kg" },
+          "dimensions": {
+            "length": 90,
+            "width": 60,
+            "height": 50,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-90123456",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-90123456-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 22, "unit": "C" },
+            "maxTemperature": { "value": 26, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-01234567",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "01234567",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:JFK",
+      "shc": "COL",
+      "description": "Antibiotics",
+      "consignor": "PharmaWorld",
+      "flightNumber": "EK0411",
+      "declaredValueForCarriage": { "value": 1180000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-01234567-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 47, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-01234567",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-01234567-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-01234567-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 47, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-01234567",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-01234567-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-01234567-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 47, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-01234567",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-01234567-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-01234567-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 47, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-01234567",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-01234567-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-01234567-5",
+          "@type": "Piece",
+          "grossWeight": { "value": 46, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 35,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-01234567",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-01234567-5",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 2, "unit": "C" },
+            "maxTemperature": { "value": 8, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-13579246",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "13579246",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:JFK",
+      "shc": "FRO",
+      "description": "Frozen lobster",
+      "consignor": "PolarLog",
+      "flightNumber": "EK0411",
+      "declaredValueForCarriage": { "value": 64000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-13579246-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 180, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 80,
+            "height": 60,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-13579246",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-13579246-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": -25, "unit": "C" },
+            "maxTemperature": { "value": -15, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-13579246-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 180, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 80,
+            "height": 60,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-13579246",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-13579246-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": -25, "unit": "C" },
+            "maxTemperature": { "value": -15, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-13579246-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 180, "unit": "kg" },
+          "dimensions": {
+            "length": 100,
+            "width": 80,
+            "height": 60,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-13579246",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-13579246-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": -25, "unit": "C" },
+            "maxTemperature": { "value": -15, "unit": "C" }
+          }
+        }
+      ]
+    }
+  ],
+  "EK0357": [
+    {
+      "@id": "urn:cargo:waybill:176-24681357",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "24681357",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:SIN",
+      "shc": "HEG",
+      "description": "Fertile hatching eggs",
+      "consignor": "Poultry Express",
+      "flightNumber": "EK0357",
+      "declaredValueForCarriage": { "value": 22000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-24681357-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 15, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-24681357-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 15, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-24681357-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 15, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-24681357-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 15, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-24681357-5",
+          "@type": "Piece",
+          "grossWeight": { "value": 14, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-5",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-24681357-6",
+          "@type": "Piece",
+          "grossWeight": { "value": 14, "unit": "kg" },
+          "dimensions": {
+            "length": 60,
+            "width": 40,
+            "height": 30,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-24681357",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-24681357-6",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 18, "unit": "C" },
+            "maxTemperature": { "value": 22, "unit": "C" }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:cargo:waybill:176-86420975",
+      "@type": "Waybill",
+      "waybillPrefix": "176",
+      "waybillNumber": "86420975",
+      "departureLocation": "urn:cargo:loc:DXB",
+      "arrivalLocation": "urn:cargo:loc:SIN",
+      "shc": "CRT",
+      "description": "Mixed consumer goods",
+      "consignor": "AsiaTrade",
+      "flightNumber": "EK0357",
+      "declaredValueForCarriage": { "value": 14000, "currency": "USD" },
+      "pieces": [
+        {
+          "@id": "urn:cargo:piece:176-86420975-1",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-86420975",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-86420975-1",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-86420975-2",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-86420975",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-86420975-2",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-86420975-3",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-86420975",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-86420975-3",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        },
+        {
+          "@id": "urn:cargo:piece:176-86420975-4",
+          "@type": "Piece",
+          "grossWeight": { "value": 39, "unit": "kg" },
+          "dimensions": {
+            "length": 80,
+            "width": 60,
+            "height": 40,
+            "unit": "cm"
+          },
+          "ofShipment": "urn:cargo:waybill:176-86420975",
+          "temperatureInstructions": {
+            "@id": "urn:cargo:tempinstr:176-86420975-4",
+            "@type": "TemperatureInstructions",
+            "minTemperature": { "value": 15, "unit": "C" },
+            "maxTemperature": { "value": 25, "unit": "C" }
+          }
+        }
+      ]
+    }
+  ]
+}

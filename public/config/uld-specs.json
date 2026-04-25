@@ -1,0 +1,68 @@
+{
+  "ENVIROTAINER_RAP_COL": {
+    "productCode": "ENVIROTAINER_RAP_COL",
+    "label": "Envirotainer RAP-COL",
+    "uldType": "AKE",
+    "heatTransferCoefficient": 0.05,
+    "pcmMeltRangeC": { "min": 4, "max": 7 },
+    "maxAcceptableInternalC": 8,
+    "ratedAutonomyHoursAt25C": 96,
+    "supportedShc": ["COL", "PER"],
+    "notes": "COL pharma reefer"
+  },
+  "VA_Q_TAINER_XL": {
+    "productCode": "VA_Q_TAINER_XL",
+    "label": "va-Q-tainer XL",
+    "uldType": "RKN",
+    "heatTransferCoefficient": 0.03,
+    "pcmMeltRangeC": { "min": 5, "max": 8 },
+    "maxAcceptableInternalC": 8,
+    "ratedAutonomyHoursAt25C": 120,
+    "supportedShc": ["COL", "PER"],
+    "notes": "High-end pharma"
+  },
+  "SONOCO_PEGASUS_CRT": {
+    "productCode": "SONOCO_PEGASUS_CRT",
+    "label": "Sonoco Pegasus CRT",
+    "uldType": "AAU",
+    "heatTransferCoefficient": 0.06,
+    "pcmMeltRangeC": { "min": 18, "max": 22 },
+    "maxAcceptableInternalC": 25,
+    "ratedAutonomyHoursAt25C": 80,
+    "supportedShc": ["CRT"],
+    "notes": "CRT controlled-room. Yellow warning at 23°C buffer."
+  },
+  "ENVIROTAINER_RKN_FRO": {
+    "productCode": "ENVIROTAINER_RKN_FRO",
+    "label": "Envirotainer RKN-FRO",
+    "uldType": "RKN",
+    "heatTransferCoefficient": 0.04,
+    "pcmMeltRangeC": { "min": -22, "max": -18 },
+    "maxAcceptableInternalC": -15,
+    "ratedAutonomyHoursAt25C": 72,
+    "supportedShc": ["FRO"],
+    "notes": "Frozen reefer (-20°C nominal)"
+  },
+  "GENERIC_PASSIVE": {
+    "productCode": "GENERIC_PASSIVE",
+    "label": "Generic passive",
+    "uldType": "PMC",
+    "heatTransferCoefficient": 0.1,
+    "pcmMeltRangeC": null,
+    "maxAcceptableInternalC": null,
+    "ratedAutonomyHoursAt25C": 12,
+    "supportedShc": ["CRT", "HEG"],
+    "notes": "No PCM; ambient delta only"
+  },
+  "AKH_HORSE_STALL": {
+    "productCode": "AKH_HORSE_STALL",
+    "label": "AKH Horse Stall",
+    "uldType": "AKH",
+    "heatTransferCoefficient": 0.12,
+    "pcmMeltRangeC": null,
+    "maxAcceptableInternalC": 26,
+    "ratedAutonomyHoursAt25C": 8,
+    "supportedShc": ["AVI", "HEG"],
+    "notes": "Live animal (large), ambient only"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "shc": {
+    "AVI": {
+      "label": "Live Animals",
+      "description": "Live cargo - extreme temperature sensitivity",
+      "temperatureInstructions": {
+        "minTemperature": { "value": 18, "unit": "C" },
+        "maxTemperature": { "value": 26, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 90,
+        "ambient30c": 45,
+        "ambient35c": 30,
+        "ambient40c": 15,
+        "ambient45c": 10
+      },
+      "urgencyPriority": 1,
+      "color": "#DC2626",
+      "icon": "alert-octagon",
+      "requiresVetClearance": true,
+      "autoHoldThresholdMinutes": 20
+    },
+    "PER": {
+      "label": "Perishable",
+      "description": "Perishable cargo (flowers, fresh produce, fish)",
+      "temperatureInstructions": {
+        "minTemperature": { "value": 2, "unit": "C" },
+        "maxTemperature": { "value": 8, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 240,
+        "ambient30c": 120,
+        "ambient35c": 90,
+        "ambient40c": 45,
+        "ambient45c": 30
+      },
+      "urgencyPriority": 2,
+      "color": "#F59E0B",
+      "icon": "leaf",
+      "autoHoldThresholdMinutes": 60
+    },
+    "COL": {
+      "label": "Cool (Pharma 2-8°C)",
+      "description": "Pharmaceutical cool chain",
+      "temperatureInstructions": {
+        "minTemperature": { "value": 2, "unit": "C" },
+        "maxTemperature": { "value": 8, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 360,
+        "ambient30c": 180,
+        "ambient35c": 120,
+        "ambient40c": 60,
+        "ambient45c": 45
+      },
+      "urgencyPriority": 2,
+      "color": "#3B82F6",
+      "icon": "thermometer-snowflake",
+      "autoHoldThresholdMinutes": 90
+    },
+    "CRT": {
+      "label": "Controlled Room Temp 15-25°C",
+      "description": "Controlled room-temperature cargo",
+      "temperatureInstructions": {
+        "minTemperature": { "value": 15, "unit": "C" },
+        "maxTemperature": { "value": 25, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 999,
+        "ambient30c": 360,
+        "ambient35c": 240,
+        "ambient40c": 120,
+        "ambient45c": 90
+      },
+      "urgencyPriority": 3,
+      "color": "#6B7280",
+      "icon": "thermometer",
+      "autoHoldThresholdMinutes": 120
+    },
+    "FRO": {
+      "label": "Frozen (-20°C)",
+      "description": "Frozen cargo (-25 to -15°C)",
+      "temperatureInstructions": {
+        "minTemperature": { "value": -25, "unit": "C" },
+        "maxTemperature": { "value": -15, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 180,
+        "ambient30c": 90,
+        "ambient35c": 60,
+        "ambient40c": 30,
+        "ambient45c": 20
+      },
+      "urgencyPriority": 1,
+      "color": "#06B6D4",
+      "icon": "snowflake",
+      "autoHoldThresholdMinutes": 30
+    },
+    "HEG": {
+      "label": "Hatching Eggs",
+      "description": "Fertile hatching eggs",
+      "temperatureInstructions": {
+        "minTemperature": { "value": 18, "unit": "C" },
+        "maxTemperature": { "value": 22, "unit": "C" }
+      },
+      "maxWaitMinutes": {
+        "ambient25c": 120,
+        "ambient30c": 60,
+        "ambient35c": 30,
+        "ambient40c": 20,
+        "ambient45c": 10
+      },
+      "urgencyPriority": 1,
+      "color": "#DC2626",
+      "icon": "egg",
+      "autoHoldThresholdMinutes": 25
+    }
+  },
+  "default": {
+    "label": "General Cargo",
+    "description": "No special handling code",
+    "temperatureInstructions": {
+      "minTemperature": { "value": 15, "unit": "C" },
+      "maxTemperature": { "value": 25, "unit": "C" }
+    },
+    "maxWaitMinutes": {
+      "ambient25c": 480,
+      "ambient30c": 240,
+      "ambient35c": 180,
+      "ambient40c": 120,
+      "ambient45c": 60
+    },
+    "urgencyPriority": 4,
+    "color": "#9CA3AF",
+    "icon": "package",
+    "autoHoldThresholdMinutes": 240
+  }
+}

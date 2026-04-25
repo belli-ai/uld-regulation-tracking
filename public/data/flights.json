@@ -1,0 +1,66 @@
+[
+  {
+    "@id": "urn:cargo:flight:EK0083",
+    "@type": "TransportMovement",
+    "modeCode": "Air",
+    "flightNumber": "EK0083",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:FRA",
+    "movementTimes": [
+      { "type": "STD", "timestamp": "2026-04-25T14:20:00+04:00" },
+      { "type": "STA", "timestamp": "2026-04-25T19:05:00+02:00" }
+    ],
+    "operatingParties": ["urn:cargo:carrier:EK"],
+    "loadingActions": [],
+    "aircraftBody": "wide-body",
+    "aircraftCategory": "passenger"
+  },
+  {
+    "@id": "urn:cargo:flight:EK0237",
+    "@type": "TransportMovement",
+    "modeCode": "Air",
+    "flightNumber": "EK0237",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:LHR",
+    "movementTimes": [
+      { "type": "STD", "timestamp": "2026-04-25T14:50:00+04:00" },
+      { "type": "STA", "timestamp": "2026-04-25T19:20:00+01:00" }
+    ],
+    "operatingParties": ["urn:cargo:carrier:EK"],
+    "loadingActions": [],
+    "aircraftBody": "wide-body",
+    "aircraftCategory": "passenger"
+  },
+  {
+    "@id": "urn:cargo:flight:EK0411",
+    "@type": "TransportMovement",
+    "modeCode": "Air",
+    "flightNumber": "EK0411",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:JFK",
+    "movementTimes": [
+      { "type": "STD", "timestamp": "2026-04-25T15:30:00+04:00" },
+      { "type": "STA", "timestamp": "2026-04-25T21:30:00-04:00" }
+    ],
+    "operatingParties": ["urn:cargo:carrier:EK"],
+    "loadingActions": [],
+    "aircraftBody": "wide-body",
+    "aircraftCategory": "passenger"
+  },
+  {
+    "@id": "urn:cargo:flight:EK0357",
+    "@type": "TransportMovement",
+    "modeCode": "Air",
+    "flightNumber": "EK0357",
+    "departureLocation": "urn:cargo:loc:DXB",
+    "arrivalLocation": "urn:cargo:loc:SIN",
+    "movementTimes": [
+      { "type": "STD", "timestamp": "2026-04-25T16:00:00+04:00" },
+      { "type": "STA", "timestamp": "2026-04-26T03:00:00+08:00" }
+    ],
+    "operatingParties": ["urn:cargo:carrier:EK"],
+    "loadingActions": [],
+    "aircraftBody": "wide-body",
+    "aircraftCategory": "passenger"
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "DXB": {
+    "iata": "DXB",
+    "name": "Dubai International",
+    "ceivCertified": true,
+    "resources": {
+      "coolDolliesTotal": 8,
+      "coolRoomSlotsTotal": 200,
+      "buildupBaysTotal": 4,
+      "breakdownBaysTotal": 0
+    },
+    "policies": {
+      "gpu": "available-on-request",
+      "shadingZones": ["tarmac-shadow-jetbridge", "tarmac-shadow-tail"],
+      "thermalBlanketStock": "Y",
+      "wetRagAuthorised": "Y"
+    },
+    "operatingHours": "24x7"
+  }
+}

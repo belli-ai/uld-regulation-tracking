@@ -1,0 +1,254 @@
+[
+  {
+    "@id": "urn:cargo:iot:IOT-001",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-001",
+    "attachedTo": "urn:cargo:uld:AKE-12345EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-001-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-001-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-001"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-001-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-001-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-001"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-001-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-001-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-001"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-001-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-001-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-001"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-002",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-002",
+    "attachedTo": "urn:cargo:uld:AKE-22219EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-002-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-002-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-002"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-002-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-002-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-002"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-002-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-002-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-002"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-002-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-002-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-002"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-003",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-003",
+    "attachedTo": "urn:cargo:uld:RKN-99001EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-003-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-003-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-003"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-003-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-003-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-003"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-003-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-003-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-003"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-003-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-003-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-003"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-004",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-004",
+    "attachedTo": "urn:cargo:uld:AKH-77701EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-004-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-004-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-004"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-004-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-004-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-004"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-004-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-004-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-004"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-004-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-004-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-004"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-005",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-005",
+    "attachedTo": "urn:cargo:uld:PMC-10001EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-005-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-005-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-005"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-005-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-005-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-005"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-005-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-005-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-005"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-005-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-005-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-005"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-006",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-006",
+    "attachedTo": "urn:cargo:uld:AAU-66610EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-006-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-006-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-006"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-006-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-006-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-006"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-006-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-006-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-006"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-006-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-006-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-006"
+      }
+    ]
+  },
+  {
+    "@id": "urn:cargo:iot:IOT-007",
+    "@type": "IotDevice",
+    "serialNumber": "IOT-007",
+    "attachedTo": "urn:cargo:uld:AKW-44401EK",
+    "sensors": [
+      {
+        "@id": "urn:cargo:sensor:IOT-007-TEMP",
+        "@type": "Sensor",
+        "sensorType": "TEMPERATURE",
+        "serialNumber": "IOT-007-TEMP",
+        "partOfIotDevice": "urn:cargo:iot:IOT-007"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-007-HUM",
+        "@type": "Sensor",
+        "sensorType": "HUMIDITY",
+        "serialNumber": "IOT-007-HUM",
+        "partOfIotDevice": "urn:cargo:iot:IOT-007"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-007-GPS",
+        "@type": "Sensor",
+        "sensorType": "GPS",
+        "serialNumber": "IOT-007-GPS",
+        "partOfIotDevice": "urn:cargo:iot:IOT-007"
+      },
+      {
+        "@id": "urn:cargo:sensor:IOT-007-SHOCK",
+        "@type": "Sensor",
+        "sensorType": "SHOCK",
+        "serialNumber": "IOT-007-SHOCK",
+        "partOfIotDevice": "urn:cargo:iot:IOT-007"
+      }
+    ]
+  }
+]

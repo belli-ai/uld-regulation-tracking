@@ -47,7 +47,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | --- | -------------------------------------------- | ----- | ------ | ------ | ------------- | ---------- |
 | M0  | Project scaffold                             | 1     | 🟢     | master | No            | —          |
 | M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
-| M2  | Mock data fixtures                           | 1     | 🟡     | master | Yes (∥ M3)    | M1         |
+| M2  | Mock data fixtures                           | 1     | 🟢     | master | Yes (∥ M3)    | M1         |
 | M3  | API route adapter layer                      | 1     | 🟢     | master | Yes (∥ M2)    | M1         |
 | M4  | Physics engine                               | 2     | 🔘     | —      | Yes           | Phase 1    |
 | M5  | State inference (5-stage)                    | 2     | 🔘     | —      | Yes           | Phase 1    |
@@ -178,7 +178,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 
 | Field           | Value                                                                  |
 | --------------- | ---------------------------------------------------------------------- |
-| Status          | 🟡 In progress                                                         |
+| Status          | 🟢 Done                                                                |
 | Owner           | master                                                                 |
 | Phase           | 1                                                                      |
 | Parallel-safe   | Yes (∥ M3, no overlapping files)                                       |
@@ -227,6 +227,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 |---|---|---|
 | 2026-04-25 | Initial scope | Lead |
 | 2026-04-25 | Locked to MOCK_DATA.md as source of truth. Added `iot-devices.json` + `dg-declarations.json` to file list. Expanded SHC coverage to all six (added FRO, HEG). Added tracker-split + DG-coverage success criteria. Hours bumped 1.5 → 2 to absorb the iot-devices and dg-declarations file work. | Lead |
+| 2026-04-25 | Completed by master + m2-dev (team `cool-chain-foundation`). 12 JSON fixtures + Zod scenario schema + 13.8K validate-fixtures.ts. `validate-fixtures` reports: 4 flights / 13 AWBs / 12 ULDs (7 tracker + 5 passive) / 7 IoT devices / 28 sensors / 8 geofence features / 2 DG decls / 4 scenarios / SHC coverage AVI+COL+CRT+FRO+HEG+PER. Full chain green: typecheck + lint + test (19/19) + build all exit 0. | master |
 
 ### M3 — API route adapter layer
 

@@ -1,0 +1,151 @@
+{
+  "airport": "DXB",
+  "source": "mock",
+  "generatedAt": "2026-04-25T00:00:00+04:00",
+  "hourly": [
+    {
+      "timestamp": "2026-04-25T00:00:00+04:00",
+      "ambientC": 30,
+      "humidityPct": 70,
+      "cloudCoverPct": 20
+    },
+    {
+      "timestamp": "2026-04-25T01:00:00+04:00",
+      "ambientC": 30,
+      "humidityPct": 72,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T02:00:00+04:00",
+      "ambientC": 29,
+      "humidityPct": 73,
+      "cloudCoverPct": 25
+    },
+    {
+      "timestamp": "2026-04-25T03:00:00+04:00",
+      "ambientC": 29,
+      "humidityPct": 74,
+      "cloudCoverPct": 27
+    },
+    {
+      "timestamp": "2026-04-25T04:00:00+04:00",
+      "ambientC": 28,
+      "humidityPct": 75,
+      "cloudCoverPct": 28
+    },
+    {
+      "timestamp": "2026-04-25T05:00:00+04:00",
+      "ambientC": 28,
+      "humidityPct": 76,
+      "cloudCoverPct": 30
+    },
+    {
+      "timestamp": "2026-04-25T06:00:00+04:00",
+      "ambientC": 28,
+      "humidityPct": 75,
+      "cloudCoverPct": 30
+    },
+    {
+      "timestamp": "2026-04-25T07:00:00+04:00",
+      "ambientC": 30,
+      "humidityPct": 72,
+      "cloudCoverPct": 28
+    },
+    {
+      "timestamp": "2026-04-25T08:00:00+04:00",
+      "ambientC": 32,
+      "humidityPct": 68,
+      "cloudCoverPct": 25
+    },
+    {
+      "timestamp": "2026-04-25T09:00:00+04:00",
+      "ambientC": 34,
+      "humidityPct": 64,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T10:00:00+04:00",
+      "ambientC": 36,
+      "humidityPct": 60,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T11:00:00+04:00",
+      "ambientC": 38,
+      "humidityPct": 58,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T12:00:00+04:00",
+      "ambientC": 40,
+      "humidityPct": 55,
+      "cloudCoverPct": 25
+    },
+    {
+      "timestamp": "2026-04-25T13:00:00+04:00",
+      "ambientC": 41,
+      "humidityPct": 52,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T14:00:00+04:00",
+      "ambientC": 42,
+      "humidityPct": 50,
+      "cloudCoverPct": 20
+    },
+    {
+      "timestamp": "2026-04-25T15:00:00+04:00",
+      "ambientC": 41,
+      "humidityPct": 52,
+      "cloudCoverPct": 22
+    },
+    {
+      "timestamp": "2026-04-25T16:00:00+04:00",
+      "ambientC": 40,
+      "humidityPct": 55,
+      "cloudCoverPct": 28
+    },
+    {
+      "timestamp": "2026-04-25T17:00:00+04:00",
+      "ambientC": 39,
+      "humidityPct": 58,
+      "cloudCoverPct": 32
+    },
+    {
+      "timestamp": "2026-04-25T18:00:00+04:00",
+      "ambientC": 38,
+      "humidityPct": 60,
+      "cloudCoverPct": 35
+    },
+    {
+      "timestamp": "2026-04-25T19:00:00+04:00",
+      "ambientC": 36,
+      "humidityPct": 62,
+      "cloudCoverPct": 38
+    },
+    {
+      "timestamp": "2026-04-25T20:00:00+04:00",
+      "ambientC": 35,
+      "humidityPct": 65,
+      "cloudCoverPct": 40
+    },
+    {
+      "timestamp": "2026-04-25T21:00:00+04:00",
+      "ambientC": 33,
+      "humidityPct": 68,
+      "cloudCoverPct": 40
+    },
+    {
+      "timestamp": "2026-04-25T22:00:00+04:00",
+      "ambientC": 32,
+      "humidityPct": 70,
+      "cloudCoverPct": 40
+    },
+    {
+      "timestamp": "2026-04-25T23:00:00+04:00",
+      "ambientC": 31,
+      "humidityPct": 70,
+      "cloudCoverPct": 30
+    }
+  ]
+}
