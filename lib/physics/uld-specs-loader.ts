@@ -1,5 +1,4 @@
-import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import uldSpecsJson from "@/public/config/uld-specs.json";
 
 export type UldPhysicsSpec = {
   id: string;
@@ -31,10 +30,6 @@ type RawUldSpec = {
   pcmMeltRangeC?: RawPcmRange | null;
   ratedAutonomyHoursAt25C?: unknown;
 };
-
-const SPEC_FILE_PATH = fileURLToPath(
-  new URL("../../public/config/uld-specs.json", import.meta.url),
-);
 
 const DEFAULT_SPECS: Readonly<Record<string, UldPhysicsSpec>> = Object.freeze({
   ENVIROTAINER_RAP_COL: {
@@ -113,7 +108,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function readNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function readPcmRange(value: unknown): RawPcmRange | undefined {
@@ -132,7 +129,8 @@ function buildSpec(id: string, rawValue: unknown): UldPhysicsSpec {
 
   return {
     id,
-    thermalMassKJ_K: readNumber(raw.thermalMassKJ_K) ?? defaults.thermalMassKJ_K,
+    thermalMassKJ_K:
+      readNumber(raw.thermalMassKJ_K) ?? defaults.thermalMassKJ_K,
     pcmMassKg: readNumber(raw.pcmMassKg) ?? defaults.pcmMassKg,
     pcmHeatOfFusionKJ_kg:
       readNumber(raw.pcmHeatOfFusionKJ_kg) ?? defaults.pcmHeatOfFusionKJ_kg,
@@ -154,8 +152,7 @@ function buildSpec(id: string, rawValue: unknown): UldPhysicsSpec {
 }
 
 function loadAllSpecs(): readonly UldPhysicsSpec[] {
-  const rawText = fs.readFileSync(SPEC_FILE_PATH, "utf8");
-  const parsed = JSON.parse(rawText) as unknown;
+  const parsed = uldSpecsJson as unknown;
 
   if (!isRecord(parsed)) {
     throw new Error("ULD specs JSON must be an object keyed by product code.");
