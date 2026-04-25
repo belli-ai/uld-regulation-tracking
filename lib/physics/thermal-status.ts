@@ -326,6 +326,7 @@ export function computeThermalStatus(ctx: ThermalContext): ThermalStatus {
     breachPredictionWindowMinutes:
       EXCURSION_THRESHOLD.breachPredictionWindowMinutes,
     maxInternalTemperatureC: ctx.threshold.maxTemperature.value,
+    minInternalTemperatureC: ctx.threshold.minTemperature.value,
     warningBudgetPercent: EXCURSION_THRESHOLD.warningBudgetPercent,
   });
   // publish handled at client call site

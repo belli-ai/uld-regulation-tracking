@@ -77,6 +77,7 @@ import {
   startTrackerFeed,
   type ScenarioParams,
 } from "@/lib/simulator/tracker-feed";
+import { demoScenarioRunner } from "@/lib/simulator/scenario-runner";
 import { useFlightsStore } from "@/lib/stores/flights-store";
 import { useUldStore } from "@/lib/stores/uld-store";
 import { cn } from "@/lib/utils";
@@ -940,9 +941,23 @@ export default function UldDetailPage() {
   const [logicalClockMs, setLogicalClockMs] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [pendingLabel, setPendingLabel] = useState<string | null>(null);
-  const [currentExcursionId, setCurrentExcursionId] = useState<string | null>(
-    null,
-  );
+  // Latest excursion event for this ULD — sourced from the recalculator's
+  // writes via useLiveQuery so the resolution logger can link new actions
+  // to the open excursion. No setter needed.
+  const latestExcursionEvent = useLiveQuery(async () => {
+    if (!inventoryUld) return null;
+    const all = await auditDb.events.toArray();
+    const excursions = all
+      .filter((e) => e.eventFor === inventoryUld["@id"])
+      .filter((e) =>
+        ["BREACH_ACTUAL", "BREACH_PREDICTED", "WARNING_BUDGET_LOW"].includes(
+          e.eventCode,
+        ),
+      )
+      .sort((a, b) => Date.parse(b.eventDate) - Date.parse(a.eventDate));
+    return excursions[0] ?? null;
+  }, [inventoryUld]);
+  const currentExcursionId = latestExcursionEvent?.["@id"] ?? null;
   const [mapGeojson, setMapGeojson] = useState<Record<string, unknown> | null>(
     null,
   );
@@ -1226,66 +1241,9 @@ export default function UldDetailPage() {
     classification?.stage === "in-flight" ||
     classification?.stage === "arrived-tarmac";
 
-  useEffect(() => {
-    if (!inventoryUld || !budgetForecast || !threshold || !classification) {
-      return;
-    }
-
-    const locationId =
-      classification.stage === "in-flight"
-        ? toIRI("urn:cargo:zone:airspace")
-        : toIRI(`urn:cargo:zone:DXB-${effectiveZoneName ?? "unknown"}`);
-    const percent = Math.max(
-      0,
-      Math.min(
-        (budgetForecast.budgetH / budgetForecast.autonomyHours) * 100,
-        100,
-      ),
-    );
-    const breachInMinutes =
-      budgetForecast.breachAt === null
-        ? null
-        : Math.max(
-            (Date.parse(budgetForecast.breachAt) -
-              Date.parse(latestTimestamp)) /
-              60_000,
-            0,
-          );
-    const event = excursionLogger.detect(
-      {
-        ambientTemperatureC: ambientBase,
-        internalTemperatureC: internalTemperature,
-        locationId,
-        observedAt: latestTimestamp,
-        predictedBreachInMinutes: breachInMinutes,
-        state: classification.stage,
-        thermalBudgetRemainingPercent: percent,
-        uldId: toIRI(inventoryUld["@id"]),
-      },
-      {
-        breachPredictionWindowMinutes: 60,
-        maxInternalTemperatureC: threshold.maxTemperature.value,
-        warningBudgetPercent: 50,
-      },
-    );
-
-    if (!event) {
-      return;
-    }
-
-    publishLogisticsEvent(event);
-    setCurrentExcursionId(event["@id"]);
-    void auditDb.events.put(event, event["@id"]);
-  }, [
-    ambientBase,
-    budgetForecast,
-    classification,
-    effectiveZoneName,
-    internalTemperature,
-    inventoryUld,
-    latestTimestamp,
-    threshold,
-  ]);
+  // Excursion event writes are now centralized in lib/physics/recalculator.ts
+  // (writes on status transition once per 5s tick, not per render).
+  // This page just consumes auditDb.events for the History tab.
 
   useEffect(() => {
     if (!inventoryUld) {
@@ -1351,6 +1309,9 @@ export default function UldDetailPage() {
     );
 
     setPendingLabel(`${executor}: ${action.label}`);
+    void demoScenarioRunner.acknowledgeUserAction(
+      `execute_action_${action.rank}`,
+    );
   };
 
   if (

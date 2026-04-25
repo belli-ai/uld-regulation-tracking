@@ -421,6 +421,52 @@ export async function recalculateAll(
     if (snapshots.length > 0) {
       await auditDb.uldStatus.bulkPut(snapshots);
     }
+
+    // Persist excursion LogisticsEvents on status transitions so the
+    // /supervisor/excursions log + /uld/[id] history populate from the
+    // recalculator instead of needing each page to detect locally.
+    // Dedupe: only write when this tick's status differs from the prior
+    // snapshot's status (prevents flooding the audit table every 5s).
+    const transitions: LogisticsEvent[] = [];
+    for (const snap of snapshots) {
+      const priorStatus = priorByUld.get(snap.uldId)?.status;
+      if (priorStatus === snap.status) continue;
+      if (snap.status === "OK" || snap.status === "Action in progress")
+        continue;
+
+      const eventCode =
+        snap.status === "Excursion"
+          ? "BREACH_ACTUAL"
+          : snap.budgetPercent < 30
+            ? "WARNING_BUDGET_LOW"
+            : "BREACH_PREDICTED";
+      const observedAt = new Date(nowMs).toISOString();
+      const event: LogisticsEvent = {
+        "@id": toIRI(
+          `urn:cool-chain:event:${eventCode}:${encodeURIComponent(observedAt)}:${encodeURIComponent(snap.uldId)}`,
+        ),
+        "@type": "LogisticsEvent",
+        eventCode,
+        eventName:
+          eventCode === "BREACH_ACTUAL"
+            ? "Thermal breach actual"
+            : eventCode === "BREACH_PREDICTED"
+              ? "Thermal breach predicted"
+              : "Thermal budget low",
+        eventDate: observedAt,
+        eventFor: toIRI(snap.uldId),
+        eventLocation: toIRI(`urn:cargo:zone:DXB-${snap.stage}`),
+        eventTimeType: "actual",
+      };
+      transitions.push(event);
+    }
+    if (transitions.length > 0) {
+      await Promise.all(
+        transitions.map((event) =>
+          auditDb.events.put(event, event["@id"]).catch(() => null),
+        ),
+      );
+    }
   } catch (error) {
     console.warn("[recalculator] tick failed", error);
   } finally {
