@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useSimulationNow } from "@/lib/clock/use-simulation-now";
 import {
   ArrowLeft,
   Box,
@@ -547,7 +548,7 @@ export default function FlightMonitorPage() {
   );
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [isLoadingAudit, setIsLoadingAudit] = useState(true);
-  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+  const currentTimeMs = useSimulationNow();
   const [weather, setWeather] = useState<CanonicalWeather>(fallbackWeather);
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
 
@@ -600,16 +601,6 @@ export default function FlightMonitorPage() {
       cancelled = true;
     };
   }, [flightNo]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTimeMs(Date.now());
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;

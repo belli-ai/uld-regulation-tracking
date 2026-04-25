@@ -28,6 +28,7 @@ import {
 } from "@/components/uld-tracker-table";
 import { WeatherSourceBadge } from "@/components/weather-source-badge";
 import { WeatherPanel } from "@/components/weather-panel";
+import { useSimulationNow } from "@/lib/clock/use-simulation-now";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -667,6 +668,7 @@ export default function SupervisorPage() {
     useState<TrackerMeasurementsByUld>({});
   const [builtUldIds, setBuiltUldIds] = useState<string[]>([]);
   const [logicalNowMs, setLogicalNowMs] = useState<number>(simulationBaseMs);
+  const simulationNowMs = useSimulationNow();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clockAnchor] = useState(() => ({
@@ -912,7 +914,7 @@ export default function SupervisorPage() {
         <section className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
           <WeatherPanel
             weather={weather}
-            nowMs={logicalNowMs}
+            nowMs={simulationNowMs}
             isRefreshing={loading}
             description="DXB ramp now and forecast."
           />

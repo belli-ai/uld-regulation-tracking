@@ -1,8 +1,10 @@
 "use client";
 
 import { getShiftedFirstStdMs } from "@/lib/data/flights-shifted";
+import { useDemoClockStore } from "@/lib/stores/demo-clock-store";
 
 const ANCHOR_OFFSET_HOURS = 2;
+export const MS_PER_DEMO_TICK = 60_000;
 
 const simulationBaseMs =
   getShiftedFirstStdMs() - ANCHOR_OFFSET_HOURS * 60 * 60 * 1000;
@@ -18,4 +20,19 @@ export function getSimulationBaseMs(): number {
 
 export function getRealAnchorMs(): number {
   return realAnchorMs;
+}
+
+/**
+ * Single source for "what time is it in the simulation right now" used by
+ * the recalculator AND by every UI surface that displays weather, clock,
+ * or budget. When the user has clicked Simulate (or has any tick > 0,
+ * meaning they previously played), the sim follows the demo clock; until
+ * they engage the simulator we anchor to the wall clock.
+ */
+export function getEffectiveSimulationNowMs(): number {
+  const demoState = useDemoClockStore.getState();
+  if (demoState.currentTickSec > 0 || demoState.playState === "playing") {
+    return simulationBaseMs + demoState.currentTickSec * MS_PER_DEMO_TICK;
+  }
+  return getSimulationNowMs();
 }
