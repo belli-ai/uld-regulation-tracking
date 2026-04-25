@@ -49,13 +49,13 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
 | M2  | Mock data fixtures                           | 1     | 🟢     | master | Yes (∥ M3)    | M1         |
 | M3  | API route adapter layer                      | 1     | 🟢     | master | Yes (∥ M2)    | M1         |
-| M4  | Physics engine                               | 2     | 🟡     | master | Yes           | Phase 1    |
-| M5  | State inference (5-stage)                    | 2     | 🟡     | master | Yes           | Phase 1    |
-| M6  | Action recommender + ranker                  | 2     | 🟡     | master | Yes           | Phase 1    |
-| M7  | Push-time scheduler                          | 2     | 🟡     | master | Yes           | Phase 1    |
-| M8  | Tracker simulator                            | 2     | 🟡     | master | Yes           | Phase 1    |
-| M9  | Build-up flow logic                          | 2     | 🟡     | master | Yes           | Phase 1    |
-| M10 | Audit DB (Dexie)                             | 2     | 🟡     | master | Yes           | Phase 1    |
+| M4  | Physics engine                               | 2     | 🟢     | master | Yes           | Phase 1    |
+| M5  | State inference (5-stage)                    | 2     | 🟢     | master | Yes           | Phase 1    |
+| M6  | Action recommender + ranker                  | 2     | 🟢     | master | Yes           | Phase 1    |
+| M7  | Push-time scheduler                          | 2     | 🟢     | master | Yes           | Phase 1    |
+| M8  | Tracker simulator                            | 2     | 🟢     | master | Yes           | Phase 1    |
+| M9  | Build-up flow logic                          | 2     | 🟢     | master | Yes           | Phase 1    |
+| M10 | Audit DB (Dexie)                             | 2     | 🟢     | master | Yes           | Phase 1    |
 | M11 | Flight list page (`/`)                       | 3     | 🔘     | —      | Yes           | Phase 2    |
 | M12 | Flight workspace (`/flight/[no]`)            | 3     | 🔘     | —      | Yes           | Phase 2    |
 | M13 | Build-up canvas (`/flight/[no]/build/[uld]`) | 3     | 🔘     | —      | Yes           | Phase 2    |
@@ -295,7 +295,7 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 | Field           | Value                                     |
 | --------------- | ----------------------------------------- |
-| Status          | 🟡 In progress                            |
+| Status          | 🟢 Done                                   |
 | Owner           | master                                    |
 | Phase           | 2                                         |
 | Parallel-safe   | Yes                                       |
@@ -330,15 +330,15 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 ### M5 — State inference (5-stage classifier)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 2              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 1        |
-| Blocks          | M14, M15, M19  |
-| Estimated hours | 1.5            |
+| Field           | Value         |
+| --------------- | ------------- |
+| Status          | 🟢 Done       |
+| Owner           | master        |
+| Phase           | 2             |
+| Parallel-safe   | Yes           |
+| Blocked by      | Phase 1       |
+| Blocks          | M14, M15, M19 |
+| Estimated hours | 1.5           |
 
 **Files**
 
@@ -369,15 +369,15 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 ### M6 — Action recommender + ranker
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 2              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 1        |
-| Blocks          | M14, M19       |
-| Estimated hours | 2              |
+| Field           | Value    |
+| --------------- | -------- |
+| Status          | 🟢 Done  |
+| Owner           | master   |
+| Phase           | 2        |
+| Parallel-safe   | Yes      |
+| Blocked by      | Phase 1  |
+| Blocks          | M14, M19 |
+| Estimated hours | 2        |
 
 **Files**
 
@@ -409,15 +409,15 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 ### M7 — Push-time scheduler
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 2              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 1        |
-| Blocks          | M12, M15       |
-| Estimated hours | 1.5            |
+| Field           | Value    |
+| --------------- | -------- |
+| Status          | 🟢 Done  |
+| Owner           | master   |
+| Phase           | 2        |
+| Parallel-safe   | Yes      |
+| Blocked by      | Phase 1  |
+| Blocks          | M12, M15 |
+| Estimated hours | 1.5      |
 
 **Files**
 
@@ -446,15 +446,15 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 ### M8 — Tracker simulator
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 2              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 1        |
-| Blocks          | M14, M15, M19  |
-| Estimated hours | 1.5            |
+| Field           | Value         |
+| --------------- | ------------- |
+| Status          | 🟢 Done       |
+| Owner           | master        |
+| Phase           | 2             |
+| Parallel-safe   | Yes           |
+| Blocked by      | Phase 1       |
+| Blocks          | M14, M15, M19 |
+| Estimated hours | 1.5           |
 
 **Files**
 
@@ -484,7 +484,7 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 | Field           | Value                                              |
 | --------------- | -------------------------------------------------- |
-| Status          | 🟡 In progress                                     |
+| Status          | 🟢 Done                                            |
 | Owner           | master                                             |
 | Phase           | 2                                                  |
 | Parallel-safe   | Yes                                                |
@@ -522,15 +522,15 @@ All M4–M10 are parallel-safe within Phase 2. Each is a pure-TS module with no 
 
 ### M10 — Audit DB (Dexie)
 
-| Field           | Value          |
-| --------------- | -------------- |
-| Status          | 🟡 In progress |
-| Owner           | master         |
-| Phase           | 2              |
-| Parallel-safe   | Yes            |
-| Blocked by      | Phase 1        |
-| Blocks          | M16, M17, M19  |
-| Estimated hours | 1.5            |
+| Field           | Value         |
+| --------------- | ------------- |
+| Status          | 🟢 Done       |
+| Owner           | master        |
+| Phase           | 2             |
+| Parallel-safe   | Yes           |
+| Blocked by      | Phase 1       |
+| Blocks          | M16, M17, M19 |
+| Estimated hours | 1.5           |
 
 **Files**
 
