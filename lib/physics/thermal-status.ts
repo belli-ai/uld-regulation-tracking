@@ -281,9 +281,18 @@ export function computeThermalStatus(ctx: ThermalContext): ThermalStatus {
     ctx.threshold,
   );
 
-  const budgetH = Math.max(0, integration.budgetSec / 3600);
+  // integration.budgetSec is "time-until-breach" if integration.breachAt is
+  // set, OR the full forecast horizon length (12h) when no breach occurs in
+  // the window. Treat the no-breach case as 100% stable rather than dividing
+  // a 12h horizon by a 120h rated autonomy and getting a red 10%.
   const autonomyHours = spec.autonomyHours > 0 ? spec.autonomyHours : 1;
-  const budgetPercent = clamp((budgetH / autonomyHours) * 100, 0, 100);
+  const noBreachInHorizon = integration.breachAt === null;
+  const budgetH = noBreachInHorizon
+    ? autonomyHours
+    : Math.max(0, integration.budgetSec / 3600);
+  const budgetPercent = noBreachInHorizon
+    ? 100
+    : clamp((budgetH / autonomyHours) * 100, 0, 100);
 
   const predictedBreachMinutes = integration.breachAt
     ? Math.max(0, (integration.breachAt.getTime() - ctx.logicalNowMs) / 60_000)
