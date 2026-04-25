@@ -17,7 +17,7 @@ Tracks structural changes to this Milestones plan. Per-milestone revisions live 
 | 1.4 | 2026-04-25 | Lead   | Cohesion review: fixed mechanical gaps. M19 file list added missing `time-of-day-change.ts` + `alert.ts` event handlers (matching PLAN.md → Demo Control Panel event types). M14 component ownership table added `flight-overview-map.tsx`. M0 deps added `tsx`. M5 success criteria split into tracker-equipped vs passive-ULD inference paths. M8 success criteria added passive-ULD skip. M3 success criteria added concrete DG stub rule table. MOCK_DATA: AKH ULDs now reference `AKH_HORSE_STALL` product code (not Generic passive). Added `ENVIROTAINER_RKN_FRO` product spec; RKN-99002EK retyped to FRO so the FRO AWB has a compatible ULD. AWB → ULD compatibility map documented. |
 | 1.5 | 2026-04-25 | Lead   | Clarifications resolved (Q1, Q2, Q3): **Q1** DG flow = pre-issued by shipper, build-up validates only — M9 contract changed from `dgChecker.check` to `dgChecker.validate` returning `{ status: 'non-dg' \| 'valid' \| 'rejected', declaration?, reason? }`. M3 stub rule table updated to look up by piece IRI. **Q2** PLAN.md Demo Scenario prose table aligned 1:1 with `dxb-warehouse-demo` JSON event timeline (15 rows, t=0–180s). **Q3** scenarios.json validated by Zod schema in `lib/simulator/scenario-schema.ts` (M2 owner, M19 importer); `zod` added to M0 deps.                                                                                                                 |
 | 1.6 | 2026-04-25 | Lead   | DG API spec received (Q4+Q5 partial): **DG AutoCheck Connect API v1** at `dg-autocheck-api/`. Async workflow (create → upload → user-verify-in-vendor-UI → webhook). M23 fully rewritten with concrete endpoint mappings, OAuth client, webhook listener with SHA-256 signature verification, modal iframe, status polling fallback, env var contract, and explicit stub-vs-autocheck mode toggle (stub stays demo default). PLAN.md → Build-Up Flow updated with two-mode semantics. MOCK_DATA → DG section reframed: stub fixtures = post-AutoCheck cache shape. M23 hours bumped 2 → 6. Pending: DGAC sandbox credentials.                                                                  |
-| 1.7 | 2026-04-25 | Lead   | One Connect / 1Neo-Connect scope added: live ULD subscription stream with location + temperature becomes the primary telemetry source, with synthetic tracker feed retained as fallback. Waybill subscription remains optional live manifest hydration. Added M24 for OAuth client, subscription management, cached notification polling, `:Measurement[]` normalization, and outbound publish of build-up/excursion/resolution records. Secrets must stay in `.env.local`; `one-connect/environment.json` is ignored. |
+| 1.7 | 2026-04-25 | Lead   | One Connect / 1Neo-Connect scope added: live ULD subscription stream with location + temperature becomes the primary telemetry source, with synthetic tracker feed retained as fallback. Waybill subscription remains optional live manifest hydration. Added M24 for OAuth client, subscription management, cached notification polling, `:Measurement[]` normalization, and outbound publish of build-up/excursion/resolution records. Secrets must stay in `.env.local`; `one-connect/environment.json` is ignored.                                                                                                                                                                         |
 
 ## How agents work this plan
 
@@ -32,45 +32,45 @@ Tracks structural changes to this Milestones plan. Per-milestone revisions live 
 
 ## Phase overview
 
-| Phase                         | Milestones                                          | Concurrency                                                    | Gate to next phase            |
-| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | ----------------------------- |
-| **Phase 1 — Foundation**      | M0 → M1 → (M2 ∥ M3)                                 | Sequential through M1, then M2 + M3 in parallel                | All Phase 1 ✅ before Phase 2 |
-| **Phase 2 — Core subsystems** | M4 ∥ M5 ∥ M6 ∥ M7 ∥ M8 ∥ M9 ∥ M10                   | All parallel (independent TS modules, no shared UI)            | All Phase 2 ✅ before Phase 3 |
-| **Phase 3 — UI screens**      | M11 ∥ M12 ∥ M13 ∥ M14 ∥ M15 ∥ M16 ∥ M17 ∥ M18 ∥ M19 | Mostly parallel — each owns a route or component cluster       | All Phase 3 ✅ before Phase 4 |
-| **Phase 4 — Polish & demo**   | M20 → M21 → M22                                     | Sequential                                                     | —                             |
+| Phase                         | Milestones                                               | Concurrency                                                             | Gate to next phase            |
+| ----------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| **Phase 1 — Foundation**      | M0 → M1 → (M2 ∥ M3)                                      | Sequential through M1, then M2 + M3 in parallel                         | All Phase 1 ✅ before Phase 2 |
+| **Phase 2 — Core subsystems** | M4 ∥ M5 ∥ M6 ∥ M7 ∥ M8 ∥ M9 ∥ M10                        | All parallel (independent TS modules, no shared UI)                     | All Phase 2 ✅ before Phase 3 |
+| **Phase 3 — UI screens**      | M11 ∥ M12 ∥ M13 ∥ M14 ∥ M15 ∥ M16 ∥ M17 ∥ M18 ∥ M19      | Mostly parallel — each owns a route or component cluster                | All Phase 3 ✅ before Phase 4 |
+| **Phase 4 — Polish & demo**   | M20 → M21 → M22                                          | Sequential                                                              | —                             |
 | **Cross-phase**               | M23 (Real DG API swap), M24 (One Connect live telemetry) | Triggered by external spec/API availability; can land any time after M3 | —                             |
 
 ## Milestone status board
 
 Quick-glance status. Each row points to the detailed milestone block below. Update both this row and the milestone's own status when claiming/completing.
 
-| ID  | Title                                        | Phase | Status | Owner  | Parallel-safe | Blocked by |
-| --- | -------------------------------------------- | ----- | ------ | ------ | ------------- | ---------- |
-| M0  | Project scaffold                             | 1     | 🟢     | master | No            | —          |
-| M1  | IATA ONE Record TS types                     | 1     | 🟢     | master | No            | M0         |
-| M2  | Mock data fixtures                           | 1     | 🟢     | master | Yes (∥ M3)    | M1         |
-| M3  | API route adapter layer                      | 1     | 🟢     | master | Yes (∥ M2)    | M1         |
-| M4  | Physics engine                               | 2     | 🟢     | master | Yes           | Phase 1    |
-| M5  | State inference (5-stage)                    | 2     | 🟢     | master | Yes           | Phase 1    |
-| M6  | Action recommender + ranker                  | 2     | 🟢     | master | Yes           | Phase 1    |
-| M7  | Push-time scheduler                          | 2     | 🟢     | master | Yes           | Phase 1    |
-| M8  | Tracker simulator                            | 2     | 🟢     | master | Yes           | Phase 1    |
-| M9  | Build-up flow logic                          | 2     | 🟢     | master | Yes           | Phase 1    |
-| M10 | Audit DB (Dexie)                             | 2     | 🟢     | master | Yes           | Phase 1    |
-| M11 | Flight list page (`/`)                       | 3     | 🟢     | master | Yes           | Phase 2    |
-| M12 | Flight workspace (`/flight/[no]`)            | 3     | 🟢     | master | Yes           | Phase 2    |
-| M13 | Build-up canvas (`/flight/[no]/build/[uld]`) | 3     | 🟢     | master | Yes           | Phase 2    |
-| M14 | ULD detail (`/uld/[id]`)                     | 3     | 🟢     | master | Yes           | Phase 2    |
-| M15 | Supervisor dashboard (`/supervisor`)         | 3     | 🟢     | master | Yes           | Phase 2    |
-| M16 | Excursion + Resolution logs                  | 3     | 🟢     | master | Yes           | Phase 2    |
-| M17 | Audit timeline + deviation report            | 3     | 🟢     | master | Yes           | Phase 2    |
-| M18 | Admin config (`/admin/config`)               | 3     | 🟢     | master | Yes           | Phase 2    |
-| M19 | Scenario runner + Demo control panel         | 3     | 🟢     | master | Yes           | Phase 2    |
-| M20 | Polish — notifications, theming, charts      | 4     | 🔘     | —      | No            | Phase 3    |
-| M21 | Pitch deck                                   | 4     | 🔘     | —      | No            | M20        |
-| M22 | End-to-end rehearsal & bug fixes             | 4     | 🔘     | —      | No            | M21        |
-| M23 | Real DG API integration swap                 | ×     | 🔘     | —      | Cross-phase   | M3 + spec  |
-| M24 | One Connect live ULD telemetry + Waybill stream | ×  | 🟡     | Codex  | Cross-phase   | M3 + One Connect sandbox |
+| ID  | Title                                           | Phase | Status | Owner  | Parallel-safe | Blocked by               |
+| --- | ----------------------------------------------- | ----- | ------ | ------ | ------------- | ------------------------ |
+| M0  | Project scaffold                                | 1     | 🟢     | master | No            | —                        |
+| M1  | IATA ONE Record TS types                        | 1     | 🟢     | master | No            | M0                       |
+| M2  | Mock data fixtures                              | 1     | 🟢     | master | Yes (∥ M3)    | M1                       |
+| M3  | API route adapter layer                         | 1     | 🟢     | master | Yes (∥ M2)    | M1                       |
+| M4  | Physics engine                                  | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M5  | State inference (5-stage)                       | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M6  | Action recommender + ranker                     | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M7  | Push-time scheduler                             | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M8  | Tracker simulator                               | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M9  | Build-up flow logic                             | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M10 | Audit DB (Dexie)                                | 2     | 🟢     | master | Yes           | Phase 1                  |
+| M11 | Flight list page (`/`)                          | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M12 | Flight workspace (`/flight/[no]`)               | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M13 | Build-up canvas (`/flight/[no]/build/[uld]`)    | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M14 | ULD detail (`/uld/[id]`)                        | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M15 | Supervisor dashboard (`/supervisor`)            | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M16 | Excursion + Resolution logs                     | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M17 | Audit timeline + deviation report               | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M18 | Admin config (`/admin/config`)                  | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M19 | Scenario runner + Demo control panel            | 3     | 🟢     | master | Yes           | Phase 2                  |
+| M20 | Polish — notifications, theming, charts         | 4     | 🔘     | —      | No            | Phase 3                  |
+| M21 | Pitch deck                                      | 4     | 🔘     | —      | No            | M20                      |
+| M22 | End-to-end rehearsal & bug fixes                | 4     | 🔘     | —      | No            | M21                      |
+| M23 | Real DG API integration swap                    | ×     | 🔘     | —      | Cross-phase   | M3 + spec                |
+| M24 | One Connect live ULD telemetry + Waybill stream | ×     | 🟡     | master | Cross-phase   | M3 + One Connect sandbox |
 
 ---
 
@@ -1164,13 +1164,13 @@ For the **scripted 3-min demo**, default to **stub mode** — eliminates depende
 
 Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and `PLAN.md` → **One Connect / 1Neo-Connect integration pattern**. One Connect can provide subscription streams for Waybill and ULD-related updates, including location and temperature telemetry. The app treats One Connect as the live primary source for ULD measurements, while the existing synthetic tracker remains the deterministic demo fallback.
 
-| Field           | Value                                                                                                                        |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Status          | 🟡 In progress                                                                                                               |
-| Owner           | Codex                                                                                                                        |
-| Phase           | × (cross-phase)                                                                                                              |
+| Field           | Value                                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Status          | 🟡 In progress                                                                                                                |
+| Owner           | master                                                                                                                        |
+| Phase           | × (cross-phase)                                                                                                               |
 | Parallel-safe   | Yes — implemented behind `ONE_CONNECT_ENABLED`; does not block mock/demo flows and can land independently after M3/M8.        |
-| Blocked by      | M3 (API adapter layer), M8 (tracker feed contract), One Connect sandbox credentials / reachable tenant                       |
+| Blocked by      | M3 (API adapter layer), M8 (tracker feed contract), One Connect sandbox credentials / reachable tenant                        |
 | Blocks          | Optional live demo path, pitch proof point for ONE Record-native adoption                                                     |
 | Estimated hours | 5 (OAuth client + subscription setup + notification polling + JSON-LD adapters + telemetry source switch + publish endpoints) |
 
@@ -1193,13 +1193,13 @@ Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and 
 
 **Subscription topics**
 
-| Need | One Connect topic |
-| --- | --- |
-| AWB manifest hydration | `https://onerecord.iata.org/ns/cargo#Waybill` |
-| ULD inventory/status updates | `https://onerecord.iata.org/ns/cargo#ULD` |
-| IoT device / sensor topology | `https://onerecord.iata.org/ns/cargo#IotDevice`, `https://onerecord.iata.org/ns/cargo#Sensor` |
-| Location + temperature telemetry | `https://onerecord.iata.org/ns/cargo#Measurement` |
-| Build-up / state / excursion event fan-out | `LOGISTICS_EVENT_RECEIVED` subscription event type |
+| Need                                       | One Connect topic                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| AWB manifest hydration                     | `https://onerecord.iata.org/ns/cargo#Waybill`                                                 |
+| ULD inventory/status updates               | `https://onerecord.iata.org/ns/cargo#ULD`                                                     |
+| IoT device / sensor topology               | `https://onerecord.iata.org/ns/cargo#IotDevice`, `https://onerecord.iata.org/ns/cargo#Sensor` |
+| Location + temperature telemetry           | `https://onerecord.iata.org/ns/cargo#Measurement`                                             |
+| Build-up / state / excursion event fan-out | `LOGISTICS_EVENT_RECEIVED` subscription event type                                            |
 
 **Success criteria**
 
