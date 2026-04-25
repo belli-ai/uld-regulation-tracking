@@ -13,13 +13,13 @@ import {
 import type { DgValidationResult } from "@/lib/build-up/dg-checker";
 import { cn } from "@/lib/utils";
 
-import type { BuildUpDropRejection, BuildUpPiece } from "./build-up-canvas";
+import type { BuildUpDropRejection, BuildUpWaybill } from "./build-up-canvas";
 
 type Props = {
   checking: boolean;
-  pieces: BuildUpPiece[];
   rejection: BuildUpDropRejection | null;
   results: DgValidationResult[];
+  waybills: BuildUpWaybill[];
 };
 
 function getTone(
@@ -49,7 +49,49 @@ function ToneIcon({ tone }: { tone: "green" | "yellow" | "red" }) {
   return <AlertTriangle className="text-amber-400" />;
 }
 
-export function DgCheckRow({ checking, pieces, rejection, results }: Props) {
+function getWaybillLabel(waybill: BuildUpWaybill): string {
+  return `${waybill.waybillPrefix}-${waybill.waybillNumber}`;
+}
+
+function getWaybillStatus(
+  waybill: BuildUpWaybill,
+  resultsById: Map<string, DgValidationResult>,
+): {
+  reason: string;
+  status: "non-dg" | "valid" | "rejected";
+} {
+  let hasValid = false;
+
+  for (const piece of waybill.pieces) {
+    const result = resultsById.get(piece["@id"]);
+
+    if (result?.status === "rejected") {
+      return {
+        reason: result.reason,
+        status: "rejected",
+      };
+    }
+
+    if (result?.status === "valid") {
+      hasValid = true;
+    }
+  }
+
+  if (hasValid) {
+    return {
+      reason: "DG declaration accepted for this flight.",
+      status: "valid",
+    };
+  }
+
+  return {
+    reason: "No DG declaration required.",
+    status: "non-dg",
+  };
+}
+
+export function DgCheckRow({ checking, rejection, results, waybills }: Props) {
+  const pieces = waybills.flatMap((waybill) => waybill.pieces);
   const tone = getTone(results, rejection, pieces.length, checking);
   const resultsById = new Map(
     results.map((result) => [result.piece["@id"], result] as const),
@@ -76,12 +118,12 @@ export function DgCheckRow({ checking, pieces, rejection, results }: Props) {
               <CardTitle className="text-lg">DG check</CardTitle>
               <CardDescription className="text-sm md:text-base">
                 {checking
-                  ? "Checking the full contents against the DG validator."
+                  ? "Checking loaded shipments against the DG validator."
                   : tone === "red"
-                    ? "A DG-declared piece failed validation."
-                    : pieces.length === 0
+                    ? "A DG-declared shipment failed validation."
+                    : waybills.length === 0
                       ? "Drop an AWB to run DG validation."
-                      : "All loaded pieces are valid or non-DG."}
+                      : "All loaded shipments are valid or non-DG."}
               </CardDescription>
             </div>
           </div>
@@ -111,56 +153,41 @@ export function DgCheckRow({ checking, pieces, rejection, results }: Props) {
           </div>
         ) : null}
 
-        {pieces.length > 0 ? (
+        {waybills.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {pieces.map((piece) => {
-              const result = resultsById.get(piece["@id"]);
-              const rejected = result?.status === "rejected";
+            {waybills.map((waybill) => {
+              const result = getWaybillStatus(waybill, resultsById);
+              const rejected = result.status === "rejected";
               const toneClass = rejected
                 ? "border-red-500/40 bg-red-500/10 text-red-100"
                 : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
 
               return (
                 <div
-                  key={piece["@id"]}
+                  key={waybill["@id"]}
                   className={cn(
-                    "flex min-h-11 flex-col gap-2 border px-3 py-3 text-sm",
+                    "grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border px-3 py-2 text-sm",
                     toneClass,
                   )}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">
-                        {piece.awbNumber} · {piece.shc ?? "GEN"}
-                      </div>
-                      <div className="truncate text-xs opacity-80">
-                        {piece["@id"].split(":").at(-1)}
-                      </div>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">
+                      {getWaybillLabel(waybill)} · {waybill.shc || "GEN"}
                     </div>
-                    <Badge
-                      variant={rejected ? "destructive" : "secondary"}
-                      className="min-h-7 shrink-0"
-                    >
-                      {result?.status === "valid"
-                        ? "Valid"
-                        : result?.status === "rejected"
-                          ? "Rejected"
-                          : "Non-DG"}
-                    </Badge>
+                    <div className="truncate text-xs opacity-80">
+                      {waybill.pieces.length} pcs · {result.reason}
+                    </div>
                   </div>
-                  {result?.status === "rejected" ? (
-                    <div className="text-xs text-red-200">{result.reason}</div>
-                  ) : result?.status === "valid" ? (
-                    <div className="text-xs text-emerald-200">
-                      {result.declaration.shippingRefNo
-                        ? `Declaration ${result.declaration.shippingRefNo}`
-                        : "DG declaration accepted for this flight."}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-emerald-200">
-                      No DG declaration required.
-                    </div>
-                  )}
+                  <Badge
+                    variant={rejected ? "destructive" : "secondary"}
+                    className="min-h-7 shrink-0"
+                  >
+                    {result.status === "valid"
+                      ? "Valid"
+                      : result.status === "rejected"
+                        ? "Rejected"
+                        : "Non-DG"}
+                  </Badge>
                 </div>
               );
             })}

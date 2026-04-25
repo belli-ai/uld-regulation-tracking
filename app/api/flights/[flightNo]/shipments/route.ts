@@ -1,6 +1,5 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { adaptMockShipmentsForFlight } from "@/lib/adapters/shipments";
+import shipmentsFixture from "@/public/data/shipments.json";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +10,7 @@ type RouteContext = {
 export async function GET(_req: Request, ctx: RouteContext) {
   const { flightNo } = await ctx.params;
   try {
-    const filePath = path.join(
-      process.cwd(),
-      "public",
-      "data",
-      "shipments.json",
-    );
-    const raw = await fs.readFile(filePath, "utf-8");
-    const data = adaptMockShipmentsForFlight(JSON.parse(raw), flightNo);
+    const data = adaptMockShipmentsForFlight(shipmentsFixture, flightNo);
     return Response.json({ data });
   } catch (err) {
     console.error("GET /api/flights/[flightNo]/shipments failed", err);

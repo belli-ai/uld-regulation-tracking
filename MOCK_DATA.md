@@ -543,10 +543,12 @@ Compliance certification sentence (the legal "I hereby declare…" paragraph at 
     "issuedForPiece": "urn:cargo:piece:176-45678901-1",
     "issuedForWaybill": "urn:cargo:waybill:176-45678901",
     "declarationDate": "2026-04-25T08:00:00+04:00",
+    "declarationPlace": "urn:cargo:loc:DXB",
     "shippingRefNo": "TS-LION-9912",
     "departureLocation": "urn:cargo:loc:DXB",
     "arrivalLocation": "urn:cargo:loc:FRA",
     "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "aircraftLimitationInformation": "Cargo aircraft only",
     "shipmentType": "NON_RADIOACTIVE",
     "exclusiveUseIndicator": false,
     "shipperParty": {
@@ -616,10 +618,12 @@ Compliance certification sentence (the legal "I hereby declare…" paragraph at 
     "issuedForPiece": "urn:cargo:piece:176-89012345-1",
     "issuedForWaybill": "urn:cargo:waybill:176-89012345",
     "declarationDate": "2026-04-25T07:30:00+04:00",
+    "declarationPlace": "urn:cargo:loc:DXB",
     "shippingRefNo": "CF-DXB-LHR-4471",
     "departureLocation": "urn:cargo:loc:DXB",
     "arrivalLocation": "urn:cargo:loc:LHR",
     "shipmentLimitation": "CARGO_AIRCRAFT_ONLY",
+    "aircraftLimitationInformation": "Cargo aircraft only",
     "shipmentType": "NON_RADIOACTIVE",
     "exclusiveUseIndicator": true,
     "shipperParty": {
@@ -691,6 +695,8 @@ Compliance certification sentence (the legal "I hereby declare…" paragraph at 
 #### Schema notes
 
 - **Why a party graph not flat strings.** IATA ONE Record models each DGD party (`shipperParty`, `consigneeParty`, `issuerParty`, `signatoryParty`) as a `:Party` IRI with an `:Address`. This survives the M23 swap unchanged — XSDG `<Shipper>`/`<Consignee>` blocks de-serialise straight onto these nodes.
+- **`declarationPlace` IRI vs `signedAt.place` text.** Both fields are kept. `declarationPlace` is the IRI-resolvable station (`urn:cargo:loc:DXB`) used by routing/auth logic. `signedAt.place` is the verbatim free-text string the shipper printed on the DGD ("Dubai, UAE") — rendered as-is, never auto-derived. Keeping both means the form preserves the shipper's wording while machine code keeps a stable IRI.
+- **`shipmentLimitation` enum vs `aircraftLimitationInformation` text.** Same duality. Enum (`PASSENGER_AND_CARGO` \| `CARGO_AIRCRAFT_ONLY`) drives routing eligibility checks; free-text is rendered verbatim on the form. Required by the validator (`scripts/validate-fixtures.ts`) and by IATA ONE Record `:DgDeclaration`.
 - **`dgDeclaredItems[]` is a list.** A DGD can carry multiple goods rows (different UN ids on one declaration). Both fixtures show single-item declarations; multi-item is left as a future fixture if a scenario needs it.
 - **Section number coupled to packing instruction.** PI 967 has Sections I and II with different limits; renderer must show "967 §II" not just "967". Section field nullable for PIs without subsection (PI 851 has none).
 - **`netQuantityPerPackage` units vary by goods.** Solids → kg; liquids → L; gases → L (water capacity). Renderer reads `unit` directly from the fixture, never re-derives.

@@ -8,6 +8,10 @@ import type { ULD } from "@/lib/ontology/one-record";
 
 export type InventoryUld = ULD & {
   buildUpStatus?: "available" | "in-build-up";
+  iotDeviceId?: string;
+  lastKnownInternalC?: number;
+  lastKnownLocation?: string;
+  uldProductCode?: string;
 };
 
 type InventoryStore = {

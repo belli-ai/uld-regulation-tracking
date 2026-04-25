@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { FlightCard } from "@/components/flight-card";
 import {
   MetricTile,
-  MissionHero,
   MissionPanel,
   MissionShell,
   MissionTopBar,
   StatusRail,
 } from "@/components/mission-control";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useFlightsStore } from "@/lib/stores/flights-store";
 import { cn } from "@/lib/utils";
 
@@ -121,96 +120,115 @@ export default function HomePage() {
         }
       />
 
-      <main className="grid w-full gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-w-0 flex-col gap-5">
-          <MissionHero
-            eyebrow="Outbound operations board"
-            title="Today's flights"
-            description="Track DXB departures, build readiness, ambient source, and cold-chain priority from one command surface."
-          >
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MetricTile
-                label="Flights"
-                value={flights.length}
-                meta="DXB outbound"
-              />
-              <MetricTile label="AWBs" value={totalAwbs} meta="Manifest load" />
-              <MetricTile
-                label="Built ULDs"
-                value={totalBuiltUlds}
-                meta="Signed off"
-              />
-            </div>
-          </MissionHero>
-
-          {error ? (
-            <MissionPanel>
-              <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
-                <p className="text-base text-destructive">{error}</p>
+      <main className="grid h-[calc(100dvh-4rem)] w-full grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden px-4 py-4 sm:px-6">
+        <Card className="mission-panel border-border/80">
+          <CardContent className="grid gap-3 p-4 lg:grid-cols-[minmax(260px,1fr)_repeat(4,minmax(120px,0.5fr))]">
+            <div className="flex min-w-0 flex-col justify-center gap-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Outbound operations board
               </div>
-            </MissionPanel>
-          ) : null}
-
-          {!error && loading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }, (_, index) => (
-                <LoadingSkeleton key={index} />
-              ))}
-            </div>
-          ) : null}
-
-          {!error && !loading && flights.length === 0 ? (
-            <MissionPanel>
-              <div className="flex min-h-[320px] items-center justify-center px-6 text-center">
-                <p className="text-base text-muted-foreground">
-                  No outbound flights today
-                </p>
+              <div className="flex min-w-0 flex-wrap items-end gap-3">
+                <h1 className="truncate text-3xl font-bold">
+                  Today&apos;s flights
+                </h1>
+                <Badge variant="secondary">DXB outbound</Badge>
               </div>
-            </MissionPanel>
-          ) : null}
+            </div>
+            <MetricTile
+              label="Flights"
+              value={flights.length}
+              meta="Departures"
+            />
+            <MetricTile label="AWBs" value={totalAwbs} meta="Manifest load" />
+            <MetricTile
+              label="Built ULDs"
+              value={totalBuiltUlds}
+              meta="Signed off"
+            />
+            <MetricTile
+              label="Risk watch"
+              value={atRiskFlights}
+              meta={atRiskFlights === 1 ? "Flight flagged" : "Flights flagged"}
+            />
+          </CardContent>
+        </Card>
 
-          {!error && !loading && flights.length > 0 ? (
+        <div className="grid min-h-0 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="min-h-0 overflow-hidden">
+            {error ? (
+              <MissionPanel className="h-full" contentClassName="h-full">
+                <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
+                  <p className="text-base text-destructive">{error}</p>
+                </div>
+              </MissionPanel>
+            ) : null}
+
+            {!error && loading ? (
+              <div className="grid h-full auto-rows-min gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <LoadingSkeleton key={index} />
+                ))}
+              </div>
+            ) : null}
+
+            {!error && !loading && flights.length === 0 ? (
+              <MissionPanel className="h-full" contentClassName="h-full">
+                <div className="flex h-full min-h-[320px] items-center justify-center px-6 text-center">
+                  <p className="text-base text-muted-foreground">
+                    No outbound flights today
+                  </p>
+                </div>
+              </MissionPanel>
+            ) : null}
+
+            {!error && !loading && flights.length > 0 ? (
+              <MissionPanel
+                className="flex h-full min-h-0 flex-col"
+                title="Departure board"
+                description="Select a flight to open build-up operations."
+                contentClassName="min-h-0 flex-1 overflow-y-auto"
+              >
+                <div className="grid auto-rows-min gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  {flights.map((flight) => (
+                    <FlightCard
+                      key={flight["@id"]}
+                      flight={flight}
+                      onClick={() =>
+                        router.push("/flight/" + flight.flightNumber)
+                      }
+                    />
+                  ))}
+                </div>
+              </MissionPanel>
+            ) : null}
+          </section>
+
+          <StatusRail className="min-h-0 overflow-y-auto">
+            <MetricTile
+              label="Station"
+              value="DXB"
+              meta="Outbound cold-chain hub"
+            />
+            <MetricTile
+              label="Risk watch"
+              value={atRiskFlights}
+              meta={atRiskFlights === 1 ? "Flight flagged" : "Flights flagged"}
+            />
+            <MetricTile
+              label="Weather"
+              value={getWeatherBadgeLabel(weatherSource)}
+              meta="Source currently active"
+            />
             <MissionPanel
-              title="Departure board"
-              description="Select a flight to open build-up operations."
-              contentClassName="grid gap-4 md:grid-cols-2 2xl:grid-cols-3"
+              title="Command cue"
+              description="Demo path begins with EK0083, then advances to build-up and ULD detail."
+              contentClassName="text-sm text-muted-foreground"
             >
-              {flights.map((flight) => (
-                <FlightCard
-                  key={flight["@id"]}
-                  flight={flight}
-                  onClick={() => router.push("/flight/" + flight.flightNumber)}
-                />
-              ))}
+              Prioritize flights with built ULD risk, then drill into the
+              workspace.
             </MissionPanel>
-          ) : null}
+          </StatusRail>
         </div>
-
-        <StatusRail className="lg:sticky lg:top-20 lg:self-start">
-          <MetricTile
-            label="Station"
-            value="DXB"
-            meta="Outbound cold-chain hub"
-          />
-          <MetricTile
-            label="Risk watch"
-            value={atRiskFlights}
-            meta={atRiskFlights === 1 ? "Flight flagged" : "Flights flagged"}
-          />
-          <MetricTile
-            label="Weather"
-            value={getWeatherBadgeLabel(weatherSource)}
-            meta="Source currently active"
-          />
-          <MissionPanel
-            title="Command cue"
-            description="Demo path begins with EK0083, then advances to build-up and ULD detail."
-            contentClassName="text-sm text-muted-foreground"
-          >
-            Prioritize flights with built ULD risk, then drill into the
-            workspace.
-          </MissionPanel>
-        </StatusRail>
       </main>
     </MissionShell>
   );

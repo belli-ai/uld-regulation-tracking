@@ -1,5 +1,3 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { z } from "zod";
 import {
   runStubDgCheck,
@@ -7,6 +5,7 @@ import {
   type DgValidationResult,
 } from "@/lib/adapters/dg-check";
 import { toIRI } from "@/lib/ontology/one-record";
+import dgDeclarationsFixture from "@/public/data/dg-declarations.json";
 
 export const dynamic = "force-dynamic";
 
@@ -58,26 +57,12 @@ export async function POST(req: Request) {
     );
   }
 
-  let fixtures: Record<string, unknown> = {};
-  try {
-    const filePath = path.join(
-      process.cwd(),
-      "public",
-      "data",
-      "dg-declarations.json",
-    );
-    const raw = await fs.readFile(filePath, "utf-8");
-    const json = JSON.parse(raw);
-    if (json && typeof json === "object" && !Array.isArray(json)) {
-      fixtures = json as Record<string, unknown>;
-    }
-  } catch (err) {
-    // No fixture file yet (M2 may still be landing). Treat all pieces as non-dg.
-    console.warn(
-      "GET dg-declarations.json unavailable; treating as empty",
-      err,
-    );
-  }
+  const fixtures: Record<string, unknown> =
+    dgDeclarationsFixture &&
+    typeof dgDeclarationsFixture === "object" &&
+    !Array.isArray(dgDeclarationsFixture)
+      ? (dgDeclarationsFixture as Record<string, unknown>)
+      : {};
 
   const request: DgCheckRequest = {
     pieces: parsed.data.pieces.map((piece) => ({

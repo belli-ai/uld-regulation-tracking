@@ -11,6 +11,17 @@ type RawUld = {
   numberOfDoors?: unknown;
   loadingIndicator?: unknown;
   sealNumber?: unknown;
+  iotDeviceId?: unknown;
+  lastKnownInternalC?: unknown;
+  lastKnownLocation?: unknown;
+  uldProductCode?: unknown;
+};
+
+type AdaptedUld = ULD & {
+  iotDeviceId?: string;
+  lastKnownInternalC?: number;
+  lastKnownLocation?: string;
+  uldProductCode?: string;
 };
 
 const ALLOWED_SERVICEABILITY = new Set(["SER", "DAM", "CON"]);
@@ -30,7 +41,7 @@ function asServiceability(value: unknown): ULD["serviceabilityCode"] {
 }
 
 export function adaptOneUld(raw: RawUld): ULD {
-  const uld: ULD = {
+  const uld: AdaptedUld = {
     "@id": toIRI(asString(raw["@id"], "uld.@id")),
     "@type": "ULD",
     uldSerialNumber: asString(raw.uldSerialNumber, "uldSerialNumber"),
@@ -56,6 +67,24 @@ export function adaptOneUld(raw: RawUld): ULD {
   }
   if (typeof raw.ataDesignator === "string" && raw.ataDesignator.length > 0) {
     uld.ataDesignator = raw.ataDesignator;
+  }
+  if (typeof raw.uldProductCode === "string" && raw.uldProductCode.length > 0) {
+    uld.uldProductCode = raw.uldProductCode;
+  }
+  if (typeof raw.iotDeviceId === "string" && raw.iotDeviceId.length > 0) {
+    uld.iotDeviceId = raw.iotDeviceId;
+  }
+  if (
+    typeof raw.lastKnownInternalC === "number" &&
+    Number.isFinite(raw.lastKnownInternalC)
+  ) {
+    uld.lastKnownInternalC = raw.lastKnownInternalC;
+  }
+  if (
+    typeof raw.lastKnownLocation === "string" &&
+    raw.lastKnownLocation.length > 0
+  ) {
+    uld.lastKnownLocation = raw.lastKnownLocation;
   }
   return uld;
 }

@@ -60,20 +60,20 @@ export function AwbManifestPanel({
         "flex h-full min-h-0 flex-col overflow-hidden",
       )}
     >
-      <CardHeader className="gap-2">
+      <CardHeader className="gap-2 p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <CardTitle className="text-lg">AWB manifest</CardTitle>
-            <CardDescription>
-              AWB no, SHC, weight, and piece count for this departure.
+            <CardTitle className="text-base">AWB manifest</CardTitle>
+            <CardDescription className="text-xs">
+              AWB, SHC, load, and assignment.
             </CardDescription>
           </div>
           <Badge variant="outline">{shipments.length}</Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-3">
+      <CardContent className="flex-1 overflow-y-auto p-4 pt-0">
+        <div className="flex flex-col gap-2">
           {isLoading && shipments.length === 0 ? (
             <div className="border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               Loading manifest...
@@ -88,18 +88,19 @@ export function AwbManifestPanel({
 
           {shipments.map((waybill) => {
             const assignedUld = assignedUldByWaybill[waybill["@id"]];
-            const isClickable = Boolean(assignedUld);
+            const isBuilt = Boolean(assignedUld);
 
             return (
               <Button
                 key={waybill["@id"]}
                 className={cn(
-                  "h-auto min-h-16 w-full justify-start border border-border/60 bg-background/35 px-4 py-3 text-left",
+                  "h-auto min-h-12 w-full justify-start border border-border/60 bg-background/35 px-3 py-2 text-left",
                   "hover:border-primary/50 hover:bg-primary/5",
-                  !isClickable &&
+                  isBuilt && "border-primary/40 bg-primary/5",
+                  !isBuilt &&
                     "cursor-default hover:border-transparent hover:bg-muted/30",
                 )}
-                disabled={!isClickable}
+                disabled={!isBuilt}
                 onClick={() => {
                   if (assignedUld) {
                     onOpenAssignedUld(assignedUld);
@@ -107,23 +108,28 @@ export function AwbManifestPanel({
                 }}
                 variant="ghost"
               >
-                <div className="flex w-full items-start justify-between gap-4">
-                  <div className="flex min-w-0 flex-col gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-base font-semibold">
+                <div className="grid w-full grid-cols-[minmax(0,1fr)_86px_112px] items-center gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">
                         {formatAwbNumber(waybill)}
                       </span>
                       <Badge variant={badgeVariantForShc(waybill.shc)}>
                         {waybill.shc || "TBD"}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                      <span>{totalWeightKg(waybill).toFixed(0)} kg</span>
-                      <span>{waybill.pieces.length} pcs</span>
-                      <span>
-                        {assignedUld ? `Built in ${assignedUld}` : "Unassigned"}
-                      </span>
-                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {totalWeightKg(waybill).toFixed(0)} kg
+                    <span className="pl-1">{waybill.pieces.length} pcs</span>
+                  </div>
+                  <div className="flex min-w-0 flex-col items-end gap-1">
+                    <Badge variant={isBuilt ? "default" : "outline"}>
+                      {isBuilt ? "Built" : "Open"}
+                    </Badge>
+                    <span className="max-w-full truncate text-xs text-muted-foreground">
+                      {assignedUld ?? "No ULD"}
+                    </span>
                   </div>
                 </div>
               </Button>

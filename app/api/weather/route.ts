@@ -1,11 +1,10 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { type NextRequest } from "next/server";
 import {
   adaptMockWeather,
   adaptOpenMeteo,
   type CanonicalWeather,
 } from "@/lib/adapters/weather";
+import dxbWeatherFixture from "@/public/data/weather/DXB.json";
 
 export const dynamic = "force-dynamic";
 
@@ -19,18 +18,18 @@ const AIRPORT_COORDS: Record<string, { lat: number; lon: number }> = {
   SIN: { lat: 1.3644, lon: 103.9915 },
 };
 
+const MOCK_WEATHER_BY_AIRPORT: Record<string, unknown> = {
+  DXB: dxbWeatherFixture,
+};
+
 const LIVE_TIMEOUT_MS = 3000;
 
-async function readMockWeather(airport: string): Promise<CanonicalWeather> {
-  const filePath = path.join(
-    process.cwd(),
-    "public",
-    "data",
-    "weather",
-    `${airport}.json`,
-  );
-  const raw = await fs.readFile(filePath, "utf-8");
-  return adaptMockWeather(JSON.parse(raw), airport);
+function readMockWeather(airport: string): CanonicalWeather {
+  const fixture = MOCK_WEATHER_BY_AIRPORT[airport];
+  if (!fixture) {
+    throw new Error(`no mock weather fixture for ${airport}`);
+  }
+  return adaptMockWeather(fixture, airport);
 }
 
 export async function GET(req: NextRequest) {
@@ -60,7 +59,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const mock = await readMockWeather(airport);
+    const mock = readMockWeather(airport);
     return Response.json(mock);
   } catch (err) {
     console.error("weather: mock fallback unavailable", err);
