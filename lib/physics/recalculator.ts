@@ -24,7 +24,12 @@ import {
   type ULD,
 } from "@/lib/ontology/one-record";
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
-import { computeThermalStatus } from "@/lib/physics/thermal-status";
+import {
+  buildStageAmbientCurve,
+  computeThermalStatus,
+} from "@/lib/physics/thermal-status";
+import { integrateBudget } from "@/lib/physics/pcm-model";
+import { getUldSpec } from "@/lib/physics/uld-specs-loader";
 import { getSimulationNowMs } from "@/lib/clock/simulation-clock";
 import { getShiftedFlights, shiftTimestamps } from "@/lib/data/flights-shifted";
 import { parseShcConfig, type ShcConfig } from "@/lib/scheduler/shc-loader";
@@ -276,6 +281,9 @@ export async function recalculateAll(
     const events = await auditDb.events.toArray().catch(() => []);
     const snapshots: UldThermalSnapshot[] = [];
 
+    const priorSnapshots = await auditDb.uldStatus.toArray().catch(() => []);
+    const priorByUld = new Map(priorSnapshots.map((s) => [s.uldId, s]));
+
     for (const { uldId, flightNumber, loadedAtMs } of built) {
       const inventory = inventoryById[uldId];
       if (!inventory) continue;
@@ -284,6 +292,19 @@ export async function recalculateAll(
       const threshold = getThresholdInstructions(shcCode);
       const measurements: Measurement[] = readWindowMeasurements(uldId);
       const stage = deriveStage(uldId, measurements, polygons, events);
+
+      // Bridge integrate from the prior snapshot so internal temp evolves
+      // tick-over-tick. Without this, internalC is rebooted each tick to
+      // lastKnownInventoryC and the budget never moves with sim time.
+      const prior = priorByUld.get(uldId);
+      const bootstrappedInventory = bridgeInternalC(
+        inventory,
+        prior,
+        cachedWeather,
+        stage,
+        threshold,
+        nowMs,
+      );
 
       const thermal = computeThermalStatus({
         flightId: flightNumber
@@ -297,7 +318,7 @@ export async function recalculateAll(
         shcCode,
         stage,
         threshold,
-        uld: inventory,
+        uld: bootstrappedInventory,
         weather: cachedWeather,
       });
 
@@ -482,5 +503,58 @@ function derivePosition(
     zoneName,
     source: "inferred",
     lastMeasurementMs: null,
+  };
+}
+
+// Cap on how much sim time a single bridge step covers. Prevents tab
+// throttling or long pauses from forecasting hours forward in one shot.
+const MAX_BRIDGE_HOURS = 6;
+
+function bridgeInternalC(
+  inventory: InventoryRecord,
+  prior: { internalC: number; updatedMs: number } | undefined,
+  weather: CanonicalWeather,
+  stage:
+    | "in-warehouse"
+    | "in-tarmac"
+    | "in-flight"
+    | "arrived-tarmac"
+    | "arrived-destination",
+  threshold: TemperatureInstructions,
+  nowMs: number,
+): InventoryRecord {
+  if (!prior || prior.updatedMs >= nowMs) return inventory;
+  const elapsedMs = nowMs - prior.updatedMs;
+  const elapsedHours = elapsedMs / 3_600_000;
+  if (elapsedHours <= 0) return inventory;
+
+  const hours = Math.min(elapsedHours, MAX_BRIDGE_HOURS);
+  const stepHours = Math.min(0.25, hours / 4);
+  const bridgeCurve = buildStageAmbientCurve(weather, stage, prior.updatedMs, {
+    hours,
+    stepHours,
+  });
+
+  const spec = (() => {
+    try {
+      return getUldSpec(inventory.uldProductCode ?? "GENERIC_PASSIVE");
+    } catch {
+      return getUldSpec("GENERIC_PASSIVE");
+    }
+  })();
+
+  const result = integrateBudget(
+    spec,
+    prior.internalC,
+    bridgeCurve,
+    60,
+    threshold,
+  );
+  const finalTrace = result.tempTrace[result.tempTrace.length - 1];
+  const bridgedC = finalTrace?.T ?? prior.internalC;
+
+  return {
+    ...inventory,
+    lastKnownInternalC: bridgedC,
   };
 }
