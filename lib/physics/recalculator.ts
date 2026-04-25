@@ -25,6 +25,7 @@ import {
 } from "@/lib/ontology/one-record";
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import { computeThermalStatus } from "@/lib/physics/thermal-status";
+import { getSimulationNowMs } from "@/lib/clock/simulation-clock";
 import rawShcConfig from "@/public/config/shc.json";
 import rawInventoryData from "@/public/data/uld-inventory.json";
 import rawWeatherData from "@/public/data/weather/DXB.json";
@@ -210,7 +211,7 @@ async function listBuiltUlds(): Promise<FlightSummary[]> {
 let inFlight = false;
 
 export async function recalculateAll(
-  nowMs: number = Date.now(),
+  nowMs: number = getSimulationNowMs(),
 ): Promise<void> {
   if (typeof window === "undefined") return;
   if (inFlight) return;
