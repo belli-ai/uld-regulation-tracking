@@ -195,39 +195,15 @@ function getDateValue(value: string): string {
 }
 
 async function loadExcursionEvents(): Promise<LogisticsEvent[]> {
-  const eventsTable = auditDb.events as unknown as {
-    toCollection(): {
-      and(predicate: (event: LogisticsEvent) => boolean): {
-        toArray(): Promise<LogisticsEvent[]>;
-      };
-    };
-    where(index: string): {
-      equals(value: string): {
-        and(predicate: (event: LogisticsEvent) => boolean): {
-          toArray(): Promise<LogisticsEvent[]>;
-        };
-      };
-    };
-  };
-
-  try {
-    return await eventsTable
-      .where("@type")
-      .equals("LogisticsEvent")
-      .and((event) =>
-        EXCURSION_EVENT_CODES.includes(event.eventCode as ExcursionEventCode),
-      )
-      .toArray();
-  } catch {
-    return eventsTable
-      .toCollection()
-      .and(
-        (event) =>
-          event["@type"] === "LogisticsEvent" &&
-          EXCURSION_EVENT_CODES.includes(event.eventCode as ExcursionEventCode),
-      )
-      .toArray();
-  }
+  // @type isn't an indexed key on the events table — schema indexes
+  // eventFor / eventDate / eventCode only. Use toArray() + filter so we
+  // never throw "KeyPath @type ... is not indexed" on Dexie schema upgrade.
+  const all = await auditDb.events.toArray();
+  return all.filter(
+    (event) =>
+      event["@type"] === "LogisticsEvent" &&
+      EXCURSION_EVENT_CODES.includes(event.eventCode as ExcursionEventCode),
+  );
 }
 
 function getSelectedExcursionId(): string | null {
