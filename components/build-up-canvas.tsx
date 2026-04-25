@@ -38,6 +38,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { budgetPreflight } from "@/lib/build-up/budget-preflight";
 import { dgChecker, type DgValidationResult } from "@/lib/build-up/dg-checker";
 import { shcCompat } from "@/lib/build-up/shc-compat";
@@ -776,6 +784,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const [sealNumber, setSealNumber] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [signingOff, setSigningOff] = useState(false);
+  const [confirmOverrideOpen, setConfirmOverrideOpen] = useState(false);
   const [budgetForecast, setBudgetForecast] = useState<BudgetForecast | null>(
     null,
   );
@@ -934,7 +943,6 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     shcStatusTone === "red" ||
     budgetStatusTone === "red";
   const signOffDisabled =
-    hasRedValidation ||
     validatedPieces.length === 0 ||
     sealNumber.trim().length === 0 ||
     checkingDg ||
@@ -1025,11 +1033,20 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
     setSubmitError(null);
   }
 
-  async function handleSignOff() {
+  function handleSignOffClick() {
+    if (hasRedValidation) {
+      setConfirmOverrideOpen(true);
+      return;
+    }
+    void handleSignOff(false);
+  }
+
+  async function handleSignOff(override: boolean) {
     if (!uld || !flight) {
       return;
     }
 
+    setConfirmOverrideOpen(false);
     setSigningOff(true);
     setSubmitError(null);
 
@@ -1042,6 +1059,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
         validatedPieces,
         sealNumber.trim(),
         "warehouse-cool-room",
+        { allowRejected: override },
       );
 
       await auditDb.loadings.put(result.loading, result.loading["@id"]);
@@ -1452,7 +1470,7 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                 type="button"
                 className="min-h-11 w-full sm:w-auto"
                 disabled={signOffDisabled}
-                onClick={() => void handleSignOff()}
+                onClick={handleSignOffClick}
               >
                 {signingOff ? (
                   <Loader2 className="animate-spin" />
@@ -1481,6 +1499,48 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
           />
         </aside>
       </main>
+      <Dialog
+        open={confirmOverrideOpen}
+        onOpenChange={(open) => setConfirmOverrideOpen(open)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="size-5" /> Sign off with failing checks?
+            </DialogTitle>
+            <DialogDescription>
+              At least one validation card is red. Proceeding will record the
+              build-up with these issues attached. Use only when overriding is
+              authorised by your supervisor.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+            {dgStatusTone === "red" ? <li>DG validation rejected.</li> : null}
+            {shcStatusTone === "red" ? (
+              <li>SHC compatibility conflicts present.</li>
+            ) : null}
+            {budgetStatusTone === "red" ? (
+              <li>Thermal budget below safe threshold.</li>
+            ) : null}
+          </ul>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmOverrideOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleSignOff(true)}
+            >
+              Sign off anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MissionShell>
   );
 }

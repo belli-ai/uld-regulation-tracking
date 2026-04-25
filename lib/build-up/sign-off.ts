@@ -28,7 +28,9 @@ function toStationIri(station: string): IRI {
   return toIRI(station);
 }
 
-function findRejectedPiece(pieces: Piece[]): { piece: Piece; reason: string } | null {
+function findRejectedPiece(
+  pieces: Piece[],
+): { piece: Piece; reason: string } | null {
   for (const piece of pieces) {
     const candidate = piece as PieceWithValidationFields;
     const validationStatus =
@@ -65,9 +67,10 @@ export function signOff(
   contents: Piece[],
   sealNumber: string,
   station: string,
+  options?: { allowRejected?: boolean },
 ): { loading: Loading; event: LogisticsEvent } {
   const rejected = findRejectedPiece(contents);
-  if (rejected) {
+  if (rejected && !options?.allowRejected) {
     throw new Error(rejected.reason);
   }
 
