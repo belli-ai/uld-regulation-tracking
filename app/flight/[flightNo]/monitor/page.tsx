@@ -665,25 +665,29 @@ export default function FlightMonitorPage() {
     weather,
     currentTimeMs,
   );
-  const rows: MonitorRow[] = localRows.map((row) => {
-    const snap = snapshotByUld.get(row.uld.uldSerialNumber);
-    if (!snap) return row;
-    const overlaid: MonitorRow = {
-      ...row,
-      ambientC: snap.ambientC,
-      effectiveAmbientC: snap.effectiveAmbientC,
-      budgetH: snap.budgetH,
-      budgetPercent: snap.budgetPercent,
-      budgetTone: snap.budgetTone,
-      internalC: snap.internalC,
-      stage: snap.stage as MonitorStage,
-      stageLabel:
-        STAGE_META[snap.stage as MonitorStage]?.label ?? row.stageLabel,
-      locationLabel:
-        STAGE_META[snap.stage as MonitorStage]?.location ?? row.locationLabel,
-    };
-    return overlaid;
-  });
+  // Single source of truth: snapshot from auditDb.uldStatus written by the
+  // global recalculator. Rows without a snapshot are hidden until the next
+  // recalculator tick (max 5s) so monitor + supervisor + uld-detail never
+  // disagree on thermal state.
+  const rows: MonitorRow[] = localRows
+    .filter((row) => snapshotByUld.has(row.uld.uldSerialNumber))
+    .map((row) => {
+      const snap = snapshotByUld.get(row.uld.uldSerialNumber)!;
+      return {
+        ...row,
+        ambientC: snap.ambientC,
+        effectiveAmbientC: snap.effectiveAmbientC,
+        budgetH: snap.budgetH,
+        budgetPercent: snap.budgetPercent,
+        budgetTone: snap.budgetTone,
+        internalC: snap.internalC,
+        stage: snap.stage as MonitorStage,
+        stageLabel:
+          STAGE_META[snap.stage as MonitorStage]?.label ?? row.stageLabel,
+        locationLabel:
+          STAGE_META[snap.stage as MonitorStage]?.location ?? row.locationLabel,
+      };
+    });
   const assignedAwbIds = new Set<IRI>();
 
   rows.forEach((row) => {

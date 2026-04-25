@@ -1179,9 +1179,13 @@ export default function UldDetailPage() {
       maxTemperatureC: threshold.maxTemperature.value,
     };
   }, [ambientCurve, internalTemperature, physicsSpec, threshold]);
+  // Single source of truth: snapshot from auditDb.uldStatus.
+  // localBudgetForecast is kept only to feed the Recharts trace (tempTrace
+  // + chartRows aren't persisted). Display values come from liveSnapshot
+  // when available — otherwise show null/placeholder rather than diverging
+  // from supervisor + monitor.
   const budgetForecast = useMemo(() => {
-    if (!localBudgetForecast) return null;
-    if (!liveSnapshot) return localBudgetForecast;
+    if (!localBudgetForecast || !liveSnapshot) return null;
     return {
       ...localBudgetForecast,
       budgetH: liveSnapshot.budgetH,
@@ -1191,7 +1195,7 @@ export default function UldDetailPage() {
       warning: liveSnapshot.budgetTone,
     };
   }, [localBudgetForecast, liveSnapshot]);
-  const displayInternalC = liveSnapshot?.internalC ?? internalTemperature;
+  const displayInternalC = liveSnapshot?.internalC ?? null;
   const topShc = useMemo(() => {
     return inventoryUld ? getTopShc(inventoryUld, waybills) : "CRT";
   }, [inventoryUld, waybills]);
@@ -1436,7 +1440,11 @@ export default function UldDetailPage() {
             />
             <MetricTile
               label="Internal"
-              value={`${displayInternalC.toFixed(1)}°C`}
+              value={
+                displayInternalC === null
+                  ? "—"
+                  : `${displayInternalC.toFixed(1)}°C`
+              }
               meta={`Max ${threshold.maxTemperature.value.toFixed(0)}°C`}
             />
             <MetricTile

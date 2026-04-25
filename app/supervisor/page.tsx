@@ -815,20 +815,24 @@ export default function SupervisorPage() {
     auditSnapshot,
   );
 
-  const rows: UldTrackerRow[] = localRows.map((row) => {
-    const snap = snapshotByUld.get(row.uldId);
-    if (!snap) return row;
-    return {
-      ...row,
-      ambientC: snap.ambientC,
-      budgetRemainingHours: snap.budgetH,
-      budgetRemainingPercent: snap.budgetPercent,
-      budgetState: snap.budgetTone,
-      internalC: snap.internalC,
-      stage: snap.stage as TrackerStage,
-      stageLabel: toStageLabel(snap.stage as TrackerStage),
-    };
-  });
+  // Single source of truth: snapshot from auditDb.uldStatus written by the
+  // global recalculator. Local compute is only used for fields the snapshot
+  // doesn't carry (status badge, flight number, push-time scheduler).
+  const rows: UldTrackerRow[] = localRows
+    .filter((row) => snapshotByUld.has(row.uldId))
+    .map((row) => {
+      const snap = snapshotByUld.get(row.uldId)!;
+      return {
+        ...row,
+        ambientC: snap.ambientC,
+        budgetRemainingHours: snap.budgetH,
+        budgetRemainingPercent: snap.budgetPercent,
+        budgetState: snap.budgetTone,
+        internalC: snap.internalC,
+        stage: snap.stage as TrackerStage,
+        stageLabel: toStageLabel(snap.stage as TrackerStage),
+      };
+    });
 
   return (
     <MissionShell>
