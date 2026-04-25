@@ -96,6 +96,7 @@ type MonitorRow = {
   stageLabel: string;
   trackerLabel: string;
   excursion: ThermalStatus["excursionEventCode"];
+  status: "Excursion" | "Alert" | "Action in progress" | "OK";
   pushTimeMs: number | null;
   holdDecision: "PUSH" | "HOLD" | "RELEASED" | null;
   maxWaitMinutes: number | null;
@@ -492,6 +493,7 @@ function createMonitorRows(
       stageLabel: meta.label,
       trackerLabel: uld.iotDeviceId ? `${uld.iotDeviceId} online` : "Inferred",
       excursion: thermal.excursionEventCode,
+      status: "OK",
       pushTimeMs: null,
       holdDecision: null,
       maxWaitMinutes: null,
@@ -689,6 +691,7 @@ export default function FlightMonitorPage() {
         pushTimeMs: snap.pushTimeMs,
         holdDecision: snap.holdDecision,
         maxWaitMinutes: snap.maxWaitMinutes,
+        status: snap.status,
       };
     });
   const assignedAwbIds = new Set<IRI>();
@@ -897,12 +900,17 @@ export default function FlightMonitorPage() {
                     {row.stage === "in-tarmac" ? (
                       <Badge variant="outline">Awaiting load</Badge>
                     ) : null}
-                    {row.excursion === "BREACH_ACTUAL" ? (
+                    {row.status === "Excursion" ? (
                       <Badge variant="destructive">Excursion</Badge>
-                    ) : row.excursion === "BREACH_PREDICTED" ? (
-                      <Badge variant="destructive">Breach predicted</Badge>
-                    ) : row.excursion === "WARNING_BUDGET_LOW" ? (
-                      <Badge variant="outline">Budget low</Badge>
+                    ) : row.status === "Alert" ? (
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500/40 bg-yellow-500/10 text-yellow-500"
+                      >
+                        Alert
+                      </Badge>
+                    ) : row.status === "Action in progress" ? (
+                      <Badge variant="outline">Action in progress</Badge>
                     ) : null}
                   </div>
                   {row.pushTimeMs !== null && row.holdDecision !== null ? (

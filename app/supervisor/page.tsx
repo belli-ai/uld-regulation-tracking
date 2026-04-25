@@ -806,8 +806,8 @@ export default function SupervisorPage() {
   );
 
   // Single source of truth: snapshot from auditDb.uldStatus written by the
-  // global recalculator. Local compute is only used for fields the snapshot
-  // doesn't carry (status badge, flight number, push-time scheduler).
+  // global recalculator. Status badge now also comes from the snapshot so
+  // supervisor / monitor / uld-detail never disagree.
   const rows: UldTrackerRow[] = localRows
     .filter((row) => snapshotByUld.has(row.uldId))
     .map((row) => {
@@ -821,6 +821,7 @@ export default function SupervisorPage() {
         internalC: snap.internalC,
         stage: snap.stage as TrackerStage,
         stageLabel: toStageLabel(snap.stage as TrackerStage),
+        status: snap.status as TrackerStatus,
       };
     });
 

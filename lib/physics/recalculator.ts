@@ -306,6 +306,15 @@ export async function recalculateAll(
         nowMs,
       );
 
+      // Cap forecast horizon at hours-until-ETD so budget reflects only
+      // the time the ULD actually has under our control. Past departure
+      // it's the receiving station's clock.
+      const stdMsForHorizon = getStdMsForFlight(flightNumber);
+      const etdHorizonHours =
+        stdMsForHorizon !== null
+          ? Math.max(0, (stdMsForHorizon - nowMs) / 3_600_000)
+          : 12;
+
       const thermal = computeThermalStatus({
         flightId: flightNumber
           ? toIRI(`urn:cargo:flight:${flightNumber}`)
@@ -320,9 +329,28 @@ export async function recalculateAll(
         threshold,
         uld: bootstrappedInventory,
         weather: cachedWeather,
+        horizonHours: etdHorizonHours,
       });
 
       const position = derivePosition(measurements, inventory, polygons);
+
+      // Status badge — single source for supervisor / monitor / uld-detail.
+      // Excursion takes priority over Alert; Alert uses 20% of the SHC
+      // band as the "approaching threshold" buffer.
+      const minC = threshold.minTemperature.value;
+      const maxC = threshold.maxTemperature.value;
+      const ALERT_BUFFER_RATIO = 0.2;
+      const alertBuffer = Math.max(0.5, (maxC - minC) * ALERT_BUFFER_RATIO);
+      let status: "Excursion" | "Alert" | "Action in progress" | "OK" = "OK";
+      if (thermal.internalC < minC || thermal.internalC > maxC) {
+        status = "Excursion";
+      } else if (
+        thermal.internalC <= minC + alertBuffer ||
+        thermal.internalC >= maxC - alertBuffer ||
+        thermal.budgetPercent < 30
+      ) {
+        status = "Alert";
+      }
 
       // Push-time scheduler: when should this ULD leave the cool room
       // for the tarmac? Combines current ambient, SHC max-wait curve,
@@ -385,6 +413,7 @@ export async function recalculateAll(
         holdDecision,
         holdReason,
         maxWaitMinutes,
+        status: holdDecision === "HOLD" && status === "OK" ? "Alert" : status,
         updatedMs: nowMs,
       });
     }

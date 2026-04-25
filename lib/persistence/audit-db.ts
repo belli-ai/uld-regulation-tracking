@@ -39,6 +39,9 @@ export type UldThermalSnapshot = {
   holdDecision: "PUSH" | "HOLD" | "RELEASED" | null;
   holdReason: string | null;
   maxWaitMinutes: number | null;
+  // Single status badge derived once in the recalculator, consumed by all
+  // pages so supervisor / monitor / uld-detail never disagree.
+  status: "Excursion" | "Alert" | "Action in progress" | "OK";
   updatedMs: number;
 };
 
@@ -76,6 +79,14 @@ export class AuditDB extends Dexie {
       actions: ", performedAt, actionStartTime, servedActivity",
       loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
       uldStatus: "uldId, stage, budgetTone, zoneName, holdDecision, updatedMs",
+    });
+
+    this.version(6).stores({
+      events: ", eventFor, eventDate, eventCode",
+      actions: ", performedAt, actionStartTime, servedActivity",
+      loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
+      uldStatus:
+        "uldId, stage, status, budgetTone, zoneName, holdDecision, updatedMs",
     });
 
     this.events = this.table("events");

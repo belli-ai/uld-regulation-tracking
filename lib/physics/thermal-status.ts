@@ -90,6 +90,10 @@ export type ThermalContext = {
   locationId: IRI;
   latestEvent?: LogisticsEvent;
   latestAction?: LogisticsAction;
+  // Optional clamp on the forecast window — used by the recalculator to
+  // cap budget at hours-until-flight-ETD instead of the default 12h. When
+  // omitted, falls back to FORECAST_HOURS.
+  horizonHours?: number;
 };
 
 export type ThermalStatus = {
@@ -267,10 +271,18 @@ export function computeThermalStatus(ctx: ThermalContext): ThermalStatus {
   const { internalC, isPassive } = deriveInternalC(ctx);
   const ambientC = sampleWeatherC(ctx.weather, ctx.logicalNowMs);
   const effectiveAmbientC = effectiveAmbientForStage(ctx.stage, ambientC);
+  // Forecast horizon: caller can clamp (e.g. recalculator caps at hours-
+  // until-ETD so budget reflects the actual usable window, not arbitrary
+  // 12h forecast that runs past the flight).
+  const horizonHours = Math.max(
+    0.1,
+    Math.min(FORECAST_HOURS, ctx.horizonHours ?? FORECAST_HOURS),
+  );
   const ambientForecast = buildStageAmbientCurve(
     ctx.weather,
     ctx.stage,
     ctx.logicalNowMs,
+    { hours: horizonHours },
   );
 
   const integration = integrateBudget(
@@ -282,13 +294,13 @@ export function computeThermalStatus(ctx: ThermalContext): ThermalStatus {
   );
 
   // integration.budgetSec is "time-until-breach" if integration.breachAt is
-  // set, OR the full forecast horizon length (12h) when no breach occurs in
-  // the window. Treat the no-breach case as 100% stable rather than dividing
-  // a 12h horizon by a 120h rated autonomy and getting a red 10%.
+  // set, OR the full forecast horizon length when no breach occurs in the
+  // window. Snap no-breach to the actual horizon (which is now flight-aware)
+  // so a 2h-until-ETD ULD doesn't claim 96h spec autonomy.
   const autonomyHours = spec.autonomyHours > 0 ? spec.autonomyHours : 1;
   const noBreachInHorizon = integration.breachAt === null;
   const budgetH = noBreachInHorizon
-    ? autonomyHours
+    ? horizonHours
     : Math.max(0, integration.budgetSec / 3600);
   const budgetPercent = noBreachInHorizon
     ? 100
