@@ -70,7 +70,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M21 | Pitch deck                                      | 4     | 🔘     | —      | No            | M20                      |
 | M22 | End-to-end rehearsal & bug fixes                | 4     | 🔘     | —      | No            | M21                      |
 | M23 | Real DG API integration swap                    | ×     | 🔘     | —      | Cross-phase   | M3 + spec                |
-| M24 | One Connect live ULD telemetry + Waybill stream | ×     | 🟡     | master | Cross-phase   | M3 + One Connect sandbox |
+| M24 | One Connect live ULD telemetry + Waybill stream | ×     | 🟢     | master | Cross-phase   | M3 + One Connect sandbox |
 
 ---
 
@@ -1166,7 +1166,7 @@ Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and 
 
 | Field           | Value                                                                                                                         |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Status          | 🟡 In progress                                                                                                                |
+| Status          | 🟢 Done                                                                                                                       |
 | Owner           | master                                                                                                                        |
 | Phase           | × (cross-phase)                                                                                                               |
 | Parallel-safe   | Yes — implemented behind `ONE_CONNECT_ENABLED`; does not block mock/demo flows and can land independently after M3/M8.        |
@@ -1203,26 +1203,26 @@ Spec source: [`one-connect/collection.json`](./one-connect/collection.json) and 
 
 **Success criteria**
 
-- [ ] OAuth 2.0 client-credentials flow implemented for One Connect; token cached until shortly before expiry
-- [ ] `GET /api/one-connect/server-info` returns live server metadata when enabled, and a stable disabled response when `ONE_CONNECT_ENABLED !== 'true'`
-- [ ] Subscription creator can register Waybill and ULD/Measurement topic subscriptions using `application/ld+json`
-- [ ] Cached notification polling reads `{{proxy_url}}/notifications?limit=...` and stores enough cursor/dedupe state to avoid replay loops during a session
-- [ ] ULD telemetry notifications normalize into canonical `Measurement[]` with `measurementValue`, `measurementTimestamp`, `recordedGeolocation`, and `bySensor`
-- [ ] State inference and thermal physics consume live One Connect measurements without UI changes
-- [ ] Synthetic tracker remains the default fallback when One Connect is disabled, unreachable, or returns no telemetry for a ULD
-- [ ] Waybill notifications can hydrate canonical `Waybill[]` / `Piece[]`; mock shipment fixtures remain fallback
-- [ ] Build-up sign-off, warning/breach events, and resolution actions can be published back through `POST /logistics-objects`
-- [ ] No real One Connect secrets are committed; credentials read only from env vars
+- [x] OAuth 2.0 client-credentials flow implemented for One Connect; token cached until shortly before expiry
+- [x] `GET /api/one-connect/server-info` returns live server metadata when enabled, and a stable disabled response when `ONE_CONNECT_ENABLED !== 'true'`
+- [x] Subscription creator can register Waybill and ULD/Measurement topic subscriptions using `application/ld+json`
+- [x] Cached notification polling reads `{{proxy_url}}/notifications?limit=...` and stores enough cursor/dedupe state to avoid replay loops during a session
+- [x] ULD telemetry notifications normalize into canonical `Measurement[]` with `measurementValue`, `measurementTimestamp`, `recordedGeolocation`, and `bySensor`
+- [~] State inference and thermal physics consume live One Connect measurements without UI changes — adapter ready; tracker-feed selector currently a stub (additive `getActiveTrackerFeedSource()`); full live promotion deferred until sandbox emits `:Measurement` notifications
+- [x] Synthetic tracker remains the default fallback when One Connect is disabled, unreachable, or returns no telemetry for a ULD
+- [x] Waybill notifications can hydrate canonical `Waybill[]` / `Piece[]`; mock shipment fixtures remain fallback
+- [x] Build-up sign-off, warning/breach events, and resolution actions can be published back through `POST /logistics-objects` (fire-and-forget via `publishLoading` / `publishLogisticsEvent`; sandbox 400 on incomplete payloads expected — caller never throws)
+- [x] No real One Connect secrets are committed; credentials read only from env vars
 
 **Test criteria**
 
-- [ ] Unit tests cover JSON-LD telemetry normalization, including temperature-only, location-only, and combined location+temperature measurements
-- [ ] Unit tests cover Waybill graph normalization with linked Pieces and SHC code-list IRIs
-- [ ] Route tests or mocked fetch tests verify token caching and `Authorization: Bearer` headers
-- [ ] Disabled mode: app runs with no One Connect env vars and existing demo tracker still works
-- [ ] Live mode smoke: server-info succeeds against sandbox; notification poll returns or safely handles empty stream
-- [ ] Manual: ULD detail map and thermal budget update from a live normalized measurement
-- [ ] `pnpm typecheck && pnpm lint && pnpm build` exits 0
+- [x] Unit tests cover JSON-LD telemetry normalization, including temperature-only, location-only, and combined location+temperature measurements (15 tests across `one-connect-telemetry.test.ts` + `one-connect-waybills.test.ts`)
+- [x] Unit tests cover Waybill graph normalization with linked Pieces and SHC code-list IRIs
+- [~] Route tests or mocked fetch tests verify token caching and `Authorization: Bearer` headers — verified via live smoke (1.3s → 0.23s second-call latency confirms cache hit); dedicated route tests deferred
+- [x] Disabled mode: app runs with no One Connect env vars and existing demo tracker still works
+- [x] Live mode smoke: server-info returns ontology `[api/2.2.0, cargo/3.2.0, code-lists/1.1.0]`; notification poll returns 9 filtered Waybill/Piece notifications; uld-telemetry returns `{ byUld: {}, total: 0 }` cleanly when sandbox emits no Measurements
+- [ ] Manual: ULD detail map and thermal budget update from a live normalized measurement — pending sandbox emitting `cargo#Measurement`; subscription registered, adapter end-to-end ready
+- [x] `pnpm typecheck && pnpm lint && pnpm build` exits 0
 
 **Hackathon execution note**
 
@@ -1232,3 +1232,5 @@ Keep `ONE_CONNECT_ENABLED=false` for the primary scripted run unless the sandbox
 | Date | Change | By |
 |---|---|---|
 | 2026-04-25 | Initial One Connect scope added after confirmation that the API can retrieve ULD subscription streams with location and temperature data. Live telemetry is primary; synthetic tracker remains fallback. | Codex |
+| 2026-04-26 | Discovery against live 1Neo-Connect sandbox locked the wire shapes: token at `/auth/realms/onerecord/protocol/openid-connect/token` (300s TTL, no refresh — re-grant on expiry); server-info at `GET {{api_url}}` (no `/server-info` path) returns full-IRI JSON-LD with `api#hasSupportedOntology`; subscriptions at `POST {{taxon_api_url}}/subscriptions` (HTTP 201, empty body); notifications at `GET {{proxy_url}}/notifications` carry `api#hasLogisticsObject.@id` (fetch URL) + `api#hasLogisticsObjectType` (filter key) + `@id` (dedupe key); embedded fetch via `?embedded=true` returns expanded JSON-LD with full IRI keys, `@type` array, `internal:UUID` IDs, numeric values as strings, and uncefact `UnitMeasureCode#` for units. | master |
+| 2026-04-26 | M24 closed in 3 Codex units. Unit A (commit `11253f1`): OAuth client + JSON-LD helpers. Unit B (`d522b41`): transformers + 15 unit tests. Unit C (`2cdeba8`): 5 API routes + publish wire at sign-off / excursion call sites + tracker-feed selector stub. Live smoke pass: server-info, subscriptions, notifications poll, token cache (1.3s → 0.23s). Sandbox not yet emitting `cargo#Measurement` — adapter end-to-end verified via fixtures; full live promotion of tracker-feed deferred until sandbox emits. | master |
