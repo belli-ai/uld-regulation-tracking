@@ -38,17 +38,36 @@ import shipmentsData from "@/public/data/shipments.json";
 import uldInventoryData from "@/public/data/uld-inventory.json";
 import { excursionLogger } from "@/lib/audit/excursion-logger";
 import type { AirportPolygons } from "@/lib/inference/airport-polygons-loader";
-import type { LogisticsAction, LogisticsEvent } from "@/lib/ontology/one-record";
+import type {
+  LogisticsAction,
+  LogisticsEvent,
+} from "@/lib/ontology/one-record";
 import { auditDb } from "@/lib/persistence/audit-db";
 import type { UldPhysicsSpec } from "@/lib/physics/uld-specs-loader";
 import { integrateBudget } from "@/lib/physics/pcm-model";
-import type { Resources, StationCapabilities, UldContext } from "@/lib/recommender/filters";
+import type {
+  Resources,
+  StationCapabilities,
+  UldContext,
+} from "@/lib/recommender/filters";
 import { recommendActions, type RankedAction } from "@/lib/recommender/ranker";
 import { resolutionLogger } from "@/lib/audit/resolution-logger";
 import { parseAirportPolygons } from "@/lib/inference/airport-polygons-loader";
-import { classifyState, getEmittedStateEvents } from "@/lib/inference/state-classifier";
-import { toIRI, type Measurement, type TemperatureInstructions, type TransportMovement, type Waybill } from "@/lib/ontology/one-record";
-import { startTrackerFeed, type ScenarioParams } from "@/lib/simulator/tracker-feed";
+import {
+  classifyState,
+  getEmittedStateEvents,
+} from "@/lib/inference/state-classifier";
+import {
+  toIRI,
+  type Measurement,
+  type TemperatureInstructions,
+  type TransportMovement,
+  type Waybill,
+} from "@/lib/ontology/one-record";
+import {
+  startTrackerFeed,
+  type ScenarioParams,
+} from "@/lib/simulator/tracker-feed";
 import { useFlightsStore } from "@/lib/stores/flights-store";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +75,9 @@ const AirportMap = dynamic(
   () => import("@/components/airport-map").then((module) => module.AirportMap),
   {
     ssr: false,
-    loading: () => <div className="h-full w-full animate-pulse rounded-xl bg-muted" />,
+    loading: () => (
+      <div className="h-full w-full animate-pulse rounded-xl bg-muted" />
+    ),
   },
 );
 
@@ -67,7 +88,9 @@ const FlightOverviewMap = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <div className="h-full w-full animate-pulse rounded-xl bg-muted" />,
+    loading: () => (
+      <div className="h-full w-full animate-pulse rounded-xl bg-muted" />
+    ),
   },
 );
 
@@ -263,13 +286,18 @@ function getCodeFromIri(value: string | undefined): string {
 
 function getScenarioForUld(uldId: string): Scenario {
   return (
-    scenarios.find((scenario) => scenario.initial_state?.ulds?.includes(uldId)) ??
+    scenarios.find((scenario) =>
+      scenario.initial_state?.ulds?.includes(uldId),
+    ) ??
     scenarios.find((scenario) => scenario.id === "dxb-warehouse-demo") ??
     scenarios[0]
   );
 }
 
-function getFlightNumberForUld(uldId: string, scenario: Scenario): string | null {
+function getFlightNumberForUld(
+  uldId: string,
+  scenario: Scenario,
+): string | null {
   const eventMatch = scenario.events?.find((event) => event.uldId === uldId);
   if (typeof eventMatch?.flightNo === "string") {
     return eventMatch.flightNo;
@@ -329,7 +357,9 @@ function createMeasurement(
   geolocation?: { latitude: number; longitude: number },
 ): Measurement {
   return {
-    "@id": toIRI(`urn:cool-chain:measurement:${id}:${sensorSuffix}:${timestamp}`),
+    "@id": toIRI(
+      `urn:cool-chain:measurement:${id}:${sensorSuffix}:${timestamp}`,
+    ),
     "@type": "Measurement",
     measurementValue: {
       value,
@@ -364,7 +394,10 @@ function averageCoordinate(points: Array<[number, number]>) {
   };
 }
 
-function getZoneCenter(zoneName: string | null, polygons: AirportPolygons | null) {
+function getZoneCenter(
+  zoneName: string | null,
+  polygons: AirportPolygons | null,
+) {
   if (zoneName === null) {
     return { latitude: 25.2532, longitude: 55.3657 };
   }
@@ -392,8 +425,12 @@ function buildSeedMeasurements(
   polygons: AirportPolygons | null,
 ): Measurement[] {
   const timestamp = new Date().toISOString();
-  const zoneCenter = getZoneCenter(getZoneNameFromLocation(uld.lastKnownLocation), polygons);
-  const ambientTemperature = scenario.initial_state?.weather_override?.ambient_c ?? 38;
+  const zoneCenter = getZoneCenter(
+    getZoneNameFromLocation(uld.lastKnownLocation),
+    polygons,
+  );
+  const ambientTemperature =
+    scenario.initial_state?.weather_override?.ambient_c ?? 38;
   const internalTemperature = uld.lastKnownInternalC ?? ambientTemperature - 6;
 
   const measurements = [
@@ -429,12 +466,17 @@ function buildSeedMeasurements(
   return measurements;
 }
 
-function getTemperatureThreshold(uld: InventoryUld, waybills: Waybill[]): TemperatureInstructions {
+function getTemperatureThreshold(
+  uld: InventoryUld,
+  waybills: Waybill[],
+): TemperatureInstructions {
   const shcCandidates = waybills
     .map((waybill) => waybill.shc)
     .filter((value): value is string => value.length > 0);
   const preferredShc =
-    shcCandidates.find((value) => uldSpecs[uld.uldProductCode ?? ""]?.supportedShc.includes(value)) ??
+    shcCandidates.find((value) =>
+      uldSpecs[uld.uldProductCode ?? ""]?.supportedShc.includes(value),
+    ) ??
     shcCandidates[0] ??
     uldSpecs[uld.uldProductCode ?? ""]?.supportedShc[0] ??
     "CRT";
@@ -451,7 +493,8 @@ function getTemperatureThreshold(uld: InventoryUld, waybills: Waybill[]): Temper
 function getClientPhysicsSpec(uld: InventoryUld): ClientUldPhysicsSpec {
   const specId = uld.uldProductCode ?? "GENERIC_PASSIVE";
   const fixture = uldSpecs[specId];
-  const fallback = DEFAULT_CLIENT_SPECS[specId] ?? DEFAULT_CLIENT_SPECS.GENERIC_PASSIVE;
+  const fallback =
+    DEFAULT_CLIENT_SPECS[specId] ?? DEFAULT_CLIENT_SPECS.GENERIC_PASSIVE;
 
   return {
     id: specId,
@@ -476,8 +519,15 @@ function buildAmbientCurve(
 
   return Array.from({ length: 13 }, (_, index) => {
     const stageOffset =
-      stage === "in-tarmac" ? 4 : stage === "in-flight" ? -6 : stage === "arrived-tarmac" ? 2 : 0;
-    const drift = index < 4 ? index * 0.5 : index < 8 ? 2 + index * 0.15 : 3 - index * 0.1;
+      stage === "in-tarmac"
+        ? 4
+        : stage === "in-flight"
+          ? -6
+          : stage === "arrived-tarmac"
+            ? 2
+            : 0;
+    const drift =
+      index < 4 ? index * 0.5 : index < 8 ? 2 + index * 0.15 : 3 - index * 0.1;
     const value = ambientStart + stageOffset + drift;
 
     return createMeasurement(
@@ -501,8 +551,13 @@ function getLatestMeasurement(
   return match ?? null;
 }
 
-function getLatestTemperature(measurements: Measurement[], fallback: number): number {
-  return getLatestMeasurement(measurements, "C")?.measurementValue.value ?? fallback;
+function getLatestTemperature(
+  measurements: Measurement[],
+  fallback: number,
+): number {
+  return (
+    getLatestMeasurement(measurements, "C")?.measurementValue.value ?? fallback
+  );
 }
 
 function getLatestGeolocation(
@@ -512,11 +567,16 @@ function getLatestGeolocation(
   return (
     [...measurements]
       .reverse()
-      .find((measurement) => measurement.recordedGeolocation)?.recordedGeolocation ?? fallback
+      .find((measurement) => measurement.recordedGeolocation)
+      ?.recordedGeolocation ?? fallback
   );
 }
 
-function getFlightProgress(flight: TransportMovement | null, timestamp: string, stage: string): number {
+function getFlightProgress(
+  flight: TransportMovement | null,
+  timestamp: string,
+  stage: string,
+): number {
   if (flight === null) {
     return 0;
   }
@@ -525,8 +585,12 @@ function getFlightProgress(flight: TransportMovement | null, timestamp: string, 
     return 1;
   }
 
-  const departure = flight.movementTimes.find((time) => time.type === "STD")?.timestamp;
-  const arrival = flight.movementTimes.find((time) => time.type === "STA")?.timestamp;
+  const departure = flight.movementTimes.find(
+    (time) => time.type === "STD",
+  )?.timestamp;
+  const arrival = flight.movementTimes.find(
+    (time) => time.type === "STA",
+  )?.timestamp;
 
   if (!departure || !arrival) {
     return stage === "in-flight" ? 0.5 : 0;
@@ -536,11 +600,17 @@ function getFlightProgress(flight: TransportMovement | null, timestamp: string, 
   const departureMs = Date.parse(departure);
   const arrivalMs = Date.parse(arrival);
 
-  if ([nowMs, departureMs, arrivalMs].some(Number.isNaN) || arrivalMs <= departureMs) {
+  if (
+    [nowMs, departureMs, arrivalMs].some(Number.isNaN) ||
+    arrivalMs <= departureMs
+  ) {
     return stage === "in-flight" ? 0.5 : 0;
   }
 
-  return Math.max(0, Math.min((nowMs - departureMs) / (arrivalMs - departureMs), 1));
+  return Math.max(
+    0,
+    Math.min((nowMs - departureMs) / (arrivalMs - departureMs), 1),
+  );
 }
 
 function getWeatherBadgeClass(source: WeatherSource) {
@@ -564,7 +634,8 @@ function buildChartRows(
 ): ChartRow[] {
   return chartTrace.map((point, index) => {
     const ambientPoint =
-      ambientCurve[Math.min(index, ambientCurve.length - 1)] ?? ambientCurve[ambientCurve.length - 1];
+      ambientCurve[Math.min(index, ambientCurve.length - 1)] ??
+      ambientCurve[ambientCurve.length - 1];
     const budgetH = Math.max(autonomyHours - point.t / 3600, 0);
 
     return {
@@ -580,9 +651,15 @@ function buildChartRows(
 function getTopShc(uld: InventoryUld, waybills: Waybill[]): string {
   const compatible = waybills
     .map((waybill) => waybill.shc)
-    .filter((shc) => uldSpecs[uld.uldProductCode ?? ""]?.supportedShc.includes(shc));
+    .filter((shc) =>
+      uldSpecs[uld.uldProductCode ?? ""]?.supportedShc.includes(shc),
+    );
 
-  return compatible[0] ?? uldSpecs[uld.uldProductCode ?? ""]?.supportedShc[0] ?? "CRT";
+  return (
+    compatible[0] ??
+    uldSpecs[uld.uldProductCode ?? ""]?.supportedShc[0] ??
+    "CRT"
+  );
 }
 
 function buildResources(scenario: Scenario): Resources {
@@ -609,9 +686,17 @@ function createHistoryEntries(
   const resolutionEntries: HistoryEntry[] = actions.map((action) => ({
     id: action["@id"],
     kind: "resolution",
-    title: action.otherIdentifiers?.find((identifier) => identifier.startsWith("actionLabel:"))?.split(":").slice(1).join(":") ?? "Mitigation logged",
+    title:
+      action.otherIdentifiers
+        ?.find((identifier) => identifier.startsWith("actionLabel:"))
+        ?.split(":")
+        .slice(1)
+        .join(":") ?? "Mitigation logged",
     timestamp: action.actionStartTime,
-    detail: action.otherIdentifiers?.find((identifier) => identifier.startsWith("executor:")) ?? "executor:handler",
+    detail:
+      action.otherIdentifiers?.find((identifier) =>
+        identifier.startsWith("executor:"),
+      ) ?? "executor:handler",
   }));
   const transitionEntries: HistoryEntry[] = transitions.map((event) => ({
     id: event["@id"],
@@ -621,43 +706,55 @@ function createHistoryEntries(
     detail: event.eventCode,
   }));
 
-  return [...excursionEntries, ...resolutionEntries, ...transitionEntries].sort((left, right) =>
-    right.timestamp.localeCompare(left.timestamp),
+  return [...excursionEntries, ...resolutionEntries, ...transitionEntries].sort(
+    (left, right) => right.timestamp.localeCompare(left.timestamp),
   );
 }
 
 export default function UldDetailPage() {
   const params = useParams<{ uldId: string }>();
-  const uldId = Array.isArray(params?.uldId) ? params.uldId[0] : params?.uldId ?? "";
+  const uldId = Array.isArray(params?.uldId)
+    ? params.uldId[0]
+    : (params?.uldId ?? "");
   const scenario = useMemo(() => getScenarioForUld(uldId), [uldId]);
   const inventoryUld = useMemo(
-    () => inventory.find((candidate) => candidate.uldSerialNumber === uldId) ?? null,
+    () =>
+      inventory.find((candidate) => candidate.uldSerialNumber === uldId) ??
+      null,
     [uldId],
   );
-  const { flights, weatherSource, loadFlights } = useFlightsStore((state) => ({
-    flights: state.flights,
-    weatherSource: state.weatherSource,
-    loadFlights: state.loadFlights,
-  }));
+  const flights = useFlightsStore((state) => state.flights);
+  const weatherSource = useFlightsStore((state) => state.weatherSource);
+  const loadFlights = useFlightsStore((state) => state.loadFlights);
   const fallbackFlightNumber = getFlightNumberForUld(uldId, scenario);
   const flight = useMemo(() => {
     return (
       flights.find((entry) => entry.flightNumber === fallbackFlightNumber) ??
-      flightsFixture.find((entry) => entry.flightNumber === fallbackFlightNumber) ??
+      flightsFixture.find(
+        (entry) => entry.flightNumber === fallbackFlightNumber,
+      ) ??
       null
     );
   }, [fallbackFlightNumber, flights]);
   const waybills = useMemo(
-    () => (fallbackFlightNumber ? shipmentsFixture[fallbackFlightNumber] ?? [] : []),
+    () =>
+      fallbackFlightNumber
+        ? (shipmentsFixture[fallbackFlightNumber] ?? [])
+        : [],
     [fallbackFlightNumber],
   );
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [logicalClockMs, setLogicalClockMs] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [pendingLabel, setPendingLabel] = useState<string | null>(null);
-  const [currentExcursionId, setCurrentExcursionId] = useState<string | null>(null);
-  const [mapGeojson, setMapGeojson] = useState<Record<string, unknown> | null>(null);
-  const [airportPolygons, setAirportPolygons] = useState<AirportPolygons | null>(null);
+  const [currentExcursionId, setCurrentExcursionId] = useState<string | null>(
+    null,
+  );
+  const [mapGeojson, setMapGeojson] = useState<Record<string, unknown> | null>(
+    null,
+  );
+  const [airportPolygons, setAirportPolygons] =
+    useState<AirportPolygons | null>(null);
   const logicalClockRef = useRef(0);
 
   useEffect(() => {
@@ -671,7 +768,9 @@ export default function UldDetailPage() {
       return;
     }
 
-    setMeasurements(buildSeedMeasurements(inventoryUld, scenario, airportPolygons));
+    setMeasurements(
+      buildSeedMeasurements(inventoryUld, scenario, airportPolygons),
+    );
     setLogicalClockMs(0);
     logicalClockRef.current = 0;
   }, [airportPolygons, inventoryUld, scenario]);
@@ -680,7 +779,9 @@ export default function UldDetailPage() {
     let cancelled = false;
 
     const loadGeojson = async () => {
-      const response = await fetch("/data/airports/DXB.geojson", { cache: "no-store" });
+      const response = await fetch("/data/airports/DXB.geojson", {
+        cache: "no-store",
+      });
       if (!response.ok || cancelled) {
         return;
       }
@@ -724,7 +825,11 @@ export default function UldDetailPage() {
       return;
     }
 
-    const feed = startTrackerFeed(uldId, scenario as ScenarioParams, () => logicalClockRef.current);
+    const feed = startTrackerFeed(
+      uldId,
+      scenario as ScenarioParams,
+      () => logicalClockRef.current,
+    );
 
     if (!feed) {
       return;
@@ -741,7 +846,11 @@ export default function UldDetailPage() {
   }, [inventoryUld?.iotDeviceId, scenario, uldId]);
 
   const fallbackZoneCenter = useMemo(
-    () => getZoneCenter(getZoneNameFromLocation(inventoryUld?.lastKnownLocation), airportPolygons),
+    () =>
+      getZoneCenter(
+        getZoneNameFromLocation(inventoryUld?.lastKnownLocation),
+        airportPolygons,
+      ),
     [airportPolygons, inventoryUld?.lastKnownLocation],
   );
   const classification = useMemo(() => {
@@ -752,10 +861,14 @@ export default function UldDetailPage() {
     return classifyState(uldId, measurements, airportPolygons);
   }, [airportPolygons, inventoryUld, measurements, uldId]);
   const internalTemperature = useMemo(() => {
-    return getLatestTemperature(measurements, inventoryUld?.lastKnownInternalC ?? 20);
+    return getLatestTemperature(
+      measurements,
+      inventoryUld?.lastKnownInternalC ?? 20,
+    );
   }, [inventoryUld?.lastKnownInternalC, measurements]);
   const latestTimestamp =
-    [...measurements].reverse()[0]?.measurementTimestamp ?? new Date().toISOString();
+    [...measurements].reverse()[0]?.measurementTimestamp ??
+    new Date().toISOString();
   const ambientBase = scenario.initial_state?.weather_override?.ambient_c ?? 38;
   const ambientCurve = useMemo(() => {
     return buildAmbientCurve(
@@ -764,9 +877,16 @@ export default function UldDetailPage() {
       classification?.stage ?? "in-warehouse",
       latestTimestamp,
     );
-  }, [ambientBase, classification?.stage, internalTemperature, latestTimestamp]);
+  }, [
+    ambientBase,
+    classification?.stage,
+    internalTemperature,
+    latestTimestamp,
+  ]);
   const threshold = useMemo(() => {
-    return inventoryUld ? getTemperatureThreshold(inventoryUld, waybills) : null;
+    return inventoryUld
+      ? getTemperatureThreshold(inventoryUld, waybills)
+      : null;
   }, [inventoryUld, waybills]);
   const physicsSpec = useMemo(() => {
     return inventoryUld ? getClientPhysicsSpec(inventoryUld) : null;
@@ -786,7 +906,11 @@ export default function UldDetailPage() {
     const autonomyHours = physicsSpec.autonomyHours;
     const budgetH = result.budgetSec / 3600;
     const warning: "green" | "yellow" | "red" =
-      budgetH >= autonomyHours * 0.5 ? "green" : budgetH >= autonomyHours * 0.3 ? "yellow" : "red";
+      budgetH >= autonomyHours * 0.5
+        ? "green"
+        : budgetH >= autonomyHours * 0.3
+          ? "yellow"
+          : "red";
 
     return {
       budgetH,
@@ -828,7 +952,8 @@ export default function UldDetailPage() {
     classification?.stage ?? "in-warehouse",
   );
   const showFlightOverview =
-    classification?.stage === "in-flight" || classification?.stage === "arrived-tarmac";
+    classification?.stage === "in-flight" ||
+    classification?.stage === "arrived-tarmac";
 
   useEffect(() => {
     if (!inventoryUld || !budgetForecast || !threshold || !classification) {
@@ -838,15 +963,25 @@ export default function UldDetailPage() {
     const locationId =
       classification.stage === "in-flight"
         ? toIRI("urn:cargo:zone:airspace")
-        : toIRI(`urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`);
+        : toIRI(
+            `urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`,
+          );
     const percent = Math.max(
       0,
-      Math.min((budgetForecast.budgetH / budgetForecast.autonomyHours) * 100, 100),
+      Math.min(
+        (budgetForecast.budgetH / budgetForecast.autonomyHours) * 100,
+        100,
+      ),
     );
     const breachInMinutes =
       budgetForecast.breachAt === null
         ? null
-        : Math.max((Date.parse(budgetForecast.breachAt) - Date.parse(latestTimestamp)) / 60_000, 0);
+        : Math.max(
+            (Date.parse(budgetForecast.breachAt) -
+              Date.parse(latestTimestamp)) /
+              60_000,
+            0,
+          );
     const event = excursionLogger.detect(
       {
         ambientTemperatureC: ambientBase,
@@ -888,13 +1023,25 @@ export default function UldDetailPage() {
 
     const loadHistory = async () => {
       const allEvents = await auditDb.events.toArray();
-      const eventsForUld = allEvents.filter((event) => event.eventFor === inventoryUld["@id"]);
-      const servedActivityIds = new Set(eventsForUld.map((event) => event["@id"]));
+      const eventsForUld = allEvents.filter(
+        (event) => event.eventFor === inventoryUld["@id"],
+      );
+      const servedActivityIds = new Set(
+        eventsForUld.map((event) => event["@id"]),
+      );
       const allActions = await auditDb.actions.toArray();
       const actionsForUld = allActions.filter((action) =>
-        action.servedActivity ? servedActivityIds.has(action.servedActivity) : false,
+        action.servedActivity
+          ? servedActivityIds.has(action.servedActivity)
+          : false,
       );
-      setHistory(createHistoryEntries(eventsForUld, actionsForUld, getEmittedStateEvents(uldId)));
+      setHistory(
+        createHistoryEntries(
+          eventsForUld,
+          actionsForUld,
+          getEmittedStateEvents(uldId),
+        ),
+      );
     };
 
     void loadHistory();
@@ -911,7 +1058,9 @@ export default function UldDetailPage() {
     const locationId =
       classification?.stage === "in-flight"
         ? toIRI("urn:cargo:zone:airspace")
-        : toIRI(`urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`);
+        : toIRI(
+            `urn:cargo:zone:DXB-${getZoneNameFromLocation(inventoryUld.lastKnownLocation) ?? "unknown"}`,
+          );
     const excursionEventId = toIRI(
       currentExcursionId ??
         `urn:cool-chain:event:manual:${encodeURIComponent(inventoryUld["@id"])}:${Date.now()}`,
@@ -921,7 +1070,8 @@ export default function UldDetailPage() {
       {
         actionId: action.id,
         actionLabel: action.label,
-        claimedBenefitHours: (action.benefitHours[0] + action.benefitHours[1]) / 2,
+        claimedBenefitHours:
+          (action.benefitHours[0] + action.benefitHours[1]) / 2,
         excursionEventId,
         locationId,
         startedAt: new Date().toISOString(),
@@ -934,14 +1084,22 @@ export default function UldDetailPage() {
     setPendingLabel(`${executor}: ${action.label}`);
   };
 
-  if (!inventoryUld || !classification || !threshold || !budgetForecast || !mapGeojson) {
+  if (
+    !inventoryUld ||
+    !classification ||
+    !threshold ||
+    !budgetForecast ||
+    !mapGeojson
+  ) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <main className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6 py-8">
           <Card className="w-full max-w-xl rounded-xl border bg-card shadow-sm">
             <CardHeader>
               <CardTitle className="text-2xl">ULD not found</CardTitle>
-              <CardDescription>Unable to resolve {uldId || "this detail route"}.</CardDescription>
+              <CardDescription>
+                Unable to resolve {uldId || "this detail route"}.
+              </CardDescription>
             </CardHeader>
           </Card>
         </main>
@@ -949,8 +1107,11 @@ export default function UldDetailPage() {
     );
   }
 
-  const originAirport = airports[getCodeFromIri(flight?.departureLocation) || "DXB"] ?? airports.DXB;
-  const arrivalAirport = airports[getCodeFromIri(flight?.arrivalLocation) || "FRA"] ?? airports.FRA;
+  const originAirport =
+    airports[getCodeFromIri(flight?.departureLocation) || "DXB"] ??
+    airports.DXB;
+  const arrivalAirport =
+    airports[getCodeFromIri(flight?.arrivalLocation) || "FRA"] ?? airports.FRA;
   const inferenceBadgeClass =
     classification.source === "measured"
       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
@@ -964,10 +1125,22 @@ export default function UldDetailPage() {
             <Button asChild variant="ghost" size="sm">
               <Link href="/">Back</Link>
             </Button>
-            <h1 className="truncate text-base font-semibold">{inventoryUld.uldSerialNumber}</h1>
+            <h1 className="truncate text-base font-semibold">
+              {inventoryUld.uldSerialNumber}
+            </h1>
           </div>
-          <Badge variant="outline" className={cn("font-mono text-xs font-semibold", getWeatherBadgeClass(weatherSource))}>
-            {weatherSource === "live" ? "LIVE" : weatherSource === "mock" ? "MOCK" : "WEATHER"}
+          <Badge
+            variant="outline"
+            className={cn(
+              "font-mono text-xs font-semibold",
+              getWeatherBadgeClass(weatherSource),
+            )}
+          >
+            {weatherSource === "live"
+              ? "LIVE"
+              : weatherSource === "mock"
+                ? "MOCK"
+                : "WEATHER"}
           </Badge>
         </div>
       </header>
@@ -981,15 +1154,26 @@ export default function UldDetailPage() {
                   ULD detail
                 </p>
                 <ShcBadge shc={topShc} />
-                <Badge variant="outline" className={cn("font-mono text-xs font-semibold", inferenceBadgeClass)}>
-                  {classification.source === "measured" ? "Measured" : "Inferred"}
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "font-mono text-xs font-semibold",
+                    inferenceBadgeClass,
+                  )}
+                >
+                  {classification.source === "measured"
+                    ? "Measured"
+                    : "Inferred"}
                 </Badge>
               </div>
               <div className="flex flex-col gap-2">
-                <CardTitle className="text-2xl">{inventoryUld.uldSerialNumber}</CardTitle>
+                <CardTitle className="text-2xl">
+                  {inventoryUld.uldSerialNumber}
+                </CardTitle>
                 <CardDescription>
-                  {uldSpecs[inventoryUld.uldProductCode ?? ""]?.label ?? "Generic passive"} •{" "}
-                  {fallbackFlightNumber ?? "No flight assigned"}
+                  {uldSpecs[inventoryUld.uldProductCode ?? ""]?.label ??
+                    "Generic passive"}{" "}
+                  • {fallbackFlightNumber ?? "No flight assigned"}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -998,7 +1182,9 @@ export default function UldDetailPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Current state
                 </p>
-                <p className="pt-2 text-lg font-semibold">{toTitleCase(classification.stage)}</p>
+                <p className="pt-2 text-lg font-semibold">
+                  {toTitleCase(classification.stage)}
+                </p>
                 <p className="pt-1 text-sm text-muted-foreground">
                   {toTitleCase(classification.internalSubState)}
                 </p>
@@ -1010,13 +1196,17 @@ export default function UldDetailPage() {
                 <p className="pt-2 text-lg font-semibold">
                   {Math.round(classification.confidence * 100)}%
                 </p>
-                <p className="pt-1 text-sm text-muted-foreground">{classification.source}</p>
+                <p className="pt-1 text-sm text-muted-foreground">
+                  {classification.source}
+                </p>
               </div>
               <div className="rounded-xl border border-border bg-muted/40 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Internal
                 </p>
-                <p className="pt-2 text-lg font-semibold">{internalTemperature.toFixed(1)}°C</p>
+                <p className="pt-2 text-lg font-semibold">
+                  {internalTemperature.toFixed(1)}°C
+                </p>
                 <p className="pt-1 text-sm text-muted-foreground">
                   Max {threshold.maxTemperature.value.toFixed(0)}°C
                 </p>
@@ -1025,9 +1215,13 @@ export default function UldDetailPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Last update
                 </p>
-                <p className="pt-2 text-lg font-semibold">{formatTimestamp(latestTimestamp)}</p>
+                <p className="pt-2 text-lg font-semibold">
+                  {formatTimestamp(latestTimestamp)}
+                </p>
                 <p className="pt-1 text-sm text-muted-foreground">
-                  {inventoryUld.iotDeviceId ? "Tracker-equipped" : "Passive ULD"}
+                  {inventoryUld.iotDeviceId
+                    ? "Tracker-equipped"
+                    : "Passive ULD"}
                 </p>
               </div>
             </CardContent>
@@ -1051,13 +1245,17 @@ export default function UldDetailPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Flight
                   </p>
-                  <p className="pt-1 text-base">{fallbackFlightNumber ?? "Unassigned"}</p>
+                  <p className="pt-1 text-base">
+                    {fallbackFlightNumber ?? "Unassigned"}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/40 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Pending log
                   </p>
-                  <p className="pt-1 text-base">{pendingLabel ?? "No action logged yet"}</p>
+                  <p className="pt-1 text-base">
+                    {pendingLabel ?? "No action logged yet"}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1101,27 +1299,42 @@ export default function UldDetailPage() {
             <CardHeader>
               <CardTitle className="text-lg">State inference</CardTitle>
               <CardDescription>
-                M5 stage classification blended with tracker or passive inventory context.
+                M5 stage classification blended with tracker or passive
+                inventory context.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="rounded-xl border border-border bg-muted/40 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-muted-foreground">Stage</span>
-                  <span className="font-semibold">{toTitleCase(classification.stage)}</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-sm text-muted-foreground">Sub-state</span>
-                  <span className="font-semibold">{toTitleCase(classification.internalSubState)}</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-sm text-muted-foreground">Confidence</span>
-                  <span className="font-semibold">{Math.round(classification.confidence * 100)}%</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-sm text-muted-foreground">Position source</span>
                   <span className="font-semibold">
-                    {classification.source === "measured" ? "Tracker GPS" : "Zone centre"}
+                    {toTitleCase(classification.stage)}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Sub-state
+                  </span>
+                  <span className="font-semibold">
+                    {toTitleCase(classification.internalSubState)}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Confidence
+                  </span>
+                  <span className="font-semibold">
+                    {Math.round(classification.confidence * 100)}%
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Position source
+                  </span>
+                  <span className="font-semibold">
+                    {classification.source === "measured"
+                      ? "Tracker GPS"
+                      : "Zone centre"}
                   </span>
                 </div>
               </div>
@@ -1141,10 +1354,13 @@ export default function UldDetailPage() {
                   Zone / fallback
                 </p>
                 <p className="pt-2 text-base">
-                  {toTitleCase(getZoneNameFromLocation(inventoryUld.lastKnownLocation))}
+                  {toTitleCase(
+                    getZoneNameFromLocation(inventoryUld.lastKnownLocation),
+                  )}
                 </p>
                 <p className="pt-1 text-sm text-muted-foreground">
-                  {latestPosition.latitude.toFixed(4)}, {latestPosition.longitude.toFixed(4)}
+                  {latestPosition.latitude.toFixed(4)},{" "}
+                  {latestPosition.longitude.toFixed(4)}
                 </p>
               </div>
             </CardContent>
@@ -1156,15 +1372,23 @@ export default function UldDetailPage() {
             <CardHeader>
               <CardTitle className="text-lg">Thermal trace</CardTitle>
               <CardDescription>
-                Internal and ambient temperatures with a projected breach marker.
+                Internal and ambient temperatures with a projected breach
+                marker.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={budgetForecast.chartRows}>
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                    <XAxis dataKey="label" stroke="var(--muted-foreground)" tickLine={false} />
+                    <CartesianGrid
+                      stroke="var(--border)"
+                      strokeDasharray="3 3"
+                    />
+                    <XAxis
+                      dataKey="label"
+                      stroke="var(--muted-foreground)"
+                      tickLine={false}
+                    />
                     <YAxis
                       yAxisId="temp"
                       stroke="var(--muted-foreground)"
@@ -1245,9 +1469,15 @@ export default function UldDetailPage() {
                     <ActionCard
                       key={action.id}
                       action={action}
-                      onExecute={(selected) => void handleActionLog(selected, "handler")}
-                      onRequest={(selected) => void handleActionLog(selected, "supervisor")}
-                      onEscalate={(selected) => void handleActionLog(selected, "ops-control")}
+                      onExecute={(selected) =>
+                        void handleActionLog(selected, "handler")
+                      }
+                      onRequest={(selected) =>
+                        void handleActionLog(selected, "supervisor")
+                      }
+                      onEscalate={(selected) =>
+                        void handleActionLog(selected, "ops-control")
+                      }
                     />
                   ))
                 ) : (
@@ -1270,7 +1500,9 @@ export default function UldDetailPage() {
             <Card className="rounded-xl border bg-card shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">History</CardTitle>
-                <CardDescription>Linked excursions, mitigations, and transitions.</CardDescription>
+                <CardDescription>
+                  Linked excursions, mitigations, and transitions.
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {history.length > 0 ? (
@@ -1280,13 +1512,19 @@ export default function UldDetailPage() {
                       className="flex flex-col gap-1 rounded-xl border border-border bg-muted/30 p-4"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base font-semibold">{entry.title}</span>
+                        <span className="text-base font-semibold">
+                          {entry.title}
+                        </span>
                         <Badge variant="outline" className="capitalize">
                           {entry.kind}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{entry.detail}</span>
-                      <span className="text-xs text-muted-foreground">{formatTimestamp(entry.timestamp)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {entry.detail}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatTimestamp(entry.timestamp)}
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -1301,14 +1539,18 @@ export default function UldDetailPage() {
             <Card className="rounded-xl border bg-card shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Timeline</CardTitle>
-                <CardDescription>M17 will land the full audit timeline surface.</CardDescription>
+                <CardDescription>
+                  M17 will land the full audit timeline surface.
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">
                   This tab is reserved for the linked timeline component.
                 </p>
                 <Button asChild variant="link" className="px-0">
-                  <Link href={`/uld/${inventoryUld.uldSerialNumber}#timeline`}>Open placeholder link</Link>
+                  <Link href={`/uld/${inventoryUld.uldSerialNumber}#timeline`}>
+                    Open placeholder link
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -1317,7 +1559,9 @@ export default function UldDetailPage() {
             <Card className="rounded-xl border bg-card shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Raw measurements</CardTitle>
-                <CardDescription>Current `Measurement[]` payload from the tracker feed.</CardDescription>
+                <CardDescription>
+                  Current `Measurement[]` payload from the tracker feed.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <pre className="max-h-[360px] overflow-auto rounded-xl border border-border bg-muted/30 p-4 text-xs leading-6 text-foreground">

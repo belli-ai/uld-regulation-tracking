@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FlightCard } from '@/components/flight-card';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { useFlightsStore } from '@/lib/stores/flights-store';
-import { cn } from '@/lib/utils';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FlightCard } from "@/components/flight-card";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { useFlightsStore } from "@/lib/stores/flights-store";
+import { cn } from "@/lib/utils";
 
 function LoadingSkeleton() {
   return (
@@ -37,41 +37,37 @@ function LoadingSkeleton() {
   );
 }
 
-function getWeatherBadgeClass(weatherSource: 'live' | 'mock' | null): string {
-  if (weatherSource === 'live') {
-    return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+function getWeatherBadgeClass(weatherSource: "live" | "mock" | null): string {
+  if (weatherSource === "live") {
+    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   }
 
-  if (weatherSource === 'mock') {
-    return 'border-orange-500/40 bg-orange-500/10 text-orange-600 dark:text-orange-400';
+  if (weatherSource === "mock") {
+    return "border-orange-500/40 bg-orange-500/10 text-orange-600 dark:text-orange-400";
   }
 
-  return 'border-border bg-muted text-muted-foreground';
+  return "border-border bg-muted text-muted-foreground";
 }
 
-function getWeatherBadgeLabel(weatherSource: 'live' | 'mock' | null): string {
-  if (weatherSource === 'live') {
-    return 'LIVE';
+function getWeatherBadgeLabel(weatherSource: "live" | "mock" | null): string {
+  if (weatherSource === "live") {
+    return "LIVE";
   }
 
-  if (weatherSource === 'mock') {
-    return 'MOCK';
+  if (weatherSource === "mock") {
+    return "MOCK";
   }
 
-  return 'WEATHER';
+  return "WEATHER";
 }
 
 export default function HomePage() {
   const router = useRouter();
-  const { flights, weatherSource, loading, error, loadFlights } = useFlightsStore(
-    (state) => ({
-      flights: state.flights,
-      weatherSource: state.weatherSource,
-      loading: state.loading,
-      error: state.error,
-      loadFlights: state.loadFlights,
-    }),
-  );
+  const flights = useFlightsStore((state) => state.flights);
+  const weatherSource = useFlightsStore((state) => state.weatherSource);
+  const loading = useFlightsStore((state) => state.loading);
+  const error = useFlightsStore((state) => state.error);
+  const loadFlights = useFlightsStore((state) => state.loadFlights);
 
   useEffect(() => {
     void loadFlights();
@@ -88,7 +84,10 @@ export default function HomePage() {
           </div>
           <Badge
             variant="outline"
-            className={cn('font-mono text-xs font-semibold', getWeatherBadgeClass(weatherSource))}
+            className={cn(
+              "font-mono text-xs font-semibold",
+              getWeatherBadgeClass(weatherSource),
+            )}
           >
             {getWeatherBadgeLabel(weatherSource)}
           </Badge>
@@ -101,7 +100,9 @@ export default function HomePage() {
             DXB outbound
           </p>
           <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">Today&apos;s flights</h2>
+            <h2 className="text-2xl font-semibold text-foreground">
+              Today&apos;s flights
+            </h2>
             <p className="text-base text-muted-foreground">
               Track outbound departures, weather source, and build readiness.
             </p>
@@ -124,7 +125,9 @@ export default function HomePage() {
 
         {!error && !loading && flights.length === 0 ? (
           <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 text-center">
-            <p className="text-base text-muted-foreground">No outbound flights today</p>
+            <p className="text-base text-muted-foreground">
+              No outbound flights today
+            </p>
           </div>
         ) : null}
 
@@ -132,9 +135,9 @@ export default function HomePage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {flights.map((flight) => (
               <FlightCard
-                key={flight['@id']}
+                key={flight["@id"]}
                 flight={flight}
-                onClick={() => router.push('/flight/' + flight.flightNumber)}
+                onClick={() => router.push("/flight/" + flight.flightNumber)}
               />
             ))}
           </div>

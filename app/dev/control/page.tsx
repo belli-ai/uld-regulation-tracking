@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { isDemoMode } from "@/lib/env";
 import { localPrefs } from "@/lib/persistence/local-prefs";
-import { type Scenario, scenariosFileSchema, type ScenarioEvent } from "@/lib/simulator/scenario-schema";
+import {
+  type Scenario,
+  scenariosFileSchema,
+  type ScenarioEvent,
+} from "@/lib/simulator/scenario-schema";
 import {
   demoScenarioRunner,
   type DemoFocusTarget,
@@ -160,12 +165,14 @@ function ManualInjectPanel() {
   const [action, setAction] = useState("cool_dolly_retrieve");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const runner = useScenarioRunnerStore((state) => ({
-    activeScenarioId: state.activeScenarioId,
-    selectedFlightNo: state.selectedFlightNo,
-    selectedUldId: state.selectedUldId,
-    uiFocus: state.uiFocus,
-  }));
+  const runner = useScenarioRunnerStore(
+    useShallow((state) => ({
+      activeScenarioId: state.activeScenarioId,
+      selectedFlightNo: state.selectedFlightNo,
+      selectedUldId: state.selectedUldId,
+      uiFocus: state.uiFocus,
+    })),
+  );
 
   const effectiveFlightNo = flightNo || runner.selectedFlightNo || "EK0083";
   const effectiveUldId = uldId || runner.selectedUldId || "AKE-12345EK";
@@ -255,7 +262,9 @@ function ManualInjectPanel() {
       setStatusMessage(`Injected ${eventType}`);
     } catch (error) {
       setStatusMessage(
-        error instanceof Error ? error.message : `Failed to inject ${eventType}`,
+        error instanceof Error
+          ? error.message
+          : `Failed to inject ${eventType}`,
       );
     }
   }
@@ -276,7 +285,9 @@ function ManualInjectPanel() {
           <span className="text-muted-foreground">Event type</span>
           <select
             className="min-h-11 rounded-md border border-input bg-background px-3 text-base"
-            onChange={(event) => setEventType(event.target.value as InjectEventType)}
+            onChange={(event) =>
+              setEventType(event.target.value as InjectEventType)
+            }
             value={eventType}
           >
             {INJECT_EVENT_OPTIONS.map((option) => (
@@ -405,26 +416,32 @@ export default function DevControlPage() {
   const [loadedScenarios, setLoadedScenarios] = useState<Scenario[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const runnerState = useScenarioRunnerStore((state) => ({
-    activeScenarioId: state.activeScenarioId,
-    forceMockWeather: state.forceMockWeather,
-    scenarios: state.scenarios,
-    soundEnabled: state.soundEnabled,
-    statusMessage: state.statusMessage,
-    timeline: state.timeline,
-    waitState: state.waitState,
-    weather: state.weather,
-  }));
-  const clockState = useDemoClockStore((state) => ({
-    currentTickSec: state.currentTickSec,
-    playState: state.playState,
-    speedMultiplier: state.speedMultiplier,
-  }));
-  const resources = useResourcesStore((state) => ({
-    freeBuildupBays: state.freeBuildupBays,
-    freeCoolDollies: state.freeCoolDollies,
-    freeCoolRoomSlots: state.freeCoolRoomSlots,
-  }));
+  const runnerState = useScenarioRunnerStore(
+    useShallow((state) => ({
+      activeScenarioId: state.activeScenarioId,
+      forceMockWeather: state.forceMockWeather,
+      scenarios: state.scenarios,
+      soundEnabled: state.soundEnabled,
+      statusMessage: state.statusMessage,
+      timeline: state.timeline,
+      waitState: state.waitState,
+      weather: state.weather,
+    })),
+  );
+  const clockState = useDemoClockStore(
+    useShallow((state) => ({
+      currentTickSec: state.currentTickSec,
+      playState: state.playState,
+      speedMultiplier: state.speedMultiplier,
+    })),
+  );
+  const resources = useResourcesStore(
+    useShallow((state) => ({
+      freeBuildupBays: state.freeBuildupBays,
+      freeCoolDollies: state.freeCoolDollies,
+      freeCoolRoomSlots: state.freeCoolRoomSlots,
+    })),
+  );
 
   useEffect(() => {
     let active = true;
@@ -478,12 +495,16 @@ export default function DevControlPage() {
   const scenarios =
     loadedScenarios.length > 0 ? loadedScenarios : runnerState.scenarios;
   const activeScenario =
-    scenarios.find((scenario) => scenario.id === runnerState.activeScenarioId) ??
+    scenarios.find(
+      (scenario) => scenario.id === runnerState.activeScenarioId,
+    ) ??
     scenarios[0] ??
     null;
   const nextPendingEvent =
     runnerState.timeline.find(
-      (item) => item.status === "pending" && item.event.at_s >= clockState.currentTickSec,
+      (item) =>
+        item.status === "pending" &&
+        item.event.at_s >= clockState.currentTickSec,
     ) ?? null;
 
   return (
@@ -499,7 +520,10 @@ export default function DevControlPage() {
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button className="min-h-11" onClick={() => void demoScenarioRunner.play()}>
+                <Button
+                  className="min-h-11"
+                  onClick={() => void demoScenarioRunner.play()}
+                >
                   Play
                 </Button>
                 <Button
@@ -530,8 +554,12 @@ export default function DevControlPage() {
               <div className="rounded-lg border px-4 py-3">
                 <div className="text-sm text-muted-foreground">Status</div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">Tick {clockState.currentTickSec}</Badge>
-                  <Badge variant="outline">{describePlayState(clockState.playState)}</Badge>
+                  <Badge variant="secondary">
+                    Tick {clockState.currentTickSec}
+                  </Badge>
+                  <Badge variant="outline">
+                    {describePlayState(clockState.playState)}
+                  </Badge>
                   <Badge variant="outline">{clockState.speedMultiplier}x</Badge>
                 </div>
                 <div className="mt-2 text-sm text-muted-foreground">
@@ -568,7 +596,9 @@ export default function DevControlPage() {
                       {SPEED_OPTIONS.map((speed) => (
                         <DropdownMenuItem
                           key={speed}
-                          onClick={() => demoScenarioRunner.setSpeedMultiplier(speed)}
+                          onClick={() =>
+                            demoScenarioRunner.setSpeedMultiplier(speed)
+                          }
                         >
                           {speed}x
                         </DropdownMenuItem>
@@ -594,7 +624,10 @@ export default function DevControlPage() {
                 {activeScenario ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="min-h-11 justify-between" variant="outline">
+                      <Button
+                        className="min-h-11 justify-between"
+                        variant="outline"
+                      >
                         {activeScenario.name}
                       </Button>
                     </DropdownMenuTrigger>
@@ -605,7 +638,11 @@ export default function DevControlPage() {
                         {scenarios.map((scenario) => (
                           <DropdownMenuItem
                             key={scenario.id}
-                            onClick={() => void demoScenarioRunner.selectScenario(scenario.id)}
+                            onClick={() =>
+                              void demoScenarioRunner.selectScenario(
+                                scenario.id,
+                              )
+                            }
                           >
                             {scenario.name}
                           </DropdownMenuItem>
@@ -623,21 +660,30 @@ export default function DevControlPage() {
 
                 <div className="flex flex-col gap-2">
                   {scenarios.map((scenario) => {
-                    const isActive = scenario.id === runnerState.activeScenarioId;
+                    const isActive =
+                      scenario.id === runnerState.activeScenarioId;
 
                     return (
                       <button
                         key={scenario.id}
                         className={cn(
                           "flex min-h-11 flex-col items-start gap-2 rounded-lg border px-4 py-3 text-left",
-                          isActive ? "border-primary bg-accent" : "border-border",
+                          isActive
+                            ? "border-primary bg-accent"
+                            : "border-border",
                         )}
-                        onClick={() => void demoScenarioRunner.selectScenario(scenario.id)}
+                        onClick={() =>
+                          void demoScenarioRunner.selectScenario(scenario.id)
+                        }
                         type="button"
                       >
                         <div className="flex w-full items-start justify-between gap-2">
-                          <span className="text-base font-medium">{scenario.name}</span>
-                          {isActive ? <Badge variant="secondary">Active</Badge> : null}
+                          <span className="text-base font-medium">
+                            {scenario.name}
+                          </span>
+                          {isActive ? (
+                            <Badge variant="secondary">Active</Badge>
+                          ) : null}
                         </div>
                         <span className="text-sm text-muted-foreground">
                           {scenario.description}
@@ -652,7 +698,9 @@ export default function DevControlPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Toggles</CardTitle>
-                <CardDescription>Persisted locally for the demo surface.</CardDescription>
+                <CardDescription>
+                  Persisted locally for the demo surface.
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
@@ -692,20 +740,34 @@ export default function DevControlPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Resources</CardTitle>
-                <CardDescription>Live values from `resources-store`.</CardDescription>
+                <CardDescription>
+                  Live values from `resources-store`.
+                </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 <div className="rounded-lg border px-4 py-3">
-                  <div className="text-sm text-muted-foreground">Cool dollies</div>
-                  <div className="mt-1 text-xl font-semibold">{resources.freeCoolDollies}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Cool dollies
+                  </div>
+                  <div className="mt-1 text-xl font-semibold">
+                    {resources.freeCoolDollies}
+                  </div>
                 </div>
                 <div className="rounded-lg border px-4 py-3">
-                  <div className="text-sm text-muted-foreground">Cool room slots</div>
-                  <div className="mt-1 text-xl font-semibold">{resources.freeCoolRoomSlots}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Cool room slots
+                  </div>
+                  <div className="mt-1 text-xl font-semibold">
+                    {resources.freeCoolRoomSlots}
+                  </div>
                 </div>
                 <div className="rounded-lg border px-4 py-3">
-                  <div className="text-sm text-muted-foreground">Build-up bays</div>
-                  <div className="mt-1 text-xl font-semibold">{resources.freeBuildupBays}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Build-up bays
+                  </div>
+                  <div className="mt-1 text-xl font-semibold">
+                    {resources.freeBuildupBays}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -716,7 +778,8 @@ export default function DevControlPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Event Timeline</CardTitle>
                 <CardDescription>
-                  Current scenario queue with the next pending event highlighted.
+                  Current scenario queue with the next pending event
+                  highlighted.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
@@ -729,7 +792,8 @@ export default function DevControlPage() {
                         key={item.id}
                         className={cn(
                           "rounded-lg border px-4 py-3",
-                          item.status === "dispatched" && "border-primary/40 bg-accent/60",
+                          item.status === "dispatched" &&
+                            "border-primary/40 bg-accent/60",
                           item.status === "pending" && "border-border",
                           isUpcoming && "border-amber-500 bg-amber-500/10",
                         )}
@@ -739,13 +803,17 @@ export default function DevControlPage() {
                             <div className="text-sm text-muted-foreground">
                               t={item.event.at_s}s
                             </div>
-                            <div className="text-base font-medium">{item.event.type}</div>
+                            <div className="text-base font-medium">
+                              {item.event.type}
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               {loadScenarioSummary(item.event)}
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {isUpcoming ? <Badge variant="secondary">Upcoming</Badge> : null}
+                            {isUpcoming ? (
+                              <Badge variant="secondary">Upcoming</Badge>
+                            ) : null}
                             <Badge variant="outline">{item.status}</Badge>
                           </div>
                         </div>
@@ -770,13 +838,17 @@ export default function DevControlPage() {
                 </CardHeader>
                 <CardContent className="grid gap-3">
                   <div className="rounded-lg border px-4 py-3">
-                    <div className="text-sm text-muted-foreground">Scenario</div>
+                    <div className="text-sm text-muted-foreground">
+                      Scenario
+                    </div>
                     <div className="mt-1 text-base font-medium">
                       {activeScenario?.name ?? "Unavailable"}
                     </div>
                   </div>
                   <div className="rounded-lg border px-4 py-3">
-                    <div className="text-sm text-muted-foreground">Duration</div>
+                    <div className="text-sm text-muted-foreground">
+                      Duration
+                    </div>
                     <div className="mt-1 text-base font-medium">
                       {activeScenario?.duration_seconds === null
                         ? "Open-ended"
@@ -784,13 +856,19 @@ export default function DevControlPage() {
                     </div>
                   </div>
                   <div className="rounded-lg border px-4 py-3">
-                    <div className="text-sm text-muted-foreground">Next event</div>
+                    <div className="text-sm text-muted-foreground">
+                      Next event
+                    </div>
                     <div className="mt-1 text-base font-medium">
-                      {nextPendingEvent ? eventLabel(nextPendingEvent.event) : "None pending"}
+                      {nextPendingEvent
+                        ? eventLabel(nextPendingEvent.event)
+                        : "None pending"}
                     </div>
                   </div>
                   <div className="rounded-lg border px-4 py-3">
-                    <div className="text-sm text-muted-foreground">Wait state</div>
+                    <div className="text-sm text-muted-foreground">
+                      Wait state
+                    </div>
                     <div className="mt-1 text-base font-medium">
                       {runnerState.waitState
                         ? `${runnerState.waitState.expected} (${runnerState.waitState.fallbackAfterSec}s)`
