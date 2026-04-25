@@ -49,6 +49,8 @@ import {
 } from "@/lib/simulator/scenario-schema";
 import { startTrackerFeed } from "@/lib/simulator/tracker-feed";
 import { auditDb } from "@/lib/persistence/audit-db";
+import { useUldStore } from "@/lib/stores/uld-store";
+import { useInventoryStore } from "@/lib/stores/inventory-store";
 import {
   toIRI,
   type Measurement,
@@ -757,6 +759,10 @@ function getStdLabel(flight: BuildUpFlight | null): string {
 
 export function BuildUpCanvas({ flightNo, uldId }: Props) {
   const router = useRouter();
+  const addBuiltUld = useUldStore((state) => state.addBuiltUld);
+  const releaseFromBuildUp = useInventoryStore(
+    (state) => state.releaseFromBuildUp,
+  );
   const [dataState, setDataState] = useState<DataState>({ status: "loading" });
   const [weather, setWeather] = useState<CanonicalWeather | null>(null);
   const [weatherError, setWeatherError] = useState<string | null>(null);
@@ -1011,6 +1017,15 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
       await auditDb.loadings.put(result.loading);
       await auditDb.events.put(result.event);
 
+      addBuiltUld(
+        {
+          ...uld,
+          sealNumber: sealNumber.trim(),
+        },
+        contents,
+      );
+      releaseFromBuildUp(uld["@id"]);
+
       startMeasurementStreaming(uld.uldSerialNumber, flight.flightNumber);
       router.push(`/flight/${flight.flightNumber}`);
     } catch (error) {
@@ -1088,170 +1103,88 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
           </Button>
         }
       />
-      <main className="grid w-full gap-5 px-4 py-5 md:px-6">
-        <MissionHero
-          eyebrow="Build-up canvas"
-          title={`Building ${uld.uldSerialNumber}`}
-          description={`${getLocationCode(String(flight.departureLocation))} to ${getLocationCode(
-            String(flight.arrivalLocation),
-          )} on ${flight.flightNumber} · ${getStdLabel(flight)}`}
-        >
-          <div className="grid gap-3 md:grid-cols-3">
-            <MetricTile
-              label="ULD"
-              value={uld.uldTypeCode}
-              meta={`${uld.ownerCode} · ${uld.serviceabilityCode}`}
-            />
-            <MetricTile
-              label="Pre-cool"
-              value={
-                typeof uld.lastKnownInternalC === "number"
-                  ? `${uld.lastKnownInternalC.toFixed(1)}°C`
-                  : "Pending"
-              }
-              meta="Internal sensor"
-            />
-            <MetricTile
-              label="Projected ambient"
-              value={weather ? weather.airport : "Loading"}
-              meta={
-                weather
-                  ? `Next ${Math.min(weather.hourly.length, 24)}h · ${weather.source}`
-                  : "Weather feed"
-              }
-            />
-          </div>
-        </MissionHero>
+      <main className="grid w-full gap-4 px-4 py-4 md:px-6 xl:h-[calc(100dvh-4rem)] xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] xl:overflow-hidden">
+        <section className="grid min-h-0 gap-4 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
+          <MissionHero
+            className="min-h-0"
+            eyebrow="Build-up canvas"
+            title={`Building ${uld.uldSerialNumber}`}
+            description={`${getLocationCode(String(flight.departureLocation))} to ${getLocationCode(
+              String(flight.arrivalLocation),
+            )} on ${flight.flightNumber} · ${getStdLabel(flight)}`}
+          >
+            <div className="grid gap-3 md:grid-cols-3">
+              <MetricTile
+                label="ULD"
+                value={uld.uldTypeCode}
+                meta={`${uld.ownerCode} · ${uld.serviceabilityCode}`}
+              />
+              <MetricTile
+                label="Pre-cool"
+                value={
+                  typeof uld.lastKnownInternalC === "number"
+                    ? `${uld.lastKnownInternalC.toFixed(1)}°C`
+                    : "Pending"
+                }
+                meta="Internal sensor"
+              />
+              <MetricTile
+                label="Projected ambient"
+                value={weather ? weather.airport : "Loading"}
+                meta={
+                  weather
+                    ? `Next ${Math.min(weather.hourly.length, 24)}h · ${weather.source}`
+                    : "Weather feed"
+                }
+              />
+            </div>
+          </MissionHero>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(280px,0.86fr)_minmax(360px,1.2fr)_minmax(320px,0.94fr)]">
-          <Card className="mission-panel h-full border-border/80">
-            <CardHeader className="gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <CardTitle className="text-xl">Manifest</CardTitle>
-                  <CardDescription className="text-sm md:text-base">
-                    Drag AWBs into the ULD contents area.
-                  </CardDescription>
-                </div>
-                <Badge variant="secondary" className="min-h-7">
-                  {manifest.length} AWBs
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {dropRejection ? (
-                <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
-                  <div className="font-medium">
-                    {dropRejection.awbLabel} rejected
+          <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(280px,0.86fr)_minmax(360px,1.2fr)] xl:overflow-hidden">
+            <Card className="mission-panel flex h-full min-h-0 flex-col overflow-hidden border-border/80">
+              <CardHeader className="gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    <CardTitle className="text-xl">Manifest</CardTitle>
+                    <CardDescription className="text-sm md:text-base">
+                      Drag AWBs into the ULD contents area.
+                    </CardDescription>
                   </div>
-                  <div className="mt-1 flex flex-col gap-1 text-red-200">
-                    {dropRejection.reasons.map((reason) => (
-                      <span key={reason}>{reason}</span>
-                    ))}
-                  </div>
+                  <Badge variant="secondary" className="min-h-7">
+                    {manifest.length} AWBs
+                  </Badge>
                 </div>
-              ) : null}
-
-              {manifest.map((waybill) => {
-                const disabled =
-                  loadedWaybillIds.has(waybill["@id"]) || checkingDg;
-                const totalAwbWeight = totalWeightKg([waybill]);
-
-                return (
-                  <div
-                    key={waybill["@id"]}
-                    draggable={!disabled}
-                    onDragStart={(event) => handleDragStart(waybill, event)}
-                    className={cn(
-                      "border border-border/80 bg-muted/30 p-4",
-                      disabled && "opacity-50",
-                      !disabled && "cursor-grab active:cursor-grabbing",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-base font-semibold">
-                          {getWaybillLabel(waybill)}
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {waybill.description ?? "No shipment description"}
-                        </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto">
+                <div className="flex flex-col gap-3">
+                  {dropRejection ? (
+                    <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
+                      <div className="font-medium">
+                        {dropRejection.awbLabel} rejected
                       </div>
-                      <Badge variant="outline" className="min-h-7 shrink-0">
-                        {waybill.shc}
-                      </Badge>
+                      <div className="mt-1 flex flex-col gap-1 text-red-200">
+                        {dropRejection.reasons.map((reason) => (
+                          <span key={reason}>{reason}</span>
+                        ))}
+                      </div>
                     </div>
+                  ) : null}
 
-                    <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
-                      <span>{waybill.pieces.length} pcs</span>
-                      <span>{totalAwbWeight.toFixed(0)} kg</span>
-                      {waybill.consignor ? (
-                        <span>{waybill.consignor}</span>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                  {manifest.map((waybill) => {
+                    const disabled =
+                      loadedWaybillIds.has(waybill["@id"]) || checkingDg;
+                    const totalAwbWeight = totalWeightKg([waybill]);
 
-          <Card className="mission-panel h-full border-border/80">
-            <CardHeader className="gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <CardTitle className="text-xl">ULD contents</CardTitle>
-                  <CardDescription className="text-sm md:text-base">
-                    Native HTML5 drag and drop with immediate rollback on DG
-                    rejection.
-                  </CardDescription>
-                </div>
-                <Badge variant="secondary" className="min-h-7">
-                  {contents.length} AWBs loaded
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragActive(true);
-                }}
-                onDragLeave={() => setDragActive(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setDragActive(false);
-
-                  const raw =
-                    event.dataTransfer.getData("application/json") ||
-                    event.dataTransfer.getData("text/plain");
-                  if (!raw) {
-                    return;
-                  }
-
-                  try {
-                    const payload = JSON.parse(raw) as DragPayload;
-                    if (typeof payload.waybillId === "string") {
-                      void handleDrop(payload);
-                    }
-                  } catch (error) {
-                    console.error("Failed to parse drag payload", error);
-                  }
-                }}
-                className={cn(
-                  "min-h-96 border-2 border-dashed border-border bg-muted/30 p-4 transition-colors",
-                  dragActive && "border-primary bg-accent/20",
-                )}
-              >
-                {contents.length === 0 ? (
-                  <div className="flex min-h-[22rem] items-center justify-center text-center text-base text-muted-foreground">
-                    Drop AWB cards here to build the ULD.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {contents.map((waybill) => (
+                    return (
                       <div
                         key={waybill["@id"]}
-                        className="border border-border/80 bg-background/70 p-4"
+                        draggable={!disabled}
+                        onDragStart={(event) => handleDragStart(waybill, event)}
+                        className={cn(
+                          "border border-border/80 bg-muted/30 p-4",
+                          disabled && "opacity-50",
+                          !disabled && "cursor-grab active:cursor-grabbing",
+                        )}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
@@ -1262,165 +1195,255 @@ export function BuildUpCanvas({ flightNo, uldId }: Props) {
                               {waybill.description ?? "No shipment description"}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="min-h-7">
-                              {waybill.shc}
-                            </Badge>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="size-11"
-                              onClick={() =>
-                                handleRemoveWaybill(waybill["@id"])
-                              }
-                              aria-label={`Remove ${getWaybillLabel(waybill)}`}
-                            >
-                              <Trash2 />
-                            </Button>
-                          </div>
+                          <Badge variant="outline" className="min-h-7 shrink-0">
+                            {waybill.shc}
+                          </Badge>
                         </div>
+
                         <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
                           <span>{waybill.pieces.length} pcs</span>
-                          <span>{totalWeightKg([waybill]).toFixed(0)} kg</span>
+                          <span>{totalAwbWeight.toFixed(0)} kg</span>
                           {waybill.consignor ? (
                             <span>{waybill.consignor}</span>
                           ) : null}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="border border-border/70 bg-muted/30 px-4 py-3">
-                  <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Total weight
-                  </div>
-                  <div className="mt-2 text-lg font-semibold">
-                    {totalWeightKg(contents).toFixed(0)} kg
-                  </div>
+                    );
+                  })}
                 </div>
-                <div className="border border-border/70 bg-muted/30 px-4 py-3">
-                  <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Total pieces
-                  </div>
-                  <div className="mt-2 text-lg font-semibold">
-                    {validatedPieces.length}
-                  </div>
-                </div>
-                <div className="border border-border/70 bg-muted/30 px-4 py-3">
-                  <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Ambient source
-                  </div>
-                  <div className="mt-2 text-lg font-semibold">
-                    {weather?.source ?? "pending"}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="flex flex-col gap-4">
-            <DgCheckRow
-              checking={checkingDg}
-              pieces={validatedPieces}
-              rejection={dropRejection}
-              results={dgResults}
-            />
-            <ShcCompatRow
-              conflicts={shcResult.conflicts}
-              hasPieces={validatedPieces.length > 0}
-              ok={shcResult.ok}
-            />
-            <BudgetPreflightRow
-              forecast={budgetForecast}
-              hasPieces={validatedPieces.length > 0}
-            />
-
-            <Card className="mission-panel border-border/80">
+            <Card className="mission-panel flex h-full min-h-0 flex-col overflow-hidden border-border/80">
               <CardHeader className="gap-3">
-                <div className="flex items-center gap-3">
-                  <PackageCheck className="text-primary" />
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <CardTitle className="text-xl">Seal and sign off</CardTitle>
+                    <CardTitle className="text-xl">ULD contents</CardTitle>
                     <CardDescription className="text-sm md:text-base">
-                      Sign-off stays locked while any validation card is red.
+                      Native HTML5 drag and drop with immediate rollback on DG
+                      rejection.
                     </CardDescription>
                   </div>
+                  <Badge variant="secondary" className="min-h-7">
+                    {contents.length} AWBs loaded
+                  </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="seal-number"
-                    className="text-sm text-muted-foreground"
-                  >
-                    Seal number
-                  </label>
-                  <Input
-                    id="seal-number"
-                    value={sealNumber}
-                    onChange={(event) => setSealNumber(event.target.value)}
-                    placeholder="SEAL-2026-001"
-                    className="min-h-11"
-                  />
-                </div>
+              <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
+                <div
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragActive(true);
+                  }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setDragActive(false);
 
-                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
-                    <PlaneTakeoff className="size-4" />
-                    {getLocationCode(String(flight.departureLocation))}
-                  </span>
-                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
-                    <PlaneLanding className="size-4" />
-                    {getLocationCode(String(flight.arrivalLocation))}
-                  </span>
-                  <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
-                    <ScanLine className="size-4" />
-                    {uld.uldSerialNumber}
-                  </span>
-                </div>
+                    const raw =
+                      event.dataTransfer.getData("application/json") ||
+                      event.dataTransfer.getData("text/plain");
+                    if (!raw) {
+                      return;
+                    }
 
-                {weatherError ? (
-                  <div className="border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-                    {weatherError}
-                  </div>
-                ) : null}
-
-                {submitError ? (
-                  <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
-                    {submitError}
-                  </div>
-                ) : null}
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 w-full sm:w-auto"
-                  onClick={() => router.push(`/flight/${flight.flightNumber}`)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  className="min-h-11 w-full sm:w-auto"
-                  disabled={signOffDisabled}
-                  onClick={() => void handleSignOff()}
-                >
-                  {signingOff ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <PackageCheck />
+                    try {
+                      const payload = JSON.parse(raw) as DragPayload;
+                      if (typeof payload.waybillId === "string") {
+                        void handleDrop(payload);
+                      }
+                    } catch (error) {
+                      console.error("Failed to parse drag payload", error);
+                    }
+                  }}
+                  className={cn(
+                    "min-h-72 flex-1 overflow-y-auto border-2 border-dashed border-border bg-muted/30 p-4 transition-colors",
+                    dragActive && "border-primary bg-accent/20",
                   )}
-                  Sign off &amp; seal
-                </Button>
-              </CardFooter>
+                >
+                  {contents.length === 0 ? (
+                    <div className="flex min-h-[22rem] items-center justify-center text-center text-base text-muted-foreground">
+                      Drop AWB cards here to build the ULD.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {contents.map((waybill) => (
+                        <div
+                          key={waybill["@id"]}
+                          className="border border-border/80 bg-background/70 p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-base font-semibold">
+                                {getWaybillLabel(waybill)}
+                              </div>
+                              <div className="mt-1 text-sm text-muted-foreground">
+                                {waybill.description ??
+                                  "No shipment description"}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="min-h-7">
+                                {waybill.shc}
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="size-11"
+                                onClick={() =>
+                                  handleRemoveWaybill(waybill["@id"])
+                                }
+                                aria-label={`Remove ${getWaybillLabel(waybill)}`}
+                              >
+                                <Trash2 />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                            <span>{waybill.pieces.length} pcs</span>
+                            <span>
+                              {totalWeightKg([waybill]).toFixed(0)} kg
+                            </span>
+                            {waybill.consignor ? (
+                              <span>{waybill.consignor}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="border border-border/70 bg-muted/30 px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      Total weight
+                    </div>
+                    <div className="mt-2 text-lg font-semibold">
+                      {totalWeightKg(contents).toFixed(0)} kg
+                    </div>
+                  </div>
+                  <div className="border border-border/70 bg-muted/30 px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      Total pieces
+                    </div>
+                    <div className="mt-2 text-lg font-semibold">
+                      {validatedPieces.length}
+                    </div>
+                  </div>
+                  <div className="border border-border/70 bg-muted/30 px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      Ambient source
+                    </div>
+                    <div className="mt-2 text-lg font-semibold">
+                      {weather?.source ?? "pending"}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
-        </div>
+        </section>
+
+        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto">
+          <Card className="mission-panel border-border/80">
+            <CardHeader className="gap-3">
+              <div className="flex items-center gap-3">
+                <PackageCheck className="text-primary" />
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-xl">Seal and sign off</CardTitle>
+                  <CardDescription className="text-sm md:text-base">
+                    Sign-off stays locked while any validation card is red.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="seal-number"
+                  className="text-sm text-muted-foreground"
+                >
+                  Seal number
+                </label>
+                <Input
+                  id="seal-number"
+                  value={sealNumber}
+                  onChange={(event) => setSealNumber(event.target.value)}
+                  placeholder="SEAL-2026-001"
+                  className="min-h-11"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
+                  <PlaneTakeoff className="size-4" />
+                  {getLocationCode(String(flight.departureLocation))}
+                </span>
+                <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
+                  <PlaneLanding className="size-4" />
+                  {getLocationCode(String(flight.arrivalLocation))}
+                </span>
+                <span className="inline-flex min-h-11 items-center gap-2 border border-border/70 bg-muted/30 px-3 py-2">
+                  <ScanLine className="size-4" />
+                  {uld.uldSerialNumber}
+                </span>
+              </div>
+
+              {weatherError ? (
+                <div className="border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+                  {weatherError}
+                </div>
+              ) : null}
+
+              {submitError ? (
+                <div className="border border-red-500/50 bg-red-500/10 px-3 py-3 text-sm text-red-100">
+                  {submitError}
+                </div>
+              ) : null}
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full sm:w-auto"
+                onClick={() => router.push(`/flight/${flight.flightNumber}`)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11 w-full sm:w-auto"
+                disabled={signOffDisabled}
+                onClick={() => void handleSignOff()}
+              >
+                {signingOff ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <PackageCheck />
+                )}
+                Sign off &amp; seal
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <DgCheckRow
+            checking={checkingDg}
+            rejection={dropRejection}
+            results={dgResults}
+            waybills={contents}
+          />
+          <ShcCompatRow
+            conflicts={shcResult.conflicts}
+            hasPieces={validatedPieces.length > 0}
+            ok={shcResult.ok}
+          />
+          <BudgetPreflightRow
+            forecast={budgetForecast}
+            hasPieces={validatedPieces.length > 0}
+          />
+        </aside>
       </main>
     </MissionShell>
   );

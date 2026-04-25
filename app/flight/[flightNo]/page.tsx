@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
+import { PackagePlus, Wand2 } from "lucide-react";
+import uldSpecsData from "@/public/config/uld-specs.json";
 import { AwbManifestPanel } from "@/components/awb-manifest-panel";
 import {
   BuiltUldStrip,
@@ -10,14 +12,18 @@ import {
 } from "@/components/built-uld-strip";
 import {
   MetricTile,
-  MissionHero,
   MissionShell,
   MissionTopBar,
   StatusRail,
 } from "@/components/mission-control";
-import { UldInventoryPanel } from "@/components/uld-inventory-panel";
+import { UldPickerSheet } from "@/components/uld-picker-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  autoBuildFlight,
+  type AutoBuildUldSpec,
+} from "@/lib/build-up/auto-build";
 import type {
   ULD,
   TransportMovement,
@@ -28,12 +34,16 @@ import {
   type InventoryUld,
 } from "@/lib/stores/inventory-store";
 import { useUldStore } from "@/lib/stores/uld-store";
+import { auditDb } from "@/lib/persistence/audit-db";
+import { cn } from "@/lib/utils";
 
 declare module "react" {
   interface Attributes {
     indicatorClassName?: string;
   }
 }
+
+const uldSpecs = uldSpecsData as Record<string, AutoBuildUldSpec>;
 
 type ApiDataResponse<T> = {
   data: T;
@@ -109,6 +119,18 @@ function isEligibleInventoryUld(uld: InventoryUld) {
   return uld.serviceabilityCode === "SER" && !uld.damageFlag;
 }
 
+function getShipmentMix(shipments: Waybill[]): string {
+  const shcCodes = Array.from(
+    new Set(shipments.map((shipment) => shipment.shc).filter(Boolean)),
+  ).sort();
+
+  if (shcCodes.length === 0) {
+    return "No SHC";
+  }
+
+  return shcCodes.join(" / ");
+}
+
 async function readApiData<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
@@ -129,11 +151,14 @@ export default function FlightWorkspacePage() {
   const markInBuildUp = useInventoryStore((state) => state.markInBuildUp);
   const builtUlds = useUldStore((state) => state.ulds);
   const builtContents = useUldStore((state) => state.contents);
+  const addBuiltUld = useUldStore((state) => state.addBuiltUld);
 
   const [flight, setFlight] = useState<TransportMovement | null>(null);
   const [shipments, setShipments] = useState<Waybill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [autoBuildMessage, setAutoBuildMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -155,6 +180,11 @@ export default function FlightWorkspacePage() {
           return;
         }
 
+        const loadings = await auditDb.loadings.toArray().catch(() => []);
+        if (isCancelled) {
+          return;
+        }
+
         startTransition(() => {
           setFlight(
             flightsData.find(
@@ -163,6 +193,37 @@ export default function FlightWorkspacePage() {
           );
           setShipments(shipmentsData);
           hydrateInventory(inventoryData);
+
+          const inventoryById = new Map(
+            inventoryData.map((u) => [u["@id"], u]),
+          );
+          const shipmentsById = new Map(
+            shipmentsData.map((s) => [s["@id"], s]),
+          );
+          for (const loading of loadings) {
+            const uldIri = loading.loadedUnits?.[0];
+            if (!uldIri) continue;
+            const uld = inventoryById.get(uldIri);
+            if (!uld) continue;
+            const waybillIds: Waybill["@id"][] = [];
+            const seen = new Set<string>();
+            for (const piece of loading.loadedPieces ?? []) {
+              const shipment = shipmentsData.find((s) =>
+                s.pieces?.some((p) => p["@id"] === piece),
+              );
+              if (!shipment) continue;
+              if (seen.has(shipment["@id"])) continue;
+              seen.add(shipment["@id"]);
+              waybillIds.push(shipment["@id"]);
+            }
+            const contents: Waybill[] = [];
+            for (const id of waybillIds) {
+              const wb = shipmentsById.get(id);
+              if (wb) contents.push(wb);
+            }
+            addBuiltUld(uld, contents);
+          }
+
           setIsLoading(false);
         });
       } catch (loadError) {
@@ -183,13 +244,30 @@ export default function FlightWorkspacePage() {
     return () => {
       isCancelled = true;
     };
-  }, [flightNo, hydrateInventory]);
+  }, [flightNo, hydrateInventory, addBuiltUld]);
 
   const builtEntries = buildWorkspaceEntries(builtUlds, builtContents);
   const assignedUldByWaybill = buildAssignedUldMap(builtUlds, builtContents);
+  const assignedWaybillIds = useMemo(
+    () => new Set(Object.keys(assignedUldByWaybill)),
+    [assignedUldByWaybill],
+  );
+  const unassignedShipments = shipments.filter(
+    (shipment) => !assignedWaybillIds.has(shipment["@id"]),
+  );
   const availableInventoryCount = inventory.filter(
     (uld) => isEligibleInventoryUld(uld) && uld.buildUpStatus !== "in-build-up",
   ).length;
+  const autoBuildPreview = useMemo(
+    () =>
+      autoBuildFlight({
+        assignedWaybillIds,
+        inventory,
+        shipments,
+        specs: uldSpecs,
+      }),
+    [assignedWaybillIds, inventory, shipments],
+  );
 
   function openBuildUp(uld: InventoryUld) {
     if (!isEligibleInventoryUld(uld)) {
@@ -206,16 +284,34 @@ export default function FlightWorkspacePage() {
   }
 
   function handleBuildNewUld() {
-    const nextAvailable = inventory.find(
-      (uld) =>
-        isEligibleInventoryUld(uld) && uld.buildUpStatus !== "in-build-up",
-    );
+    setPickerOpen(true);
+  }
 
-    if (!nextAvailable) {
+  function handleAutoBuild() {
+    const result = autoBuildFlight({
+      assignedWaybillIds,
+      inventory,
+      shipments,
+      specs: uldSpecs,
+    });
+
+    if (result.plans.length === 0) {
+      setAutoBuildMessage("No compatible ready ULDs for remaining AWBs.");
       return;
     }
 
-    openBuildUp(nextAvailable);
+    for (const plan of result.plans) {
+      addBuiltUld(plan.uld, plan.shipments);
+      markInBuildUp(plan.uld["@id"]);
+    }
+
+    const awbCount = result.plans.reduce(
+      (sum, plan) => sum + plan.shipments.length,
+      0,
+    );
+    setAutoBuildMessage(
+      `${result.plans.length} ULDs built for ${awbCount} AWBs. ${result.unassigned.length} AWBs remain unassigned.`,
+    );
   }
 
   function openAssignedUld(uldSerialNumber: string) {
@@ -246,41 +342,65 @@ export default function FlightWorkspacePage() {
         }
       />
 
-      <main className="grid w-full gap-5 px-4 py-5 sm:px-6 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
-        <section className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-          <MissionHero
-            eyebrow="Load planning console"
-            title={flightNo}
-            description={`${headerRoute} mission workspace. Build ULDs from manifest demand, available equipment, and cold-chain readiness.`}
-            actions={
+      <main className="grid h-[calc(100dvh-4rem)] w-full grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden px-4 py-4 sm:px-6">
+        <Card className="mission-panel border-border/80">
+          <CardContent className="grid gap-3 p-4 lg:grid-cols-[minmax(220px,1fr)_repeat(5,minmax(120px,0.58fr))_auto]">
+            <div className="flex min-w-0 flex-col justify-center gap-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Flight build-up
+              </div>
+              <div className="flex min-w-0 flex-wrap items-end gap-3">
+                <h1 className="truncate text-3xl font-bold">{flightNo}</h1>
+                <Badge variant="secondary">{headerRoute}</Badge>
+              </div>
+            </div>
+            <MetricTile
+              label="ETD"
+              value={formatFlightTime(flight)}
+              meta="Scheduled push"
+            />
+            <MetricTile
+              label="AWBs"
+              value={shipments.length}
+              meta={getShipmentMix(shipments)}
+            />
+            <MetricTile
+              label="Open"
+              value={unassignedShipments.length}
+              meta="Unassigned AWBs"
+            />
+            <MetricTile
+              label="Built"
+              value={builtEntries.length}
+              meta="ULDs signed off"
+            />
+            <MetricTile
+              label="Ready ULDs"
+              value={availableInventoryCount}
+              meta={`${autoBuildPreview.plans.length} auto plan`}
+            />
+            {/* <div className="flex flex-col justify-center gap-2">
               <Button
                 disabled={availableInventoryCount === 0}
                 onClick={handleBuildNewUld}
+                variant="outline"
               >
-                + Build new ULD
+                <PackagePlus data-icon="inline-start" />
+                Pick ULD
               </Button>
-            }
-          >
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MetricTile
-                label="Manifest"
-                value={shipments.length}
-                meta="AWBs queued"
-              />
-              <MetricTile
-                label="Inventory"
-                value={availableInventoryCount}
-                meta="Ready ULDs"
-              />
-              <MetricTile
-                label="Built"
-                value={builtEntries.length}
-                meta="ULDs signed off"
-              />
-            </div>
-          </MissionHero>
+              <Button
+                disabled={autoBuildPreview.plans.length === 0}
+                onClick={handleAutoBuild}
+              >
+                <Wand2 data-icon="inline-start" />
+                Auto build
+              </Button>
+            </div> */}
+          </CardContent>
+        </Card>
 
-          <div className="grid min-h-[560px] gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="grid min-h-0 gap-4 overflow-hidden xl:grid-cols-[minmax(320px,0.82fr)_minmax(460px,1.22fr)_300px]">
+          <section className="grid min-h-0 gap-4 overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:col-span-2">
             <div className="min-h-0">
               <AwbManifestPanel
                 shipments={shipments}
@@ -298,32 +418,68 @@ export default function FlightWorkspacePage() {
                 }
               />
             </div>
-          </div>
-        </section>
+          </section>
 
-        <StatusRail className="min-h-0 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)]">
-          <MetricTile label="Route" value={headerRoute} meta="Airport pair" />
-          <MetricTile
-            label="ETD"
-            value={formatFlightTime(flight)}
-            meta="Scheduled push"
-          />
-          <MetricTile
-            label="AWBs"
-            value={shipments.length}
-            meta="Manifest demand"
-          />
-          <div className="min-h-0 flex-1">
-            <UldInventoryPanel
-              flightNo={flightNo}
-              inventory={inventory}
-              isLoading={isLoading}
-              onBuildNewUld={handleBuildNewUld}
-              onOpenBuildUp={openBuildUp}
+          <StatusRail className="min-h-0 overflow-y-auto">
+            <div className="grid gap-2">
+              <Button
+                disabled={autoBuildPreview.plans.length === 0}
+                onClick={handleAutoBuild}
+              >
+                <Wand2 data-icon="inline-start" />
+                Auto build compatible AWBs
+              </Button>
+              <Button
+                disabled={availableInventoryCount === 0}
+                onClick={handleBuildNewUld}
+                variant="outline"
+              >
+                <PackagePlus data-icon="inline-start" />
+                Open ULD picker
+              </Button>
+            </div>
+            <MetricTile label="Route" value={headerRoute} meta="Airport pair" />
+            <MetricTile
+              label="Compatibility"
+              value={autoBuildPreview.plans.length}
+              meta="ULDs in auto plan"
             />
-          </div>
-        </StatusRail>
+            <MetricTile
+              label="Assignable"
+              value={autoBuildPreview.plans.reduce(
+                (sum, plan) => sum + plan.shipments.length,
+                0,
+              )}
+              meta="AWBs matched"
+            />
+            <MetricTile
+              label="Remainder"
+              value={autoBuildPreview.unassigned.length}
+              meta="Needs manual review"
+            />
+
+            <div
+              className={cn(
+                "border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground",
+                autoBuildMessage && "border-primary/40 bg-primary/5",
+              )}
+            >
+              {autoBuildMessage ??
+                "Auto build groups AWBs by SHC support, ULD product capability, type requirements, and conservative weight limits."}
+            </div>
+          </StatusRail>
+        </div>
       </main>
+
+      <UldPickerSheet
+        flightNo={flightNo}
+        inventory={inventory}
+        isLoading={isLoading}
+        onOpenBuildUp={openBuildUp}
+        onOpenChange={setPickerOpen}
+        open={pickerOpen}
+        specs={uldSpecs}
+      />
     </MissionShell>
   );
 }
