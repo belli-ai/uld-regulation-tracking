@@ -268,6 +268,8 @@ export async function recalculateAll(
         weather: cachedWeather,
       });
 
+      const position = derivePosition(measurements, inventory, polygons);
+
       snapshots.push({
         ambientC: thermal.ambientC,
         breachAtMs: thermal.breachAt ? thermal.breachAt.getTime() : null,
@@ -283,6 +285,11 @@ export async function recalculateAll(
         stage: thermal.stage,
         uldId,
         uldProductCode: inventory.uldProductCode ?? null,
+        latestLat: position.lat,
+        latestLon: position.lon,
+        zoneName: position.zoneName,
+        trackerSource: position.source,
+        lastMeasurementMs: position.lastMeasurementMs,
         updatedMs: nowMs,
       });
     }
@@ -312,4 +319,94 @@ export function pushMeasurementForRecalc(
 
 function readWindowMeasurements(uldId: string): Measurement[] {
   return measurementWindow[uldId] ?? [];
+}
+
+type PositionSnapshot = {
+  lat: number | null;
+  lon: number | null;
+  zoneName: string | null;
+  source: "measured" | "inferred";
+  lastMeasurementMs: number | null;
+};
+
+function parseZoneFromIri(value: string | undefined): string | null {
+  if (!value) return null;
+  const tail = value.split(":").at(-1) ?? value;
+  const dashIdx = tail.indexOf("-");
+  return dashIdx >= 0 ? tail.slice(dashIdx + 1) : tail;
+}
+
+function findGpsMeasurement(
+  measurements: Measurement[],
+): Measurement | undefined {
+  for (let i = measurements.length - 1; i >= 0; i -= 1) {
+    const m = measurements[i];
+    const geo = (m as { recordedGeolocation?: unknown }).recordedGeolocation;
+    if (
+      geo &&
+      typeof (geo as { latitude?: unknown }).latitude === "number" &&
+      typeof (geo as { longitude?: unknown }).longitude === "number"
+    ) {
+      return m;
+    }
+  }
+  return undefined;
+}
+
+function zoneCenterFromPolygons(
+  polygons: AirportPolygons | null,
+  zoneName: string | null,
+): { lat: number; lon: number } | null {
+  if (!polygons || !zoneName) return null;
+  const zones = (polygons as unknown as { zones?: unknown }).zones;
+  if (!Array.isArray(zones)) return null;
+  for (const zone of zones) {
+    const z = zone as {
+      name?: unknown;
+      id?: unknown;
+      center?: { lat?: unknown; lon?: unknown };
+    };
+    const id = typeof z.id === "string" ? z.id : null;
+    const name = typeof z.name === "string" ? z.name : null;
+    if (id !== zoneName && name !== zoneName) continue;
+    const lat = z.center?.lat;
+    const lon = z.center?.lon;
+    if (typeof lat === "number" && typeof lon === "number") {
+      return { lat, lon };
+    }
+  }
+  return null;
+}
+
+function derivePosition(
+  measurements: Measurement[],
+  inventory: InventoryRecord,
+  polygons: AirportPolygons | null,
+): PositionSnapshot {
+  const gps = findGpsMeasurement(measurements);
+  if (gps) {
+    const geo = (
+      gps as {
+        recordedGeolocation?: { latitude?: number; longitude?: number };
+      }
+    ).recordedGeolocation;
+    const ts = Date.parse(gps.measurementTimestamp);
+    return {
+      lat: geo?.latitude ?? null,
+      lon: geo?.longitude ?? null,
+      zoneName: parseZoneFromIri(inventory.lastKnownLocation),
+      source: "measured",
+      lastMeasurementMs: Number.isFinite(ts) ? ts : null,
+    };
+  }
+
+  const zoneName = parseZoneFromIri(inventory.lastKnownLocation);
+  const center = zoneCenterFromPolygons(polygons, zoneName);
+  return {
+    lat: center?.lat ?? null,
+    lon: center?.lon ?? null,
+    zoneName,
+    source: "inferred",
+    lastMeasurementMs: null,
+  };
 }

@@ -26,6 +26,13 @@ export type UldThermalSnapshot = {
   predictedBreachMinutes: number | null;
   shcCode: string;
   uldProductCode: string | null;
+  // Position + provenance (persisted so /uld/[id] map and supervisor row
+  // both read the same coordinates as the recalculator computed.)
+  latestLat: number | null;
+  latestLon: number | null;
+  zoneName: string | null;
+  trackerSource: "measured" | "inferred";
+  lastMeasurementMs: number | null;
   updatedMs: number;
 };
 
@@ -49,6 +56,13 @@ export class AuditDB extends Dexie {
       actions: ", performedAt, actionStartTime, servedActivity",
       loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
       uldStatus: "uldId, stage, budgetTone, updatedMs",
+    });
+
+    this.version(4).stores({
+      events: ", eventFor, eventDate, eventCode",
+      actions: ", performedAt, actionStartTime, servedActivity",
+      loadings: ", actionStartTime, *loadedUnits, *loadedPieces",
+      uldStatus: "uldId, stage, budgetTone, zoneName, updatedMs",
     });
 
     this.events = this.table("events");
