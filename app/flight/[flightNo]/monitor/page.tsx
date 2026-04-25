@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   ArrowLeft,
   Box,
@@ -45,12 +46,19 @@ import type {
   Loading,
   LogisticsAction,
   LogisticsEvent,
+  TemperatureInstructions,
   TransportMovement,
   ULD,
   Waybill,
 } from "@/lib/ontology/one-record";
 import { toIRI } from "@/lib/ontology/one-record";
-import { auditDb } from "@/lib/persistence/audit-db";
+import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
+import shcConfigData from "@/public/config/shc.json";
+import {
+  computeThermalStatus,
+  type ThermalStage,
+  type ThermalStatus,
+} from "@/lib/physics/thermal-status";
 import { useUldStore } from "@/lib/stores/uld-store";
 
 type MonitorStage =
@@ -77,12 +85,16 @@ type MonitorRow = {
   awbCount: number;
   budgetH: number;
   budgetTone: "green" | "yellow" | "red";
+  budgetPercent: number;
   internalC: number;
+  ambientC: number;
+  effectiveAmbientC: number;
   locationLabel: string;
   shcCodes: string[];
   stage: MonitorStage;
   stageLabel: string;
   trackerLabel: string;
+  excursion: ThermalStatus["excursionEventCode"];
   uld: InventoryUld;
 };
 
@@ -100,49 +112,89 @@ const DUBAI_TIME_ZONE = "Asia/Dubai";
 const STAGE_META: Record<
   MonitorStage,
   {
-    budgetH: number;
-    budgetTone: "green" | "yellow" | "red";
     eventCode: StageEventCode;
     label: string;
     location: string;
   }
 > = {
   "in-warehouse": {
-    budgetH: 11.2,
-    budgetTone: "green",
     eventCode: "STATE_WAREHOUSE_IN",
     label: "Warehouse",
     location: "DXB cool room",
   },
   "in-tarmac": {
-    budgetH: 4,
-    budgetTone: "yellow",
     eventCode: "STATE_TARMAC_IN",
     label: "Tarmac",
     location: "DXB apron staging",
   },
   "in-flight": {
-    budgetH: 9,
-    budgetTone: "green",
     eventCode: "STATE_FLIGHT_IN",
     label: "In flight",
     location: "Aircraft hold",
   },
   "arrived-tarmac": {
-    budgetH: 3,
-    budgetTone: "red",
     eventCode: "STATE_TARMAC_DEST_IN",
     label: "Arrived tarmac",
     location: "Destination apron",
   },
   "arrived-destination": {
-    budgetH: 8,
-    budgetTone: "green",
     eventCode: "STATE_DEST_WAREHOUSE_IN",
     label: "Destination",
     location: "Destination warehouse",
   },
 };
+
+type RawShcEntry = {
+  temperatureInstructions?: {
+    minTemperature?: { value?: unknown; unit?: unknown };
+    maxTemperature?: { value?: unknown; unit?: unknown };
+  };
+};
+
+const SHC_CONFIG = shcConfigData as {
+  default?: RawShcEntry;
+  shc?: Record<string, RawShcEntry>;
+};
+
+function getThresholdInstructions(shcCode: string): TemperatureInstructions {
+  const shcEntry = SHC_CONFIG.shc?.[shcCode] ?? SHC_CONFIG.default;
+  const minValue = shcEntry?.temperatureInstructions?.minTemperature?.value;
+  const maxValue = shcEntry?.temperatureInstructions?.maxTemperature?.value;
+  const minUnit = shcEntry?.temperatureInstructions?.minTemperature?.unit;
+  const maxUnit = shcEntry?.temperatureInstructions?.maxTemperature?.unit;
+
+  return {
+    "@id": toIRI(`urn:cargo:tempinstr:${shcCode}`),
+    "@type": "TemperatureInstructions",
+    minTemperature: {
+      unit: minUnit === "F" ? "F" : "C",
+      value: typeof minValue === "number" ? minValue : 15,
+    },
+    maxTemperature: {
+      unit: maxUnit === "F" ? "F" : "C",
+      value: typeof maxValue === "number" ? maxValue : 25,
+    },
+  };
+}
+
+function getDominantShc(waybills: Waybill[]): string {
+  const seen = new Map<string, number>();
+  for (const waybill of waybills) {
+    const code = waybill.shc;
+    if (!code) continue;
+    seen.set(code, (seen.get(code) ?? 0) + 1);
+  }
+  if (seen.size === 0) return "GEN";
+  let bestCode = "GEN";
+  let bestCount = -1;
+  for (const [code, count] of seen) {
+    if (count > bestCount) {
+      bestCode = code;
+      bestCount = count;
+    }
+  }
+  return bestCode;
+}
 
 const STAGE_BY_EVENT: Partial<Record<string, MonitorStage>> = {
   BUILD_UP_COMPLETE: "in-warehouse",
@@ -393,6 +445,8 @@ function createMonitorRows(
   rowInputs: Array<{ contents: Waybill[]; uld: InventoryUld }>,
   stageByUld: Record<string, MonitorStage>,
   events: LogisticsEvent[],
+  weather: CanonicalWeather,
+  logicalNowMs: number,
 ): MonitorRow[] {
   const uniqueRows = new Map<
     string,
@@ -407,17 +461,33 @@ function createMonitorRows(
     const stage =
       stageByUld[uld.uldSerialNumber] ?? latestStageFromAudit(uld, events);
     const meta = STAGE_META[stage];
+    const dominantShc = getDominantShc(contents);
+    const threshold = getThresholdInstructions(dominantShc);
+
+    const thermal = computeThermalStatus({
+      uld,
+      shcCode: dominantShc,
+      threshold,
+      weather,
+      stage: stage as ThermalStage,
+      logicalNowMs,
+      locationId: toIRI(`urn:cargo:zone:DXB-${stage}`),
+    });
 
     return {
       awbCount: contents.length,
-      budgetH: meta.budgetH,
-      budgetTone: meta.budgetTone,
-      internalC: uld.lastKnownInternalC ?? 4.2,
+      budgetH: thermal.budgetH,
+      budgetTone: thermal.budgetTone,
+      budgetPercent: thermal.budgetPercent,
+      internalC: thermal.internalC,
+      ambientC: thermal.ambientC,
+      effectiveAmbientC: thermal.effectiveAmbientC,
       locationLabel: meta.location,
       shcCodes: getShcCodes(contents),
       stage,
       stageLabel: meta.label,
-      trackerLabel: uld.iotDeviceId ? `${uld.iotDeviceId} online` : "Passive",
+      trackerLabel: uld.iotDeviceId ? `${uld.iotDeviceId} online` : "Inferred",
+      excursion: thermal.excursionEventCode,
       uld,
     };
   });
@@ -579,7 +649,41 @@ export default function FlightMonitorPage() {
     ...buildRowsFromStore(builtUlds, builtContents, waybillIds),
     ...buildRowsFromAudit(auditSnapshot.loadings, waybillByPiece),
   ];
-  const rows = createMonitorRows(rowInputs, stageByUld, auditSnapshot.events);
+  const liveSnapshots =
+    useLiveQuery(
+      () => auditDb.uldStatus.toArray(),
+      [],
+      [] as UldThermalSnapshot[],
+    ) ?? [];
+  const snapshotByUld = new Map(
+    liveSnapshots.map((snap) => [snap.uldId, snap] as const),
+  );
+  const localRows = createMonitorRows(
+    rowInputs,
+    stageByUld,
+    auditSnapshot.events,
+    weather,
+    currentTimeMs,
+  );
+  const rows: MonitorRow[] = localRows.map((row) => {
+    const snap = snapshotByUld.get(row.uld.uldSerialNumber);
+    if (!snap) return row;
+    const overlaid: MonitorRow = {
+      ...row,
+      ambientC: snap.ambientC,
+      effectiveAmbientC: snap.effectiveAmbientC,
+      budgetH: snap.budgetH,
+      budgetPercent: snap.budgetPercent,
+      budgetTone: snap.budgetTone,
+      internalC: snap.internalC,
+      stage: snap.stage as MonitorStage,
+      stageLabel:
+        STAGE_META[snap.stage as MonitorStage]?.label ?? row.stageLabel,
+      locationLabel:
+        STAGE_META[snap.stage as MonitorStage]?.location ?? row.locationLabel,
+    };
+    return overlaid;
+  });
   const assignedAwbIds = new Set<IRI>();
 
   rows.forEach((row) => {
@@ -760,7 +864,17 @@ export default function FlightMonitorPage() {
                     <span>{row.uld.uldTypeCode}</span>
                     <span>{row.trackerLabel}</span>
                     <span>Internal {row.internalC.toFixed(1)}C</span>
+                    <span>
+                      Ambient {row.effectiveAmbientC.toFixed(1)}C
+                      {Math.abs(row.ambientC - row.effectiveAmbientC) > 0.5
+                        ? ` (raw ${row.ambientC.toFixed(1)}C)`
+                        : ""}
+                    </span>
                     <span>{row.locationLabel}</span>
+                    <span>
+                      Budget {row.budgetH.toFixed(1)}h ·{" "}
+                      {row.budgetPercent.toFixed(0)}%
+                    </span>
                   </div>
                 </div>
 
@@ -775,6 +889,13 @@ export default function FlightMonitorPage() {
                     ) : null}
                     {row.stage === "in-tarmac" ? (
                       <Badge variant="outline">Awaiting load</Badge>
+                    ) : null}
+                    {row.excursion === "BREACH_ACTUAL" ? (
+                      <Badge variant="destructive">Excursion</Badge>
+                    ) : row.excursion === "BREACH_PREDICTED" ? (
+                      <Badge variant="destructive">Breach predicted</Badge>
+                    ) : row.excursion === "WARNING_BUDGET_LOW" ? (
+                      <Badge variant="outline">Budget low</Badge>
                     ) : null}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   CartesianGrid,
   Legend,
@@ -49,7 +50,7 @@ import type {
   LogisticsAction,
   LogisticsEvent,
 } from "@/lib/ontology/one-record";
-import { auditDb } from "@/lib/persistence/audit-db";
+import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
 import type { UldPhysicsSpec } from "@/lib/physics/uld-specs-loader";
 import { integrateBudget } from "@/lib/physics/pcm-model";
 import type {
@@ -1137,7 +1138,11 @@ export default function UldDetailPage() {
   const physicsSpec = useMemo(() => {
     return inventoryUld ? getClientPhysicsSpec(inventoryUld) : null;
   }, [inventoryUld]);
-  const budgetForecast = useMemo(() => {
+  const liveSnapshot = useLiveQuery(
+    () => (inventoryUld ? auditDb.uldStatus.get(uldId) : undefined),
+    [inventoryUld, uldId],
+  ) as UldThermalSnapshot | undefined;
+  const localBudgetForecast = useMemo(() => {
     if (!threshold || !physicsSpec) {
       return null;
     }
@@ -1174,6 +1179,19 @@ export default function UldDetailPage() {
       maxTemperatureC: threshold.maxTemperature.value,
     };
   }, [ambientCurve, internalTemperature, physicsSpec, threshold]);
+  const budgetForecast = useMemo(() => {
+    if (!localBudgetForecast) return null;
+    if (!liveSnapshot) return localBudgetForecast;
+    return {
+      ...localBudgetForecast,
+      budgetH: liveSnapshot.budgetH,
+      breachAt: liveSnapshot.breachAtMs
+        ? new Date(liveSnapshot.breachAtMs).toISOString()
+        : null,
+      warning: liveSnapshot.budgetTone,
+    };
+  }, [localBudgetForecast, liveSnapshot]);
+  const displayInternalC = liveSnapshot?.internalC ?? internalTemperature;
   const topShc = useMemo(() => {
     return inventoryUld ? getTopShc(inventoryUld, waybills) : "CRT";
   }, [inventoryUld, waybills]);
@@ -1418,7 +1436,7 @@ export default function UldDetailPage() {
             />
             <MetricTile
               label="Internal"
-              value={`${internalTemperature.toFixed(1)}°C`}
+              value={`${displayInternalC.toFixed(1)}°C`}
               meta={`Max ${threshold.maxTemperature.value.toFixed(0)}°C`}
             />
             <MetricTile
