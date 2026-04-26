@@ -68,6 +68,7 @@ import {
   type ThermalStage,
 } from "@/lib/physics/thermal-status";
 import { startTrackerFeed } from "@/lib/simulator/tracker-feed";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type WeatherSource = "live" | "mock";
@@ -123,7 +124,6 @@ const RESOURCE_FALLBACK = {
   freeCoolDollies: 8,
   freeCoolRoomSlots: 200,
 };
-const LOGICAL_MULTIPLIER = 60;
 const TRACKER_WINDOW = 48;
 const TOW_ESTIMATE_MINUTES: Record<string, number> = {
   AVI: 5,
@@ -895,7 +895,21 @@ export default function SupervisorPage() {
             description="Sort by budget, stage, or status to prioritize supervisor attention."
             contentClassName="p-0"
           >
-            <UldTrackerTable rows={rows} />
+            {loading ? (
+              <div className="flex flex-col gap-px p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 py-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <UldTrackerTable rows={rows} />
+            )}
           </MissionPanel>
         </section>
 

@@ -7,6 +7,7 @@ import { ResetButton } from "@/components/reset-button";
 import { ScenarioRouteFollower } from "@/components/scenario-route-follower";
 import { SimulateToggle } from "@/components/simulate-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { isDemoMode } from "@/lib/env";
 
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: Props) {
           {children}
           <SimulateToggle />
           <ResetButton />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

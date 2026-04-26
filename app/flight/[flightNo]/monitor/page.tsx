@@ -54,6 +54,7 @@ import type {
 } from "@/lib/ontology/one-record";
 import { toIRI } from "@/lib/ontology/one-record";
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
+import { Skeleton } from "@/components/ui/skeleton";
 import shcConfigData from "@/public/config/shc.json";
 import {
   computeThermalStatus,
@@ -1111,11 +1112,15 @@ export default function FlightMonitorPage() {
                   {operationMessage}
                 </div>
               ) : null}
-              <div className="font-mono text-xs">
-                {isLoadingAudit
-                  ? "Loading audit state..."
-                  : "Audit state ready"}
-              </div>
+              {isLoadingAudit ? (
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-3 w-40" />
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-36" />
+                </div>
+              ) : (
+                <div className="font-mono text-xs">Audit state ready</div>
+              )}
             </CardContent>
           </Card>
         </aside>

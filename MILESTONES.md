@@ -66,7 +66,7 @@ Quick-glance status. Each row points to the detailed milestone block below. Upda
 | M17 | Audit timeline + deviation report               | 3     | 🟢     | master | Yes           | Phase 2                  |
 | M18 | Admin config (`/admin/config`)                  | 3     | 🟢     | master | Yes           | Phase 2                  |
 | M19 | Scenario runner + Demo control panel            | 3     | 🟢     | master | Yes           | Phase 2                  |
-| M20 | Polish — notifications, theming, charts         | 4     | 🟡     | master | No            | Phase 3                  |
+| M20 | Polish — notifications, theming, charts         | 4     | 🟢     | master | No            | Phase 3                  |
 | M21 | Pitch deck                                      | 4     | 🔘     | —      | No            | M20                      |
 | M22 | End-to-end rehearsal & bug fixes                | 4     | 🔘     | —      | No            | M21                      |
 | M23 | Real DG API integration swap                    | ×     | 🔘     | —      | Cross-phase   | M3 + spec                |
@@ -978,7 +978,7 @@ Components ownership map (first writer = owner):
 
 | Field           | Value                             |
 | --------------- | --------------------------------- |
-| Status          | 🟡 In progress                    |
+| Status          | 🟢 Done                           |
 | Owner           | master                            |
 | Phase           | 4                                 |
 | Parallel-safe   | No (touches multiple UI surfaces) |
@@ -1008,6 +1008,7 @@ Components ownership map (first writer = owner):
 | Date | Change | By |
 |---|---|---|
 | 2026-04-25 | Initial scope | Lead |
+| 2026-04-26 | Completed by master + hackathon-dev (sonnet). 4 Codex sub-units: (A) `<Toaster />` mounted in `app/layout.tsx`, sonner fallback in `lib/simulator/event-handlers/notification.ts` when `Notification.permission !== "granted"`, `notification.onclick` deep-link in `lib/notifications/web-notify.ts`. (B) New `lib/theming/apply-theme-of-day.ts` (no `useTheme` dep) called from end of `time-of-day-change.ts` — morning/afternoon → light, evening/night → dark, persists to `localStorage["theme"]`. (C) `app/supervisor/resolutions/page.tsx` derives `points` from `auditDb.actions` Dexie reads + `seedSampleResolutions()` fallback so the scatter has visible content on first load. (D) shadcn `Skeleton` primitive installed; loading branches added to `app/supervisor/page.tsx`, `app/supervisor/excursions/page.tsx`, `app/supervisor/audit/[uldId]/page.tsx`, `app/flight/[flightNo]/page.tsx`, `app/flight/[flightNo]/monitor/page.tsx`. Pages skipped: `flight/[no]/build/[uldId]/page.tsx` (server shell, no awaitable load), `uld/[uldId]/page.tsx` (already had pulse skeletons on its dynamic-imported map/chart), `admin/config/page.tsx` (synchronous static fixtures). Master cleanup: removed pre-existing unused `LOGICAL_MULTIPLIER` in supervisor page + unused `excursionLogger` / `publishLogisticsEvent` imports in uld detail page (baseline lint was failing `--max-warnings=0`). Master also rewrote excursions skeleton block — agent's verbose multi-`<td>` per skeleton row triggered a webpack prerender chunk error; replaced with a single `<td colSpan={7}>` skeleton cell. `pnpm typecheck && pnpm lint && pnpm build` all green. | master |
 
 ### M21 — Pitch deck
 

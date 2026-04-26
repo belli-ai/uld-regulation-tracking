@@ -29,6 +29,7 @@ import type {
   LogisticsAction,
   LogisticsEvent,
 } from "@/lib/ontology/one-record";
+import { Skeleton } from "@/components/ui/skeleton";
 import { auditDb } from "@/lib/persistence/audit-db";
 import { cn } from "@/lib/utils";
 
@@ -460,22 +461,30 @@ export default function SupervisorExcursionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRows.map((row) => (
-                  <ExcursionLogRow
-                    key={row.event["@id"]}
-                    event={row.event}
-                    ambientTemperatureC={row.ambientTemperatureC}
-                    internalTemperatureC={row.internalTemperatureC}
-                    linkedResolution={row.linkedResolution}
-                    predictedBreachInMinutes={row.predictedBreachInMinutes}
-                    rootCause={row.rootCause}
-                    shc={row.shc}
-                    state={row.state}
-                    isSelected={
-                      selectedExcursionId === String(row.event["@id"])
-                    }
-                  />
-                ))}
+                {isLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={`skeleton-${i}`}>
+                        <td className="p-3" colSpan={7}>
+                          <Skeleton className="h-4 w-full" />
+                        </td>
+                      </TableRow>
+                    ))
+                  : filteredRows.map((row) => (
+                      <ExcursionLogRow
+                        key={row.event["@id"]}
+                        event={row.event}
+                        ambientTemperatureC={row.ambientTemperatureC}
+                        internalTemperatureC={row.internalTemperatureC}
+                        linkedResolution={row.linkedResolution}
+                        predictedBreachInMinutes={row.predictedBreachInMinutes}
+                        rootCause={row.rootCause}
+                        shc={row.shc}
+                        state={row.state}
+                        isSelected={
+                          selectedExcursionId === String(row.event["@id"])
+                        }
+                      />
+                    ))}
                 {!isLoading && filteredRows.length === 0 ? (
                   <TableRow>
                     <td

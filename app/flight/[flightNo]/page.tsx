@@ -42,6 +42,7 @@ import {
 } from "@/lib/stores/inventory-store";
 import { useUldStore } from "@/lib/stores/uld-store";
 import { auditDb, type UldThermalSnapshot } from "@/lib/persistence/audit-db";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 declare module "react" {
@@ -687,7 +688,47 @@ export default function FlightWorkspacePage() {
           </CardContent>
         </Card>
 
-        <div className="grid min-h-0 gap-4 overflow-hidden xl:grid-cols-[minmax(320px,0.82fr)_minmax(460px,1.22fr)_300px]">
+        {isLoading && shipments.length === 0 ? (
+          <div className="grid min-h-0 gap-4 overflow-hidden xl:grid-cols-[minmax(320px,0.82fr)_minmax(460px,1.22fr)_300px]">
+            <section className="grid min-h-0 gap-4 overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:col-span-2">
+              <div className="min-h-0 flex flex-col gap-3 p-4 border border-border/50 rounded-lg">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                ))}
+              </div>
+              <div className="min-h-0 flex flex-col gap-3 p-4 border border-border/50 rounded-lg">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded" />
+                    <div className="flex flex-col gap-1 flex-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                ))}
+              </div>
+            </section>
+            <div className="flex flex-col gap-3 p-4 border border-border/50 rounded-lg">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          className={cn(
+            "grid min-h-0 gap-4 overflow-hidden xl:grid-cols-[minmax(320px,0.82fr)_minmax(460px,1.22fr)_300px]",
+            isLoading && shipments.length === 0 ? "hidden" : "",
+          )}
+        >
           <section className="grid min-h-0 gap-4 overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:col-span-2">
             <div className="min-h-0">
               <AwbManifestPanel

@@ -1,3 +1,4 @@
+import { applyThemeForTimeOfDay } from "@/lib/theming/apply-theme-of-day";
 import type { RunnerContext } from "@/lib/simulator/scenario-runner";
 import type { ScenarioEvent } from "@/lib/simulator/scenario-schema";
 
@@ -37,4 +38,5 @@ export async function handleTimeOfDayChange(
   }));
 
   ctx.addLog(`Time-of-day changed to ${timeOfDay}`, "info");
+  applyThemeForTimeOfDay(timeOfDay);
 }

@@ -44,9 +44,16 @@ export async function fireWebNotification(
     return null;
   }
 
-  return new Notification(payload.title, {
+  const notification = new Notification(payload.title, {
     body: payload.body,
     data: payload.data,
     tag: payload.tag,
   });
+  notification.onclick = (event) => {
+    event.preventDefault();
+    window.focus();
+    const href = (notification.data as { href?: string } | undefined)?.href;
+    if (href) window.location.assign(href);
+  };
+  return notification;
 }

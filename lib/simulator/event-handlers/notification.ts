@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 import { fireWebNotification } from "@/lib/notifications/web-notify";
 import type { RunnerContext } from "@/lib/simulator/scenario-runner";
 import type { ScenarioEvent } from "@/lib/simulator/scenario-schema";
@@ -20,7 +22,12 @@ export async function handleNotification(
     statusMessage: event.title,
   });
 
-  if (ctx.getState().notificationsEnabled) {
+  const osGranted =
+    ctx.getState().notificationsEnabled &&
+    typeof window !== "undefined" &&
+    Notification.permission === "granted";
+
+  if (osGranted) {
     await fireWebNotification({
       body,
       data:
@@ -28,8 +35,22 @@ export async function handleNotification(
           ? { href: `/uld/${event.uldId}` }
           : undefined,
       tag:
-        typeof event.uldId === "string" ? `demo-${event.uldId}` : "demo-notification",
+        typeof event.uldId === "string"
+          ? `demo-${event.uldId}`
+          : "demo-notification",
       title: event.title,
+    });
+  } else {
+    toast(event.title, {
+      description: body,
+      action:
+        typeof event.uldId === "string"
+          ? {
+              label: "Open ULD",
+              onClick: () =>
+                window.location.assign(`/uld/${event.uldId as string}`),
+            }
+          : undefined,
     });
   }
 

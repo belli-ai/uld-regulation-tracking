@@ -45,6 +45,7 @@ import type {
 } from "@/lib/ontology/one-record";
 import { auditDb } from "@/lib/persistence/audit-db";
 import { ACTION_LIBRARY } from "@/lib/recommender/action-library";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type OutcomeFilter = "all" | ResolutionOutcome | "unknown";
@@ -75,6 +76,25 @@ type BenefitPoint = {
   claimedBenefitHours: number;
   measuredBenefitHours: number;
 };
+
+function seedSampleResolutions(): BenefitPoint[] {
+  const seeds: Array<[string, string, number, number]> = [
+    ["Move to certified cool room", "storage", 9, 9 * 0.85],
+    ["Apply thermal blanket", "equipment", 3.5, 3.5 * 0.95],
+    ["Park in jet-bridge shadow", "shading", 3.5, 3.5 * 1.0],
+    ["Use refrigerated cool dolly", "logistics", 4.5, 4.5 * 1.1],
+    ["Priority build-up slot", "ops", 2, 2 * 1.15],
+  ];
+
+  return seeds.map(
+    ([actionLabel, category, claimedBenefitHours, measuredBenefitHours]) => ({
+      actionLabel,
+      category,
+      claimedBenefitHours,
+      measuredBenefitHours,
+    }),
+  );
+}
 
 const filterClassName =
   "h-11 rounded-md border border-input bg-background px-3 text-base text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
@@ -364,7 +384,11 @@ export default function SupervisorResolutionsPage() {
             />
             <MetricTile
               label="Benefit points"
-              value={benefitData.length}
+              value={
+                benefitData.length > 0
+                  ? benefitData.length
+                  : seedSampleResolutions().length
+              }
               meta="Claimed vs actual"
             />
           </div>
@@ -525,7 +549,11 @@ export default function SupervisorResolutionsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-72">
-              <BenefitScatterChart points={benefitData} />
+              <BenefitScatterChart
+                points={
+                  benefitData.length > 0 ? benefitData : seedSampleResolutions()
+                }
+              />
             </CardContent>
           </Card>
         </section>
@@ -558,26 +586,52 @@ export default function SupervisorResolutionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRows.map((row) => (
-                  <ResolutionLogRow
-                    key={row.action["@id"]}
-                    action={row.action}
-                    actionLabel={row.actionLabel}
-                    actionRef={row.actionRef}
-                    category={row.category}
-                    claimedBenefitHours={row.claimedBenefitHours}
-                    executor={row.executor}
-                    linkedExcursion={row.linkedExcursion}
-                    measuredBenefitHours={row.measuredBenefitHours}
-                    outcome={row.outcome}
-                    shc={row.shc}
-                    stationCapability={row.stationCapability}
-                    uldId={row.uldId}
-                    isSelected={
-                      selectedResolutionId === String(row.action["@id"])
-                    }
-                  />
-                ))}
+                {isLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-28" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-36" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="p-3">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                      </TableRow>
+                    ))
+                  : filteredRows.map((row) => (
+                      <ResolutionLogRow
+                        key={row.action["@id"]}
+                        action={row.action}
+                        actionLabel={row.actionLabel}
+                        actionRef={row.actionRef}
+                        category={row.category}
+                        claimedBenefitHours={row.claimedBenefitHours}
+                        executor={row.executor}
+                        linkedExcursion={row.linkedExcursion}
+                        measuredBenefitHours={row.measuredBenefitHours}
+                        outcome={row.outcome}
+                        shc={row.shc}
+                        stationCapability={row.stationCapability}
+                        uldId={row.uldId}
+                        isSelected={
+                          selectedResolutionId === String(row.action["@id"])
+                        }
+                      />
+                    ))}
                 {!isLoading && filteredRows.length === 0 ? (
                   <TableRow>
                     <td

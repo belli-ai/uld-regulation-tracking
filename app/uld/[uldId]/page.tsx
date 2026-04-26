@@ -45,8 +45,6 @@ import flightsData from "@/public/data/flights.json";
 import scenariosData from "@/public/data/scenarios.json";
 import shipmentsData from "@/public/data/shipments.json";
 import uldInventoryData from "@/public/data/uld-inventory.json";
-import { excursionLogger } from "@/lib/audit/excursion-logger";
-import { publishLogisticsEvent } from "@/lib/adapters/one-connect/publish-client";
 import type { AirportPolygons } from "@/lib/inference/airport-polygons-loader";
 import type {
   LogisticsAction,

@@ -26,6 +26,7 @@ import type {
   LogisticsEvent,
 } from "@/lib/ontology/one-record";
 import { auditDb } from "@/lib/persistence/audit-db";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
   params: Promise<{
@@ -192,10 +193,23 @@ export default function AuditPage({ params }: Props) {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {loading ? (
-              <div className="flex min-h-48 items-center justify-center border border-dashed border-border bg-background/40 px-4">
-                <p className="text-sm text-muted-foreground">
-                  Loading audit records…
-                </p>
+              <div className="flex flex-col gap-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-56" />
+                </div>
               </div>
             ) : (
               <AuditTimeline
