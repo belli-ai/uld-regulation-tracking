@@ -9,23 +9,28 @@ function routeForFocus(
   flightNo: string | null,
   uldId: string | null,
 ): string {
+  const flightSegment = flightNo ? encodeURIComponent(flightNo) : null;
+  const uldSegment = uldId ? encodeURIComponent(uldId) : null;
+
   switch (target) {
     case "flight_list":
       return "/";
     case "flight_workspace":
-      return flightNo ? `/flight/${flightNo}` : "/flight/[flightNo]";
+      return flightSegment ? `/flight/${flightSegment}` : "/flight/[flightNo]";
     case "build_up_canvas":
-      return flightNo && uldId
-        ? `/flight/${flightNo}/build/${uldId}`
+      return flightSegment && uldSegment
+        ? `/flight/${flightSegment}/build/${uldSegment}`
         : "/flight/[flightNo]/build/[uldId]";
     case "uld_detail":
-      return uldId ? `/uld/${uldId}` : "/uld/[uldId]";
+      return uldSegment ? `/uld/${uldSegment}` : "/uld/[uldId]";
     case "supervisor_dashboard":
       return "/supervisor";
     case "audit_log":
-      return uldId ? `/supervisor/audit/${uldId}` : "/supervisor/audit/[uldId]";
+      return uldSegment
+        ? `/supervisor/audit/${uldSegment}`
+        : "/supervisor/audit/[uldId]";
     case "pitch_slide":
-      return uldId ? `/supervisor/audit/${uldId}` : "/supervisor";
+      return "/pitch";
   }
 }
 
@@ -53,7 +58,9 @@ export async function handleUiFocus(
       ? event.flightNo
       : ctx.getState().selectedFlightNo;
   const selectedUldId =
-    typeof event.uldId === "string" ? event.uldId : ctx.getState().selectedUldId;
+    typeof event.uldId === "string"
+      ? event.uldId
+      : ctx.getState().selectedUldId;
 
   ctx.setState({
     selectedFlightNo,

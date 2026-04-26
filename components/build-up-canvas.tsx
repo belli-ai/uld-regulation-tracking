@@ -247,6 +247,31 @@ function getLocationCode(value: string): string {
   return value.split(":").at(-1) ?? value;
 }
 
+function decodeRouteSegment(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getRouteIdTail(value: string): string {
+  const decoded = decodeRouteSegment(value);
+  return decoded.split(":").at(-1) ?? decoded;
+}
+
+function matchesUldId(entry: BuildUpUld, requestedId: string): boolean {
+  const decoded = decodeRouteSegment(requestedId);
+  const serial = getRouteIdTail(decoded);
+
+  return (
+    entry.uldSerialNumber === decoded ||
+    entry.uldSerialNumber === serial ||
+    entry["@id"] === toIRI(decoded) ||
+    getRouteIdTail(entry["@id"]) === serial
+  );
+}
+
 function getWaybillLabel(
   waybill: Pick<BuildUpWaybill, "waybillNumber" | "waybillPrefix">,
 ): string {
@@ -700,6 +725,8 @@ async function loadBuildData(
   flightNo: string,
   uldId: string,
 ): Promise<ParsedBuildData> {
+  const decodedFlightNo = decodeRouteSegment(flightNo);
+  const decodedUldId = decodeRouteSegment(uldId);
   const [flightsResponse, shipmentsResponse, inventoryResponse] =
     await Promise.all([
       fetch(`/data/flights.json?t=${Date.now()}`, { cache: "no-store" }),
@@ -734,20 +761,17 @@ async function loadBuildData(
       ? (shipmentsRaw as Record<string, unknown>)
       : {};
 
-  const manifest = Array.isArray(shipmentsMap[flightNo])
-    ? shipmentsMap[flightNo].flatMap((entry) => {
+  const manifest = Array.isArray(shipmentsMap[decodedFlightNo])
+    ? shipmentsMap[decodedFlightNo].flatMap((entry) => {
         const parsed = parseWaybill(entry);
         return parsed ? [parsed] : [];
       })
     : [];
 
   const flight =
-    flights.find((entry) => entry.flightNumber === flightNo) ?? null;
+    flights.find((entry) => entry.flightNumber === decodedFlightNo) ?? null;
   const uld =
-    inventory.find(
-      (entry) =>
-        entry["@id"] === toIRI(uldId) || entry.uldSerialNumber === uldId,
-    ) ?? null;
+    inventory.find((entry) => matchesUldId(entry, decodedUldId)) ?? null;
 
   return { flight, manifest, uld };
 }

@@ -287,27 +287,30 @@ function routeForFocus(
   selectedFlightNo: string | null,
   selectedUldId: string | null,
 ): string {
+  const flightSegment = selectedFlightNo
+    ? encodeURIComponent(selectedFlightNo)
+    : null;
+  const uldSegment = selectedUldId ? encodeURIComponent(selectedUldId) : null;
+
   switch (focus) {
     case "flight_list":
       return "/";
     case "flight_workspace":
-      return selectedFlightNo ? `/flight/${selectedFlightNo}` : "/flight/[flightNo]";
+      return flightSegment ? `/flight/${flightSegment}` : "/flight/[flightNo]";
     case "build_up_canvas":
-      return selectedFlightNo && selectedUldId
-        ? `/flight/${selectedFlightNo}/build/${selectedUldId}`
+      return flightSegment && uldSegment
+        ? `/flight/${flightSegment}/build/${uldSegment}`
         : "/flight/[flightNo]/build/[uldId]";
     case "uld_detail":
-      return selectedUldId ? `/uld/${selectedUldId}` : "/uld/[uldId]";
+      return uldSegment ? `/uld/${uldSegment}` : "/uld/[uldId]";
     case "supervisor_dashboard":
       return "/supervisor";
     case "audit_log":
-      return selectedUldId
-        ? `/supervisor/audit/${selectedUldId}`
+      return uldSegment
+        ? `/supervisor/audit/${uldSegment}`
         : "/supervisor/audit/[uldId]";
     case "pitch_slide":
-      return selectedUldId
-        ? `/supervisor/audit/${selectedUldId}`
-        : "/supervisor";
+      return uldSegment ? `/supervisor/audit/${uldSegment}` : "/supervisor";
   }
 }
 
